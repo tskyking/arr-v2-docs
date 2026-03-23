@@ -1,0 +1,18 @@
+# Topics Index
+
+This folder holds topic-specific working memory.
+
+## Current Topics
+
+- `openclaw-setup.md` — setup, configuration, tooling, security, memory, git, and workflow infrastructure
+- `saas-build.md` — product requirements, roadmap, architecture, and coordination with coder + QA
+- `life-ops.md` — planning, systems, admin, finances, and day-to-day life organization
+- `health-family.md` — health, habits, kids' progress/guidance, and family-related planning
+- `travel-fun.md` — vacation planning, outings, ideas, research, and lighter lifestyle topics
+
+## Notes
+
+- Keep durable high-level memory in `MEMORY.md`.
+- Keep day-level notes in `memory/YYYY-MM-DD.md`.
+- Use these topic files as living notebooks for deeper context.
+- Split a topic into subtopics only when it becomes large enough to justify it.
