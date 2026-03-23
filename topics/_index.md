@@ -16,3 +16,12 @@ This folder holds topic-specific working memory.
 - Keep day-level notes in `memory/YYYY-MM-DD.md`.
 - Use these topic files as living notebooks for deeper context.
 - Split a topic into subtopics only when it becomes large enough to justify it.
+
+## Related Document Folders
+
+- `docs/inbox` — unsorted intake
+- `docs/saas` — SaaS/product documents
+- `docs/life-ops` — planning/admin/finance/supporting docs
+- `docs/health-family` — health/family-related documents
+- `docs/travel` — travel documents
+- `docs/reference` — general reference material
