@@ -1,0 +1,1274 @@
+from email import message
+from functools import partial
+import json
+import os
+import threading
+import pandas as pd
+
+from django.http import FileResponse, Http404
+from django.db.models import F, Q
+from django.db.models import Subquery
+from django.core.cache import cache
+from django.http import HttpResponse
+
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
+
+from rest_framework.response import Response
+from rest_framework import status, viewsets, mixins, generics
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework import filters
+from rest_framework.filters import OrderingFilter
+
+from .serializers import (UploadCsvSerializer, CreateTransactionSerliazer, ItemSerializer, CreateItemListSerializer,
+                          ItemRevenueSeriliazer, TransactionScreenSerilizer, ArrByCustomerSeriliazer, UpdateTransactionSerliazer,
+                          CreateCalculationSeriliazer, CloseDateSeriliazer, ArrGracePeriodSerializer, CalculationDaySerializer,
+                          PendingArrByCustomerSeriliazer
+                          )
+# from .reterive_invoice_data import load_membership_data
+from .newret import load_membership_data
+from .models import Transaction, Item, Calculation, CloseDate, ArrGracePeriod, CalculationMonths, Company
+from .signals import calculation_on_arr_grace_period_handler, calculation_on_item_save
+from services.models import ProductService, ProductServiceType, ExcelTransaction
+# from .saasot_calculation.total_calc import table_totals, items_totals
+from .saasot_calculation import total_calc2
+from .saasot_calculation.revenue1 import *
+from .csv_excel_download import create_arr_csv, create_arr_excel, create_database_contract_csv, create_database_contract_excel
+from authentication.permissions import DuplicateInvoice, IsOwner, CalculationWrite, IsAdmin
+from .pagination import CustomPagination
+from .filters import StartsWithSearchFilter
+
+from .signals import *
+
+import logging
+
+class UploadCsvView(APIView):
+    """
+    A viewset that provides the upload csv functionality 
+    """
+    serializer_class = UploadCsvSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        if 'csv_file' not in data.keys():
+            return Response({"message": "'csv_file' key not found"}, status=status.HTTP_400_BAD_REQUEST)
+        if data['csv_file']:
+            serializer = UploadCsvSerializer(data=data)
+            if serializer.is_valid():
+                company_id = self.request.GET.get('company_id', None)
+                try:
+                    company = Company.objects.get(id=company_id)
+                except:
+                    company = None
+
+                undefiend_service = load_membership_data(data['csv_file'], request.user, company)
+
+                if undefiend_service.get('error', None):
+                    return Response({'message': str(undefiend_service['error'])}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"undefiend_service": undefiend_service, "message": "Succesfully upload!!"}, status=status.HTTP_200_OK)
+
+            else:
+                return Response({'message': 'There is an error in the data'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"message": "file is required to send "}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def process_excel_transactions(product_service):
+    try:
+        excel_transactions = ExcelTransaction.objects.filter(product_service=product_service)
+
+        correct_csv_date = []
+        for et in excel_transactions:
+            try:
+                customer_name = et.customer.split(':')
+                cus_name = customer_name[0].strip()
+
+                start_date = pd.to_datetime(et.subscription_start_date) if et.subscription_start_date else None
+                end_date = pd.to_datetime(et.subscription_end_date) if et.subscription_end_date else None
+
+                if start_date is not None:
+                    start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+
+                if end_date is not None:
+                    end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+
+                subcription_status = None
+                subscription_terms_month = None
+                arr = None
+
+                if start_date and end_date:
+                    delta = relativedelta(end_date, start_date)
+                    subscription_terms_month = delta.years * 12 + delta.months + 1
+                    if datetime.now(timezone.get_current_timezone()) < end_date:
+                        subcription_status = "active"
+                    else:
+                        subcription_status = "pending renewal"
+
+                invoice_date_str = pd.to_datetime(et.date).strftime("%Y%m%d")
+                cus_name_clean = cus_name.replace(" ", "")
+                unique_identifier = f"{invoice_date_str}-{et.number}-{cus_name_clean[:5]}"
+                unique_identifier = et.number
+
+                if (product_service.revenue_type is not None and 
+                    product_service.revenue_type.revenue_type == "over life of subscription" and 
+                    (et.subscription_start_date is None or et.subscription_end_date is None)):
+                    correct_csv_date.append(et.number)
+
+                    transaction = Transaction.objects.filter(
+                        company=product_service.company,
+                        invoice_number=et.number,
+                        customer_name__iexact=cus_name,
+                        order_close_data=et.date
+                    ).first()
+
+                    if transaction:
+                        transaction.delete()
+                    else:
+                        if transaction is None:
+                            transaction = Transaction.objects.create(
+                                customer_name=cus_name,
+                                f_cst_name=cus_name,
+                                order_close_data=et.date,
+                                billing_method=et.transaction_type,
+                                invoice_number=et.number,
+                                user=product_service.user,
+                                company=product_service.company,
+                                red_flag=False
+                            )
+
+                    continue
+
+                transaction = Transaction.objects.filter(
+                    company=product_service.company,
+                    invoice_number=et.number,
+                    customer_name__iexact=cus_name,
+                    order_close_data=et.date
+                ).first()
+
+                if transaction is None:
+                    transaction = Transaction.objects.create(
+                        customer_name=cus_name,
+                        f_cst_name=cus_name,
+                        order_close_data=et.date,
+                        billing_method=et.transaction_type,
+                        invoice_number=et.number,
+                        user=product_service.user,
+                        company=product_service.company,
+                        red_flag=False
+                    )
+
+                amount = float(et.amount) if et.amount is not None else 0.0
+                sales_price = float(et.sales_price) if et.sales_price is not None else 0.0
+
+                item_exists = Item.objects.filter(
+                    item_description=et.memo_description,
+                    quantity=abs(et.qty),
+                    s_start_d=start_date,
+                    s_end_d=end_date,
+                    subscription_terms_month=subscription_terms_month,
+                    arr=arr,
+                    subscription_status=subcription_status,
+                    total_revenue=amount,
+                    productp_service=product_service,
+                    tansaction=transaction,
+                ).exists()
+
+                if not item_exists:
+                    item = Item.objects.create(
+                        item_description=et.memo_description,
+                        quantity=abs(et.qty),
+                        s_start_d=start_date,
+                        s_end_d=end_date,
+                        subscription_terms_month=subscription_terms_month,
+                        arr=arr,
+                        subscription_status=subcription_status,
+                        total_revenue=amount,
+                        productp_service=product_service,
+                        tansaction=transaction,
+                        amount=amount,
+                        sale_price=sales_price,
+                    )
+
+                    try:
+                        calculation_on_item_save(sender=Item, instance=item, created=True)
+                    except Exception as e:
+                        pass
+
+                else:
+                    item = Item.objects.get(
+                        item_description=et.memo_description,
+                        quantity=abs(et.qty),
+                        s_start_d=start_date,
+                        s_end_d=end_date,
+                        subscription_terms_month=subscription_terms_month,
+                        arr=arr,
+                        subscription_status=subcription_status,
+                        total_revenue=amount,
+                        productp_service=product_service,
+                        tansaction=transaction,
+                    )
+                    item.amount = amount
+                    item.sale_price = sales_price
+                    item.save()
+
+                    try:
+                        calculation_on_item_save(sender=Item, instance=item, created=False)
+                    except Exception as e:
+                        pass
+
+            except Exception as e:
+                pass
+
+    except Exception as e:
+        pass
+
+
+class CreateTransactionView(viewsets.ModelViewSet):
+    """
+    A viewset that provides the all actions
+    """
+    serializer_class = CreateTransactionSerliazer
+    queryset = Transaction.objects.all()
+
+    def get_permissions(self):
+        if self.action == 'create':
+            permission_classes = [DuplicateInvoice, IsAuthenticated]
+        elif self.action == 'update' or self.action == 'partial_update':
+            permission_classes = [IsOwner, IsAuthenticated]
+        else:
+            permission_classes = [IsAuthenticated]
+
+        return [permission() for permission in permission_classes]
+
+    def create(self, request):
+        data = request.data.copy()
+        items = json.loads(data['items'])
+        del data['items']
+
+        transaction_serializer = CreateTransactionSerliazer(
+            data=data, context={"request": request})
+        if transaction_serializer.is_valid():
+            transaction_serializer.save()
+            transaction = transaction_serializer.data['id']
+
+            for i in range(0, len(items)):
+                items[i]['tansaction'] = transaction
+            item_serializer = ItemSerializer(data=items, many=True)
+            if item_serializer.is_valid():
+                item_serializer.save()
+                return Response({"message": "Succesfully Created"}, status=status.HTTP_201_CREATED)
+            else:
+                Transaction.objects.get(id=transaction).delete()
+                return Response({'message': 'There is an error in items data', "error": item_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'message': 'There is an error in transaction data', "error": transaction_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        data = request.data.copy()
+        items = json.loads(data['items'])
+        del data['items']
+        instance = self.get_object()
+        item_instance = Item.objects.filter(
+            tansaction__user__company=self.request.user.company, tansaction=instance)
+
+        transaction_serializer = UpdateTransactionSerliazer(
+            instance, data=data, partial=True)
+        if transaction_serializer.is_valid():
+            transaction_serializer.save()
+            transaction = transaction_serializer.data['id']
+
+            for i in range(0, len(items)):
+                items[i]['tansaction'] = transaction
+            item_serializer = ItemSerializer(
+                item_instance, data=items, many=True)
+            if item_serializer.is_valid():
+                Item.objects.filter(tansaction__id=transaction).delete()
+                item_serializer.save()
+                return Response({"message": "Sucesfully Updated"}, status=status.HTTP_200_OK)
+            else:
+                return Response({'message': 'There is an error in items data', "error": item_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'message': 'There is an error in transaction data', "error": transaction_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ItemlistView(generics.ListAPIView):
+    """
+    A viewset that provides the list of items of the specific user
+    """
+    serializer_class = CreateItemListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+    filter_backends = [StartsWithSearchFilter]
+    search_fields = ['tansaction__customer_name']
+
+    def get_queryset(self):
+        items = Item.objects.filter(tansaction__user__company=self.request.user.company).annotate(
+            redflag=F('tansaction__red_flag')
+        )
+        return items.order_by('-redflag', 'tansaction')
+
+    def list(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        if self.request.GET.get('page'):
+            paginated_data = self.paginate_queryset(queryset)
+
+            serializer = CreateItemListSerializer(paginated_data, many=True)
+
+            page_size = self.paginator.page.paginator.count // 20
+            if self.paginator.page.paginator.count % 20 == 0:
+                page_size = page_size-1
+            else:
+                page_size = page_size+1
+
+            response_data = {
+                "links": {
+                    "next": self.paginator.get_next_link(),
+                    "previous": self.paginator.get_previous_link()
+                },
+                "page_size": page_size,
+                "count": self.paginator.page.paginator.count,
+                "data": serializer.data,
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        serializer = CreateItemListSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class DatabaseDropdownList(APIView):
+    """
+    An APi provide a deopdown list of database list table in frontend
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        new_list = []
+        user = self.request.user
+        prd_types = ProductServiceType.objects.filter(
+            user__company=user.company)
+
+        for prd in prd_types:
+            new_list.append(
+                {"name": str(prd.productp_service_type) + " revenue", "id": prd.id})
+            new_list.append(
+                {"name": str(prd.productp_service_type) + " deferred revenue", "id": prd.id})
+        new_list.append({"name": "billing"})
+        new_list.append({"name": "total revenue"})
+        new_list.append({"name": "total deferred revenue"})
+        return Response({"data": new_list}, status=status.HTTP_200_OK)
+
+
+class ArrByCustomerView(generics.ListAPIView):
+    """
+    A viewset that calculates the ARR of a customer based on the customer_name on transactions.
+    """
+    serializer_class = ArrByCustomerSeriliazer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+    filter_backends = [StartsWithSearchFilter, OrderingFilter]
+    search_fields = ['customer_name']
+    ordering_fields = ['customer_name']
+
+    def get_queryset(self, *args, **kwargs):
+        item_ids = Item.objects.filter(
+            tansaction__user__company=self.request.user.company,
+            productp_service__revenue_type__revenue_type="over life of subscription"
+        ).values('tansaction_id')
+
+        queryset = Transaction.objects.filter(
+            id__in=item_ids, user__company=self.request.user.company
+        ).distinct()
+
+        ordering = self.request.query_params.get('ordering')
+        if ordering == '-customer_name':
+            queryset = queryset.order_by(F('customer_name').desc())
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        heading = []
+
+        start = self.kwargs.get('start')
+        start = parse_date(start)
+        end = self.kwargs.get('end')
+        end = parse_date(end)
+        current_date = start
+        while current_date <= end:
+            heading.append(current_date.strftime("%b %y"))
+            current_date += relativedelta(months=1)
+
+        calc_type = self.kwargs.get('typ')
+
+        if self.request.GET.get('page'):
+            paginated_data = self.paginate_queryset(queryset)
+
+            serializer = ArrByCustomerSeriliazer(
+                paginated_data, many=True,
+                context={"type": calc_type, "user": self.request.user}
+            )
+
+            page_size = self.paginator.page.paginator.count // 20
+            if self.paginator.page.paginator.count % 20 == 0:
+                page_size = page_size - 1
+            else:
+                page_size = page_size + 1
+
+            response_data = {
+                "links": {
+                    "next": self.paginator.get_next_link(),
+                    "previous": self.paginator.get_previous_link()
+                },
+                "page_size": page_size,
+                "count": self.paginator.page.paginator.count,
+                "data": serializer.data,
+                "heading": heading
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        else:
+            serializer = ArrByCustomerSeriliazer(queryset, many=True, context={"type": calc_type, "user": self.request.user})
+
+        return Response({"data": serializer.data, "heading": heading})
+
+
+class ArrBySpecifcsCustomerView(APIView):
+    """
+    A viewset that calculate the arr of customer on base on sutomer_name on transaction
+    """
+    serializer_class = ArrByCustomerSeriliazer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        ids = self.kwargs.get('ids')
+        ids_list = ids.split(',')
+        return Transaction.objects.filter(
+            id__in=ids_list, user__company=self.request.user.company
+        ).order_by('customer_name').distinct('customer_name')
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        heading = []
+        start = Item.objects.earliest('s_start_d').s_start_d
+        end = Item.objects.exclude(s_end_d=None).order_by(
+            '-s_end_d').first().s_end_d
+        current_date = start
+
+        while current_date <= end:
+            heading.append(current_date.strftime("%b %y"))
+            current_date += relativedelta(months=1)
+        calc_type = self.kwargs.get('typ')
+
+        serializer = ArrByCustomerSeriliazer(queryset, many=True, context={
+                                             "type": calc_type, "user": self.request.user})
+        total_arr = total_calc2.total_arr_customer(serializer.data)
+        data = serializer.data
+        modified_data = []
+        for item in serializer.data:
+            item['total_arr'] = total_arr
+            modified_data.append(item)
+
+        return Response({"data": modified_data, "heading": heading})
+
+
+class MultiTransactionSecreenCalc(APIView):
+    """
+    A viewset that calculate the revenue and other things on multi transaction items 
+    """
+    serializer_class = TransactionScreenSerilizer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        ids = self.kwargs.get('ids')
+        id_list = ids.split(',')
+        tsc = Transaction.objects.filter(id__in=id_list)
+        if len(tsc) > 0:
+            return tsc
+        else:
+            None
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if queryset == None:
+            return Response({"message": "Transaction with this id does not exist"})
+        calc_type = self.kwargs.get('typ')
+        serializer = TransactionScreenSerilizer(
+            queryset, many=True, context={'type': calc_type})
+        data = serializer.data
+        months = []
+        table_total = total_calc2.table_totals(data)
+        items_total = total_calc2.items_totals(data)
+
+        for i in range(0, len(table_total['temp_total_revenue'])):
+            months.append(table_total['temp_total_revenue'][i]['date'])
+
+        for i in range(0, len(table_total['total_billing_revenue'])):
+            months.append(table_total['total_billing_revenue'][i]['date'])
+
+        for i in range(0, len(table_total['total_arr'])):
+            months.append(table_total['total_arr'][i]['date'])
+
+        months = list(set(months))
+        months.sort(key=lambda x: parse_date(x))
+
+        return Response({"data": serializer.data,
+                         "total_revenue": table_total['temp_total_revenue'],
+                         "total_billing": table_total['total_billing_revenue'],
+                         "balance": table_total['balance'], "total_arr": table_total["total_arr"],
+                         "total_cumilative_revenue": table_total['total_cumilative_revenue'],
+                         "total_cumilative_billing": table_total['total_cumilative_billing'],
+                         "total_items_rev": items_total['total_items_rev'],
+                         "total_items_def": items_total['total_items_def'],
+                         "total_items_bal": items_total['total_items_bal'],
+                         "tables_headings": items_total['table_headings'],
+                         "total_items_arr": items_total['total_items_arr'],
+                         "months": months
+                         }
+                        )
+
+
+class CalculationViewSet(viewsets.ModelViewSet):
+    """
+    A viewset that provides the all actions
+    """
+    serializer_class = CreateCalculationSeriliazer
+    queryset = Calculation.objects.all()
+
+    def get_permissions(self):
+        if self.action == 'create':
+            permission_classes = [IsAuthenticated]
+        elif self.action == 'update' or self.action == 'partial_update':
+            permission_classes = [IsAuthenticated, CalculationWrite]
+        else:
+            permission_classes = [IsAuthenticated]
+
+        return [permission() for permission in permission_classes]
+
+    def partial_update(self, request, *args, **kwargs):
+        data = request.data.copy()
+        rev_value = 0
+        del data['password']
+        instance = self.get_object()
+        key = list(data.keys())
+        data2 = {key[0]: json.loads(data[key[0]])}
+        f = 0
+
+        if key[0] == 'revenue':
+            for i in range(0, len(data2[key[0]])):
+                rev_value += data2[key[0]][i]['value']
+            f = rev_value - instance.items.total_revenue
+
+            serializer = CreateCalculationSeriliazer(instance, data=data2)
+            if serializer.is_valid():
+                self.perform_update(serializer)
+                serializer.save()
+                calc_id = serializer.data['id']
+                calc = Calculation.objects.get(id=calc_id)
+                item = calc.items
+                def_rev = deferred_revenue(item)
+                calc.deffered_revenue = def_rev
+                calc.save()
+                return Response(serializer.data)
+            else:
+                return Response(
+                    {"message": "there is something wrong with data",
+                        "error": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        else:
+            serializer = CreateCalculationSeriliazer(instance, data=data2)
+            if serializer.is_valid():
+                self.perform_update(serializer)
+                serializer.save()
+                return Response(serializer.data)
+            else:
+                return Response(
+                    {"message": "there is something wrong with data",
+                        "error": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+class CloseDateViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CloseDateSeriliazer
+    queryset = CloseDate.objects.all()
+
+
+from django.db.models import Prefetch
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
+class ArrRollForwardView(APIView):
+    serializer_class = ArrByCustomerSeriliazer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_company = self.request.user.company
+        item_ids = Item.objects.filter(
+            Q(total_revenue__isnull=False) | Q(total_revenue__gt=0),
+            tansaction__user__company=user_company,
+            productp_service__revenue_type__revenue_type="over life of subscription"
+        ).values_list('tansaction_id', flat=True)
+
+        return Transaction.objects.filter(
+            id__in=item_ids, user__company=user_company
+        ).distinct().prefetch_related(
+            Prefetch('tansaction')
+        )
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        cache_key = f"user_{user.id}_data_{self.kwargs.get('typ')}_{self.kwargs.get('start')}_{self.kwargs.get('end')}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
+        queryset = self.get_queryset()
+        calc_type = self.kwargs.get('typ')
+        serializer = ArrByCustomerSeriliazer(queryset, many=True, context={'type': calc_type, "user": self.request.user})
+
+        start = parse_date(self.kwargs.get('start'))
+        end = parse_date(self.kwargs.get('end'))
+        heading = [start.strftime("%b %y")]
+        current_date = start
+        while current_date <= end:
+            current_date += relativedelta(months=1)
+            heading.append(current_date.strftime("%b %y"))
+
+        arr_roll_fwd = total_calc2.arr_rollforward(serializer.data)
+        Logo_Rollforward = arr_roll_fwd.pop('Logo_Rollforward', None)
+        key_metcrics = arr_roll_fwd.pop('key_metcrics', None)
+
+        side_heading = [
+            "Beggining_ARR", "New_ARR", "Recovery_ARR", "Expansion_ARR",
+            "Contraction_ARR", "Churn_ARR",
+            "Ending_ARR"
+        ]
+
+        data = {
+            "arr_roll_fwd": arr_roll_fwd,
+            "heading": heading,
+            "side_heading": side_heading,
+            'Logo_Rollforward': Logo_Rollforward,
+            "Key_Metcrics": key_metcrics
+        }
+        cache.set(cache_key, data, timeout=3600)
+
+        return Response(data)
+
+
+@method_decorator(cache_page(60*60), name='dispatch')
+class CachedArrRollForwardView(ArrRollForwardView):
+    pass
+
+
+class CustomerArrRollForwardView(APIView):
+
+    serializer_class = ArrByCustomerSeriliazer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        ids = self.kwargs.get('ids')
+        id_list = ids.split(',')
+        return Transaction.objects.filter(id__in=id_list).order_by('customer_name').distinct('customer_name')
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        calc_type = self.kwargs.get('typ')
+        serializer = ArrByCustomerSeriliazer(queryset, many=True, context={
+                                             'type': calc_type, "user": self.request.user})
+        arr_roll_fwd = total_calc2.arr_rollforward(serializer.data)
+
+        heading = []
+        start = Item.objects.earliest('s_start_d').s_start_d
+        end = Item.objects.exclude(s_end_d=None).order_by(
+            '-s_end_d').first().s_end_d
+        current_date = start
+
+        while current_date <= end:
+            heading.append(current_date.strftime("%b %y"))
+            current_date += relativedelta(months=1)
+        rsp = {"Beginning_ARR": arr_roll_fwd["Beginning_ARR"],
+               "New_ARR": arr_roll_fwd["New_ARR"],
+               "Recovery_ARR": arr_roll_fwd["Recovery_ARR"],
+               "Expansion ARR": arr_roll_fwd["Expansion_ARR"],
+               "Contraction_ARR": arr_roll_fwd["Contraction_ARR"],
+               "Churn_ARR": arr_roll_fwd["Churn_ARR"],
+               "Ending_ARR": arr_roll_fwd["Ending_ARR"],
+               }
+        side_heading = rsp.keys()
+
+        return Response({"arr_roll_fwd": rsp, "heading": heading, "side_heading": side_heading,
+                         "Logo_Rollforward": arr_roll_fwd['Logo_Rollforward']})
+
+
+class ArrGracePeriodViewset(viewsets.ModelViewSet):
+    """
+    A viewset that provides the detail and list  actions
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = ArrGracePeriodSerializer
+
+    def get_queryset(self):
+        return ArrGracePeriod.objects.all()
+
+    def create(self, request):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+
+        if serializer.is_valid():
+            ArrGracePeriod.objects.filter(
+                company=request.user.company).delete()
+            instance = serializer.save()
+            calculation_on_arr_grace_period_handler(
+                sender=self.__class__, instance=instance, created=True, user=request.user)
+
+            return Response(
+                {"message": "Succesfully updated", "data": serializer.data},
+                status=status.HTTP_200_OK
+            )
+
+    def update(self, request, *args, **kwargs):
+        return Response("this method is not allowed")
+
+    def destroy(self, request, *args, **kwargs):
+        return Response("this method is not allowed")
+
+
+class StartEndPeriod(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+
+        starting_period = []
+        start_p = parse_date("Jan 16")
+        start_p_end = parse_date("Nov 29")
+        current_date = start_p
+        while current_date <= start_p_end:
+            starting_period.append(current_date.strftime("%b %y"))
+            current_date += relativedelta(months=1)
+
+        ending_period = []
+        start_p = parse_date("Jan 16")
+        start_p_end = parse_date("Nov 29")
+        current_date = start_p
+        while current_date <= start_p_end:
+            ending_period.append(current_date.strftime("%b %y"))
+            current_date += relativedelta(months=1)
+
+        return Response({"starting_period": starting_period, "ending_period": ending_period}, status=status.HTTP_200_OK)
+
+
+class ItemRevenueView(generics.ListAPIView):
+    """
+    A viewset that calculate the revenue and itemother things on  based
+    """
+    serializer_class = CalculationDaySerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+    filter_backends = [StartsWithSearchFilter]
+    search_fields = ['items__tansaction__customer_name']
+
+    def get_ordering(self):
+        ordering = self.request.query_params.get('ordering')
+        return ordering
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = Calculation.objects.filter(
+            items__tansaction__user__company=self.request.user.company)
+        if self.kwargs.get('typ') != 'day':
+            queryset = CalculationMonths.objects.filter(
+                items__tansaction__user__company=self.request.user.company)
+
+        queryset = self.filter_queryset(queryset)
+
+        query = self.kwargs.get('query')
+        query_list = query.split(' ')
+
+        if "billing" in query or 'total' in query:
+            pass
+        else:
+            queryset = queryset.filter(items__tansaction__user__company=self.request.user.company,
+                                       items__productp_service__productp_service_type__productp_service_type=query_list[
+                                           0]
+                                       ).order_by('items__s_start_d')
+
+        ordering = self.get_ordering()
+        if ordering:
+            queryset = queryset.order_by(ordering)
+
+        return_fields = ['revenue', 'billing', 'deffered_revenue']
+        if "deferred" in query:
+            return_fields.remove('deffered_revenue')
+        elif "billing" in query:
+            return_fields.remove('billing')
+        else:
+            return_fields.remove('revenue')
+
+        self.return_fields = return_fields
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        start = parse_date(self.kwargs.get('start'))
+        end = parse_date(self.kwargs.get('end'))
+        current_date = start
+        heading = []
+
+        while current_date <= end:
+            heading.append(current_date.strftime("%b %y"))
+            current_date += relativedelta(months=1)
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        if self.request.GET.get('page'):
+            paginated_data = self.paginate_queryset(queryset)
+
+            serializer = CalculationDaySerializer(
+                paginated_data, many=True, fields=self.return_fields)
+
+            page_size = self.paginator.page.paginator.count // 20
+            if self.paginator.page.paginator.count % 20 == 0:
+                page_size = page_size-1
+            else:
+                page_size = page_size+1
+
+            response_data = {
+                "links": {
+                    "next": self.paginator.get_next_link(),
+                    "previous": self.paginator.get_previous_link()
+                },
+                "page_size": page_size,
+                "count": self.paginator.page.paginator.count,
+                "data": serializer.data,
+                "heading": heading
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        else:
+            serializer = CalculationDaySerializer(
+                queryset, many=True, fields=self.return_fields)
+
+        return Response({"data": serializer.data, "heading": heading}, status=status.HTTP_200_OK)
+
+
+class TableTotal(APIView):
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = Calculation.objects.filter(
+            items__tansaction__user__company=self.request.user.company)
+        if self.kwargs.get('typ') != 'day':
+            queryset = CalculationMonths.objects.filter(
+                items__tansaction__user__company=self.request.user.company)
+
+        query = self.kwargs.get('query')
+        query_list = query.split(' ')
+
+        if "billing" in query or 'total' in query or 'arr' in query:
+            pass
+        else:
+            queryset = queryset.filter(items__tansaction__user__company=self.request.user.company,
+                                       items__productp_service__productp_service_type__productp_service_type=query_list[0]
+                                       )
+
+        return queryset.order_by('items__tansaction')
+
+    def get(self, request, *args, **kwargs):
+
+        queryset = self.get_queryset()
+        query = self.kwargs.get('query')
+
+        total = []
+        for calc in queryset:
+            if "deferred" in query:
+                calc_data = calc.deffered_revenue
+            elif "billing" in query:
+                calc_data = calc.billing
+            elif "arr" in query:
+                calc_data = calc.arr
+            else:
+                calc_data = calc.revenue
+            combined = {}
+
+            for item in total:
+                combined[item['date']] = combined.get(
+                    item['date'], 0) + item['value']
+
+            if calc_data != None:
+                for item in calc_data:
+                    combined[item['date']] = combined.get(
+                        item['date'], 0) + item['value']
+
+            total = [{"date": date, "value": value}
+                     for date, value in combined.items()]
+        try:
+            all_dates = set(item['date'] for item in total)
+            min_date = min(all_dates, key=parse_date)
+            max_date = max(all_dates, key=parse_date)
+            all_dates_with_zero = set(
+                (parse_date(min_date) + timedelta(days=30*i)).strftime("%b %y")
+                for i in range((parse_date(max_date) - parse_date(min_date)).days // 30 + 1)
+            )
+            missing_dates = all_dates_with_zero - all_dates
+            total.extend([{"date": date, "value": 0}
+                         for date in missing_dates])
+        except:
+            pass
+        total.sort(key=lambda x: parse_date(x['date']))
+
+        return Response({'total': total}, status=status.HTTP_200_OK)
+
+
+class DownloadArrCustomer(APIView):
+    """
+    A viewset that provide the csv of arr-by-customer
+    """
+
+    def get_queryset(self, *args, **kwargs):
+
+        start = parse_date(self.kwargs.get('start'))
+        end = parse_date(self.kwargs.get('end'))
+
+        item_ids = Item.objects.filter(
+            tansaction__user__company=self.request.user.company,
+            productp_service__revenue_type__revenue_type="over life of subscription",
+            s_start_d__date__gte=start, s_end_d__date__lte=end
+        ).values('tansaction_id')
+
+        return Transaction.objects.filter(id__in=item_ids, user__company=self.request.user.company).order_by('customer_name').distinct('customer_name')
+
+    def get(self, request, *args, **kwargs):
+
+        queryset = self.get_queryset()
+        calc_type = self.kwargs.get('typ')
+
+        seriliazer = ArrByCustomerSeriliazer(queryset, many=True, context={
+                                             "type": calc_type, "user": self.request.user})
+        file_type = self.kwargs.get('file')
+
+        if file_type == 'csv':
+            threading.Thread(target=create_arr_csv, args=[
+                             seriliazer.data, self.request.user.username]).start()
+            return Response({'message': 'Task started in the background', 'file_name': f'{self.request.user.username}-arr.csv'},
+                            status=status.HTTP_200_OK
+                            )
+        else:
+            threading.Thread(target=create_arr_excel, args=[
+                             seriliazer.data, self.request.user.username]).start()
+            return Response({'message': 'Task started in the background', 'file_name': f'{self.request.user.username}-arr.xlsx'},
+                            status=status.HTTP_200_OK
+                            )
+
+
+class DownloadDatabaseContract(APIView):
+
+    """
+    A viewset that provide the csv of database-contract-table
+    """
+    serializer_class = CalculationDaySerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = Calculation.objects.filter(
+            items__tansaction__user__company=self.request.user.company)
+        if self.kwargs.get('typ') != 'day':
+            queryset = CalculationMonths.objects.filter(
+                items__tansaction__user__company=self.request.user.company)
+
+        query = self.kwargs.get('query')
+        query_list = query.split(' ')
+
+        if "billing" in query or 'total' in query:
+            pass
+
+        else:
+            if self.kwargs.get('file') == 'csv':
+                queryset = queryset.filter(items__tansaction__user__company=self.request.user.company,
+                                           items__productp_service__productp_service_type__productp_service_type=query_list[0]
+                                           ).order_by('items__s_start_d')
+            else:
+                queryset = queryset.filter(items__tansaction__user__company=self.request.user.company
+                                           ).order_by('items__s_start_d')
+
+        return_fields = ['revenue', 'billing', 'deffered_revenue']
+        fld = ""
+        if "deffered" in query:
+            return_fields.remove('deffered_revenue')
+            fld = "deffered_revenue"
+        elif "billing" in query:
+            return_fields.remove('billing')
+            fld = "billing"
+        else:
+            fld = "revenue"
+            return_fields.remove('revenue')
+
+        file_type = self.kwargs.get('file')
+        if file_type != 'csv':
+            self.return_fields = []
+        else:
+            self.return_fields = return_fields
+        self.fld = fld
+        return queryset.order_by('items__s_start_d')
+
+    def get(self, request, *args, **kwargs):
+
+        start = parse_date(self.kwargs.get('start'))
+        end = parse_date(self.kwargs.get('end'))
+        task_id = self.request.user.username
+
+        queryset = self.get_queryset().filter(
+            Q(items__s_start_d__date__isnull=True) | Q(items__s_end_d__date__isnull=True) |
+            (Q(items__s_start_d__date__gte=start)
+             & Q(items__s_end_d__date__lte=end))
+        )
+
+        serializer = CalculationDaySerializer(
+            queryset, many=True, fields=self.return_fields)
+
+        file_type = self.kwargs.get('file')
+
+        if file_type == 'csv':
+            threading.Thread(target=create_database_contract_csv, args=[
+                             serializer.data, self.fld, self.request.user.username]).start()
+            return Response({'message': 'Task started in the background', 'file_name': f'{self.request.user.username}.csv'},
+                            status=status.HTTP_200_OK
+                            )
+
+        else:
+            threading.Thread(target=create_database_contract_excel, args=[
+                             serializer.data, self.request.user.username]).start()
+            return Response({'message': 'Task started in the background', 'file_name': f'{self.request.user.username}.xlsx'},
+                            status=status.HTTP_200_OK
+                            )
+
+
+class DownloadFile(APIView):
+
+    def get(self, request, *args, **kwargs):
+
+        file_name = self.kwargs.get('name')
+        if os.path.exists(file_name):
+            response = FileResponse(open(
+                file_name, 'rb'), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="output.xlsx"'
+            os.remove(file_name)
+            return response
+        else:
+            return Response({"message": "Processing"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class ClearUserCacheView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        cache_key = f"user_{user.id}_data"
+        cache_key2 = f"user_{user.id}_pending_arr"
+
+        cache.delete(cache_key)
+        cache.delete(cache_key2)
+
+        return Response({'message': f'Cache cleared for user {user.id}'})
+
+
+class PendingArr(APIView):
+    serializer_class = ArrByCustomerSeriliazer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        item_ids = Item.objects.filter(
+            Q(total_revenue__isnull=False) | Q(total_revenue__gt=0),
+            tansaction__user__company=self.request.user.company,
+            productp_service__revenue_type__revenue_type="over life of subscription"
+        ).values('tansaction_id')
+
+        return Transaction.objects.filter(
+            id__in=Subquery(item_ids), user__company=self.request.user.company
+        ).distinct()
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        cache_key = f"user_{user.id}_pending_arr"
+
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return Response(cached_data)
+
+        queryset = self.get_queryset()
+        calc_type = self.kwargs.get('typ')
+        serializer = PendingArrByCustomerSeriliazer(
+            queryset, many=True, context={'type': calc_type, "user": self.request.user})
+
+        heading = []
+        start = self.kwargs.get('start')
+        start = parse_date(start)
+        end = self.kwargs.get('end')
+        end = parse_date(end)
+        current_date = start
+        while current_date <= end:
+            heading.append(current_date.strftime("%b %y"))
+            current_date += relativedelta(months=1)
+
+        data = total_calc2.peding_arr(serializer.data)
+        data = {"heading": heading, "data": data}
+        cache.set(cache_key, data, timeout=3600)
+
+        return Response(data)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+import json
+
+# @method_decorator(csrf_exempt, name='dispatch')
+
+@csrf_exempt
+class LandingPageChartsView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'User is not authenticated'}, status=401)
+        
+        try:
+            body = json.loads(request.body)
+            selected_option = body.get('selectedOption')
+            start_period = body.get('startPeriod')
+            end_period = body.get('endPeriod')
+
+            print(f'Selected Option: {selected_option}')
+            print(f'Start Period: {start_period}')
+            print(f'End Period: {end_period}')
+
+            start = parse_date(start_period)
+            end = parse_date(end_period)
+            heading = [start.strftime("%b %y")]
+            current_date = start
+            while current_date <= end:
+                current_date += relativedelta(months=1)
+                heading.append(current_date.strftime("%b %y"))
+
+            queryset = getQueryset(request, selected_option)  # Use the helper function to get queryset
+            serializer = ArrByCustomerSerializer(queryset, many=True, context={'type': selected_option, "user": request.user})
+
+            print('((((((((((((((((((((((((((((((((((((((((serializer.data))))))))))))))))))))))))))))))))))))))))')
+            print(serializer.data)
+
+            arr_roll_fwd = ''
+            Logo_Rollforward = ''
+            key_metcrics = ''
+
+            side_heading = ["Beggining_ARR", "New_ARR", "Recovery_ARR", "Expansion_ARR", "Contraction_ARR", "Churn_ARR", "Ending_ARR"]
+
+            data = {
+                "selectedOption": selected_option,
+                "startPeriod": start_period,
+                "endPeriod": end_period,
+                "arr_roll_fwd": arr_roll_fwd,
+                "heading": heading,
+                "side_heading": side_heading,
+                'Logo_Rollforward': Logo_Rollforward,
+                "Key_Metcrics": key_metcrics
+            }
+
+            return JsonResponse(data)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+def getQueryset(request, selected_option):
+    user_company = request.user.company
+    item_ids = Item.objects.filter(
+        Q(total_revenue__isnull=False) | Q(total_revenue__gt=0),
+        transaction__user__company=user_company,
+        product_service__revenue_type__revenue_type="over life of subscription"
+    ).values_list('transaction_id', flat=True)
+
+    return Transaction.objects.filter(
+        id__in=item_ids, user__company=user_company, some_field=selected_option
+    ).distinct().prefetch_related(
+        Prefetch('transaction')
+    )
+
+
+# from django.http import JsonResponse
+# from django.views.decorators.csrf import csrf_exempt
+# from django.views.decorators.http import require_POST
+# from django.contrib.auth.decorators import login_required
+# from django.utils.decorators import method_decorator
+# import json
+
+# @method_decorator(csrf_exempt, name='dispatch')
+# @method_decorator(login_required, name='dispatch')
+# @require_POST
+# def landing_page_charts(request):
+#     if not request.user.is_authenticated:
+#         return JsonResponse({'error': 'User is not authenticated'}, status=401)
+    
+#     try:
+#         body = json.loads(request.body)
+#         selected_option = body.get('selectedOption')
+#         start_period = body.get('startPeriod')
+#         end_period = body.get('endPeriod')
+
+#         print(f'Selected Option: {selected_option}')
+#         print(f'Start Period: {start_period}')
+#         print(f'End Period: {end_period}')
+
+#         start = parse_date(start_period)
+#         end = parse_date(end_period)
+#         heading = [start.strftime("%b %y")]
+#         current_date = start
+#         while current_date <= end:
+#             current_date += relativedelta(months=1)
+#             heading.append(current_date.strftime("%b %y"))
+
+#         queryset = getQueryset(request, selected_option)  # Use the helper function to get queryset
+#         serializer = ArrByCustomerSerializer(queryset, many=True, context={'type': selected_option, "user": request.user})
+
+#         print('((((((((((((((((((((((((((((((((((((((((serializer.data))))))))))))))))))))))))))))))))))))))))')
+#         print(serializer.data)
+
+#         arr_roll_fwd = ''
+#         Logo_Rollforward = ''
+#         key_metcrics = ''
+
+#         side_heading = ["Beggining_ARR", "New_ARR", "Recovery_ARR", "Expansion_ARR", "Contraction_ARR", "Churn_ARR", "Ending_ARR"]
+
+#         data = {
+#             "selectedOption": selected_option,
+#             "startPeriod": start_period,
+#             "endPeriod": end_period,
+#             "arr_roll_fwd": arr_roll_fwd,
+#             "heading": heading,
+#             "side_heading": side_heading,
+#             'Logo_Rollforward': Logo_Rollforward,
+#             "Key_Metcrics": key_metcrics
+#         }
+
+#         return JsonResponse(data)
+#     except json.JSONDecodeError:
+#         return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+# def getQueryset(request, selected_option):
+#     user_company = request.user.company
+#     item_ids = Item.objects.filter(
+#         Q(total_revenue__isnull=False) | Q(total_revenue__gt=0),
+#         transaction__user__company=user_company,
+#         product_service__revenue_type__revenue_type="over life of subscription"
+#     ).values_list('transaction_id', flat=True)
+
+#     return Transaction.objects.filter(
+#         id__in=item_ids, user__company=user_company, some_field=selected_option
+#     ).distinct().prefetch_related(
+#         Prefetch('transaction')
+#     )
+
+

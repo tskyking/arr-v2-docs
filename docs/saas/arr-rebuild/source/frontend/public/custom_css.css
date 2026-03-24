@@ -1,0 +1,665 @@
+/* .sidemenubar {
+    width: 256px !important;
+} */
+/* .sidebar {
+    width: 248px !important;
+} */
+
+span.menu_img {
+  width: 35px;
+}
+
+.Rightbar {
+  position: relative;
+}
+
+/* .Topdivallpage .loading-spinner {
+    text-align: center;
+    margin: 0 auto;
+  }
+  .Topdivallpage .spinner-container-bg {
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    min-height: auto;
+    position: unset;
+  }
+  .Topdivallpage .spinner-container {
+    position: unset;
+    padding-bottom: 50px;
+  } */
+
+.swal-overlay--show-modal {
+  z-index: 999999999999;
+}
+.swal-overlay {
+  /* background-color: #edf5ff; */
+}
+
+@media (min-width: 1171px) and (max-width: 1980px) {
+  .Marketingcampaign p {
+    line-height: 24px;
+  }
+}
+
+.Topdiv {
+  position: relative;
+}
+div[data-popper-placement="top"] {
+  margin-bottom: 15px !important;
+}
+
+.spinner-container-bg {
+  min-height: 100vh !important;
+}
+/* .sidebar {
+  height: 100vh;
+} */
+
+.dataTables_paginate li.active a:hover {
+  color: #ffffff !important;
+}
+
+.job-documents-img img {
+  width: 100%;
+}
+.job-documents-img {
+  float: left;
+}
+.job-documents {
+  display: inline-block !important;
+}
+
+/* .job-popup-box {
+  display: none;
+} */
+.job-popup-box {
+  position: fixed;
+  background: #00000050;
+  width: 100%;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 99999999;
+  transition-delay: 3s;
+  transition-delay: 2s, 4ms;
+  transition-property: margin-right;
+}
+.job-box {
+  position: relative;
+  width: 60%;
+  margin: 0 auto;
+  height: 100%;
+  max-height: 100vh;
+  background: #fff;
+  padding: 20px;
+  overflow: auto;
+  float: right;
+  transition-delay: 3s;
+  transition-delay: 2s, 4ms;
+  transition-property: margin-right;
+}
+.job-close-icon {
+  content: "x";
+  cursor: pointer;
+  position: fixed;
+  right: calc(15% - 30px);
+  top: calc(100vh - 85vh - 33px);
+  background: #ededed;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  line-height: 20px;
+  text-align: center;
+  border: 1px solid #999;
+  font-size: 20px;
+}
+.job-blocker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  content: " ";
+  background: rgba(0, 0, 0, 0.5);
+}
+.MarketingDetails-popup .jobdes h2 {
+  width: 100%;
+  text-transform: capitalize;
+}
+
+/* Popup style */
+.profile-popup-box {
+  position: fixed;
+  background: #00000050;
+  width: 100%;
+  height: 100vh;
+  top: 0;
+  left: 0;
+}
+
+.profile-box {
+  position: relative;
+  width: 70%;
+  margin: 0 auto;
+  height: auto;
+  max-height: 70vh;
+  margin-top: calc(100vh - 85vh - 20px);
+  background: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  border: 1px solid #999;
+  overflow: auto;
+}
+
+.profile-close-icon {
+  content: "x";
+  cursor: pointer;
+  position: fixed;
+  right: calc(15% - 30px);
+  top: calc(100vh - 85vh - 33px);
+  background: #ededed;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  line-height: 20px;
+  text-align: center;
+  border: 1px solid #999;
+  font-size: 20px;
+}
+
+.job-custom_popup .css-1t1j96h-MuiPaper-root-MuiDialog-paper {
+  border-radius: 0 !important;
+  margin: 0 !important;
+  max-height: 100% !important;
+  max-width: 70% !important;
+  width: 70% !important;
+  float: right !important;
+  height: 100% !important;
+}
+.job-custom_popup .css-hz1bth-MuiDialog-container {
+  height: 100% !important;
+  display: unset !important;
+  width: 100% !important;
+}
+.countdiv span {
+  width: auto !important;
+  float: left;
+}
+.jobaddformtop .text-content {
+  float: left;
+  width: 100%;
+}
+.error textarea,
+.error input[type="number"] {
+  border: 1px solid rgb(209, 79, 79);
+}
+
+.error
+  .MuiInput-root.MuiInput-underline.MuiInputBase-root.MuiInputBase-colorPrimary.MuiInputBase-formControl.MuiInputBase-adornedEnd.css-1ptx2yq-MuiInputBase-root-MuiInput-root,
+.error .Marketing {
+  border: 1px solid rgb(209, 79, 79);
+}
+
+.pricename span.pricetag {
+  width: auto !important;
+}
+
+.carousel__wrap ul {
+  list-style-type: none;
+  padding: 0;
+}
+.carousel__wrap {
+  margin-top: 10%;
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  position: relative;
+  width: 80%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.carousel__inner {
+  height: 40rem;
+  position: relative;
+  width: calc(90rem);
+}
+.carousel__container {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+.carousel__slide-list {
+  height: 100%;
+  left: 50%;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  transform: translateX(-50%);
+  width: calc(330rem);
+}
+.carousel__slide-item {
+  display: inline-block;
+  height: 25rem;
+  margin: 0;
+  padding: 1rem;
+  position: absolute;
+  transition: all 0.3s;
+  width: 25rem;
+}
+.carousel__slide-item-img-link {
+  cursor: zoom-in;
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+.carousel__slide-item-img-link img {
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.5s ease;
+  width: 100%;
+}
+.carousel__slide-item-img-link::after {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  content: " ";
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  opacity: 0;
+  position: absolute;
+  transition: all 0.5s ease;
+  width: 100%;
+}
+.carousel__slide-item-img-link:hover::after {
+  opacity: 1;
+}
+.carousel__slide-item-img-link:hover img {
+  transform: scale(1.3);
+}
+
+.carousel-slide-item__body {
+  bottom: -2.5rem;
+  height: 10%;
+  position: absolute;
+}
+.carousel-slide-item__body h4 {
+  margin: 0.7rem 0 0;
+  text-transform: uppercase;
+}
+.carousel-slide-item__body p {
+  font-size: 1.2rem;
+  line-height: 1.3;
+  margin: 0.7rem 0 0;
+}
+.carousel__btn {
+  align-items: center;
+  background: 0;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.carousel__btn--prev {
+  left: -8rem;
+}
+.carousel__btn--next {
+  right: -8rem;
+}
+.carousel__btn-arrow {
+  border: solid #2472fc;
+  border-width: 0 0.4rem 0.4rem 0;
+  height: 2rem;
+  padding: 3px;
+  width: 2rem;
+  z-index: 10;
+}
+.carousel__btn-arrow--left {
+  transform: rotate(135deg);
+}
+.carousel__btn-arrow--right {
+  transform: rotate(-45deg);
+}
+.carousel__dots {
+  display: inline-block;
+  left: 50%;
+  margin-top: 2rem;
+  position: absolute;
+  transform: translateX(-50%);
+}
+.carousel__dots .dot {
+  background: #ccc;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 2rem;
+  margin: 0 0.3rem;
+  outline: none;
+  transform: scale(0.5);
+  width: 2rem;
+}
+.carousel__dots .dot.active {
+  background: black;
+}
+
+.image-i_1 video {
+  /* width: auto !important; */
+  height: 260px !important;
+}
+/* .image-i_1 {
+  overflow: hidden !important;
+  height: 360px !important;
+} */
+
+.image-i_1 div {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* RESET PASSWORD CSS 8 SEP*/
+
+/* .reset-password-bg {
+  background: rgba(36, 114, 252, 0.06) !important;
+} */
+.reset-password-tab {
+  font: Arial, sans-serif;
+  border-collapse: collapse;
+  width: 600px;
+  margin: 0 auto;
+}
+
+.reset-password-tdata {
+  width: 100%;
+  /* float: "left";
+  text-align: "center"; */
+  margin: 36px 0 0;
+}
+
+.reset-password-content {
+  padding: 34px 44px;
+  border-radius: 8px !important;
+  background: #fff;
+  border: 1px solid #dddddd5e;
+  margin-bottom: 50;
+  margin-top: 50;
+}
+
+.reset-password-boxButton {
+  padding: 22px 87px;
+}
+.reset-password-template-text h1 {
+  font-size: 26px;
+  color: #000000;
+}
+
+.reset-password-forgot-text {
+  padding: 10px 0px;
+  font-size: 16px;
+  color: #384860;
+  margin-bottom: 0px;
+}
+.reset-password-text {
+  font-size: 16px;
+  color: #000000;
+  font-weight: bold;
+}
+.resetPassword-box {
+  background: #f8f8f8;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  width: 335px;
+  height: 47px;
+  align-items: center;
+  padding: 17px 79px 14px 16px;
+  gap: 10px;
+}
+.confirmPassword-text {
+  font-size: 16px;
+  color: #000000;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+.passwordsMatch-text {
+  color: #a0a0a0;
+  font-size: 16px;
+  margin-top: 1rem;
+}
+.buttonResetPassword {
+  font-size: 16px;
+  line-height: 19px;
+  color: #ffffff;
+  background: #2472fc;
+  border-radius: 8px;
+  /* width: 250px; */
+  height: 47px;
+  padding: 14px 46px;
+  gap: 10px;
+  border-style: none;
+}
+.buttonResetPasswordCenter {
+  text-align: center;
+  padding-bottom: 70px;
+}
+
+/* RESET PASSWORD CSS  END*/
+
+/* ASSERT TOGGLE UI 9 SEP */
+
+.uploadFileAssertText {
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  color: #2472fc;
+  padding: 0px 7px;
+}
+
+.assertOr {
+  color: #71757b;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0px 53px;
+}
+
+.assertBrowse {
+  background: #2472fc;
+  border-radius: 4px;
+  padding: 9px 20px;
+  width: 125px;
+  height: 35px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.selectedAssertsText {
+  font-size: 16px !important;
+  color: #000000;
+  margin: 10px 0 1px !important;
+  font-weight: bold !important;
+}
+
+.galleryLogoDustbin img {
+  cursor: pointer;
+}
+img.assertbinLogo1 {
+  cursor: pointer;
+}
+img.assertbinLogo2 {
+  cursor: pointer;
+}
+
+.LookingIntoSky {
+  color: #474e55;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  cursor: pointer;
+}
+.assertVaultLink {
+  color: #1b4ea8;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 10px;
+  font-family: "Figtree";
+  text-transform: uppercase;
+  background: #e1ecff;
+  border-radius: 2px;
+  padding: 2px 5px;
+  gap: 4px;
+  cursor: pointer;
+}
+.assertDustbinLink img {
+  cursor: pointer;
+}
+
+.adifecttesturl {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 13px;
+  color: #2472fc;
+  padding: 0px 7px;
+  cursor: pointer;
+}
+
+.assertEnterUrl {
+  padding: 9px 8px;
+  width: 272px;
+  height: 35px;
+  background: #ffffff;
+  border: 1px solid #afb4b7;
+  border-radius: 4px;
+  /* color: #AFB4B7; */
+  font-weight: 400;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.assertEnterUrl-placeholder {
+  color: #afb4b7;
+}
+
+.enterUrluse {
+  color: #2472fc;
+  text-align: center;
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid #76a7ff;
+  border-radius: 4px;
+  padding: 9px 23px;
+}
+
+.includeUrlText {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #2472fc;
+  padding: 0px 6px;
+  cursor: pointer;
+}
+
+.assertContentMainD {
+  width: 556px;
+  border: 1px solid #76a7ff;
+  border-radius: 8px;
+  display: flex;
+}
+
+.assertUploadBrowseArea {
+  display: inline-block;
+  /* border-right: 1px solid #76A7FF; */
+  padding: 48px 19px;
+}
+
+.enterUrlLinkButton input::-webkit-input-placeholder {
+  color: #afb4b7;
+}
+
+.assertSelectedArea {
+  /* float: right; */
+  padding: 15px 11px;
+  border-left: 1px solid #76a7ff;
+}
+.agencysecjobadd2 {
+  width: 65%;
+}
+.enterUrlLinkButton-error {
+  height: 10px;
+}
+.enterUrlLinkButton {
+  display: flex;
+  padding: 10px 0px 0;
+}
+.enterUrlLinkButton {
+  display: flex;
+}
+.useButtonAssert {
+  padding: 5px 0px;
+  cursor: pointer;
+}
+
+span.LookingIntoSky {
+  padding: 0px 15px;
+}
+
+img.assertbinLogo1 {
+  float: right;
+  /* padding: 0px 10px; */
+}
+
+img.assertbinLogo2 {
+  float: right;
+  /* padding: 0px 10px; */
+}
+
+img.assertbinLogo2 {
+  float: right;
+  /* padding: 0px 10px; */
+}
+
+.assertDustbinLink {
+  padding: 0px 0px 0;
+}
+
+.urlIncludePlus {
+  padding: 0px 0px 10px;
+}
+
+.uploadLogoText {
+  padding: 0px 11px;
+}
+
+.browseVaultButtn {
+  padding: 12px 0px;
+}
+
+::placeholder {
+  color: red;
+}
+
+.galleryLogoDustbin {
+  padding: 5px 0px;
+}
+h5.selectedAssertsText {
+  margin: 14px 0 10px;
+  font-size: 16px !important;
+  font-weight: bold;
+}
+
+/* ASSERT TOGGLE UI 9 SEP */

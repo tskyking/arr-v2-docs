@@ -1,0 +1,3182 @@
+@media only screen and (min-width: 320px) and (max-width: 767px) {
+}
+@media (min-width: 300px) and (max-width: 500px) {
+  .main_date {
+    display: block !important;
+  }
+  .port-singlecreator {
+    width: 100% !important;
+  }
+  .port-singlecreator img {
+    height: 100% !important;
+  }
+  .CDashboard1 .MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded {
+    width: 300px !important;
+  }
+  .amzingBannerAdMain {
+    display: block !important;
+  }
+  .jobBtnsub_newbtntop {
+    display: block !important;
+  }
+  .createrBoxContent {
+    width: 100% !important;
+  }
+
+  .userprofileimg {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .jobsFourInProgress {
+    gap: 5px !important;
+  }
+  .circle-profileImg {
+    width: 80px !important;
+  }
+  .header {
+    padding: 10px 6px !important;
+  }
+  .logo {
+    width: 30% !important;
+    margin: 8px 0 !important;
+  }
+  .loginsigin {
+    width: 140px !important;
+    left: -75px !important;
+  }
+  .loginRight {
+    width: 70% !important;
+  }
+  span.header-profile-pic img {
+    width: 35px !important;
+    height: 35px !important;
+  }
+  img.logoimg {
+    max-width: 90px !important;
+  }
+  .ml-7 {
+    margin-left: 2px !important;
+  }
+  .portfoliocreatorpage {
+    width: 100% !important;
+  }
+  .dateaddedit .main_date {
+    display: flex !important;
+  }
+  .profileimgchange {
+    width: 80px;
+    height: 80px;
+  }
+  .mediaimg div img {
+    width: 103px !important;
+  }
+  .mediaimg li {
+    width: 98px !important;
+  }
+  button.all_jobs_poject_button {
+    width: 48% !important;
+    font-size: 11px !important;
+    float: left !important;
+  }
+  .media .file_contnet11New {
+    margin: 0px 0 15px 0px !important;
+  }
+  .media h6.files_selct_content11 {
+    font-size: 10px !important;
+  }
+  .profileImgDialogagency .MuiPaper-root.MuiPaper-elevation {
+    max-width: 350px !important;
+  }
+  .recent_pics1NewImages {
+    width: 100% !important;
+    float: left !important;
+  }
+  .Stage1_right_Workflow li {
+    margin: 0 4px !important;
+  }
+  li.disable_up_down {
+    width: 18px;
+  }
+  /* .main_date {
+    max-width: 380px !important;
+    overflow-x: scroll !important;
+    overflow-y: hidden;
+  } */
+  .dateaddedit {
+    max-width: 380px !important;
+    overflow-x: scroll !important;
+    overflow-y: hidden;
+  }
+  .agencysecjobadd {
+    display: block !important;
+    width: 100% !important;
+  }
+  .agencysecjobadd1 {
+    width: 100% !important;
+    padding: 20px 0 22px !important;
+    border-bottom: 1px solid #2472fc !important;
+  }
+  .agencysecjobadd2 {
+    width: 100% !important;
+    text-align: center !important;
+  }
+  .folderDisplayNewInline {
+    width: 100% !important;
+  }
+  .collectionnameimgdiv {
+    width: 100% !important;
+  }
+  .foldershowclass .yourFavDayDayTime {
+    width: 100% !important;
+  }
+  .NegotiateMainDiv_sec .negDueDateSec {
+    margin: 0 0px 0px 0px !important;
+  }
+  .NegotiateMainDiv {
+    display: block !important;
+    width: 100% !important;
+  }
+  .NegotiateMainDiv_sec .NegotiateButtonOne {
+    margin: 18px 0px 0px 0 !important;
+  }
+}
+@media (min-width: 500px) and (max-width: 767px) {
+  button.all_jobs_poject_button {
+    width: 23% !important;
+  }
+  .loginsigin {
+    width: 140px !important;
+    left: -70px !important;
+  }
+  .CDashboard1 .MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded {
+    width: 480px !important;
+  }
+  .amzingBannerAdMain {
+    display: block !important;
+  }
+  .NegotiateMainDiv {
+    width: 100% !important;
+  }
+  .portfolioImgContent {
+    width: 50% !important;
+  }
+  .port-singlecreator {
+    width: 50% !important;
+  }
+  .logo {
+    width: 50% !important;
+    margin: 8px 0 !important;
+  }
+  .main_date {
+    max-width: 470px !important;
+    overflow-x: scroll !important;
+    overflow-y: hidden;
+  }
+  .loginRight {
+    width: 50% !important;
+    justify-content: end !important;
+  }
+  button.addBtnWorkPage {
+    margin-right: 8px;
+  }
+  .foldershowclass .yourFavDayDayTime {
+    width: 50% !important;
+  }
+  .header {
+    padding: 14px 20px !important;
+  }
+  .profileImgDialogagency .MuiPaper-root.MuiPaper-elevation {
+    max-width: 500px !important;
+  }
+  .container,
+  .container-sm {
+    max-width: 100% !important;
+  }
+  .folderDisplayNewInline {
+    width: 50% !important;
+  }
+  .collectionnameimgdiv {
+    width: 50% !important;
+  }
+
+  .recent_pics1NewImages {
+    width: 50% !important;
+    float: left !important;
+  }
+  .dialogcontent_and_actions_new .input_search22_New_media {
+    left: 10px !important;
+  }
+  .agencysecjobadd {
+    display: block !important;
+    width: 100% !important;
+  }
+  .agencysecjobadd1 {
+    width: 100% !important;
+    padding: 20px 0 22px !important;
+    border-bottom: 1px solid #2472fc !important;
+  }
+  .agencysecjobadd2 {
+    width: 100% !important;
+    text-align: center !important;
+  }
+}
+@media (max-width: 767px) {
+  .Topdiv {
+    display: block !important;
+  }
+  .searchActivityPublicP.agencyjoblistsearchfilterjob1 {
+    float: left !important;
+  }
+  .media-collection-all-data {
+    display: block;
+  }
+  .input_search22_New_media1 {
+    position: unset;
+    padding: 0 10px;
+  }
+  .backbtnallcollfav {
+    padding: 0 10px;
+    display: block;
+  }
+  .backcllbtn {
+    position: unset;
+    margin-bottom: 11px;
+    display: inline-block;
+    float: right;
+  }
+  .mainslider1 {
+    max-width: 100%;
+    width: 100%;
+  }
+  .Createjobfilemedia {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .backcllbtn a.skillname_contnetmideaback {
+    float: right;
+    padding: 10px 10px 0;
+  }
+  body {
+    background: rgba(36, 114, 252, 0.06) !important;
+  }
+  h6.creatorprtite1 {
+    width: 100% !important;
+    text-align: left !important;
+    margin: 10px 0 !important;
+    float: left !important;
+  }
+  .Jobsnewdiv {
+    display: block !important;
+  }
+  .Sort_content {
+    display: block !important;
+  }
+  .assertEnterUrl {
+    width: 100% !important;
+  }
+  h1.Analyticstitle_contnet_allNew {
+    width: 100% !important;
+    float: left !important;
+  }
+  .Topdiv {
+    background: none !important;
+  }
+  .FreshBtn {
+    justify-content: left !important;
+    margin-top: 10px !important;
+  }
+  .Jobsnewdiv {
+    display: block !important;
+    padding: 0 !important;
+  }
+  .searchActivityPublicP.agencyjoblistsearchfilterjob {
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+  .assertDustbinLink {
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+  .feedbackAboutAreaMainD .css-13xfq8m-MuiTabPanel-root {
+    margin-top: 0 !important;
+  }
+  img.assertbinLogo2 {
+    margin: 0% 0% !important;
+  }
+  .updateAndRemoveNewProfile {
+    display: block !important;
+  }
+  .buttonDivProfileLineBtn {
+    font-size: 12px !important;
+    padding: 5px 13px !important;
+  }
+  .agnecyProfileComapniesAllContent .adifectAdminfirst {
+    width: 50% !important;
+    margin-left: 0 !important;
+  }
+  .communicationUpdateMethidBtnDiv {
+    margin: 0 0 10px !important;
+  }
+  .NegotiateMainDiv2 .negDueDateSec {
+    margin: 0 0px 0px 0 !important;
+  }
+  .preCommMethPara {
+    width: 100%;
+  }
+  .methodagencyProfile {
+    margin-bottom: 10px;
+  }
+  .login-content {
+    margin: 60px auto !important;
+    height: 100% !important;
+  }
+  .inviteuserbt {
+    float: left !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .Categoriesdiv2 {
+    padding: 20px !important;
+  }
+  .Category_p {
+    padding: 13px 0 0px !important;
+  }
+  .questionInput {
+    width: 100% !important;
+  }
+  .negOffer21 {
+    width: 100% !important;
+  }
+  input.joblistinput {
+    width: 100% !important;
+  }
+  .proposedPriceDueDate {
+    width: 100% !important;
+  }
+  .Categoriesdiv2 .col-sm-12 {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .negoCancelButtonDiv {
+    margin: 0 0 10px !important;
+  }
+  /* .CategorylistName h1 {
+    margin: 0 0 10px;
+  } */
+  .creatorjoblistdate {
+    display: block !important;
+  }
+  .creatorhomepage {
+    display: block !important;
+  }
+  .NegotiateMainDiv2 .NegotiateButtonOne {
+    margin: 0px 0px 0px 0 !important;
+  }
+  .pagehelpdiv1 .buttonNotShwoInCenter input {
+    margin: 0 !important;
+  }
+  .activ4
+    .lastdatesec
+    .MuiInput-root.MuiInput-underline.MuiInputBase-root.MuiInputBase-colorPrimary.MuiInputBase-formControl.MuiInputBase-adornedEnd {
+    border: none !important;
+    height: 59px !important;
+  }
+  .dialogcontent_and_actions_new .cancelButtonnew {
+    display: flex !important;
+  }
+  .NegotiateButtonOne2 {
+    margin: 0 0 0 0 !important;
+  }
+  .jopapplycreator {
+    width: 100% !important;
+    text-align: left !important;
+    margin: 10px 0 10px !important;
+  }
+
+  .agencyjobtoppage .AllPageHight {
+    min-height: auto !important;
+  }
+  span.CoverCreator3 {
+    width: 100% !important;
+  }
+  .attachfilesCreatorText {
+    width: 100% !important;
+  }
+  .formjobsagencyadd .main_date.due_date_box {
+    overflow-x: scroll !important;
+    width: 520px !important;
+  }
+  .formjobsagencyadd .ext-content-del.val_main_date {
+    width: 800px !important;
+  }
+  .Ajobshare h2 {
+    margin-top: 10px !important;
+  }
+  .activitySelectNew {
+    width: 100% !important;
+  }
+  .askQuestionArea {
+    width: 100% !important;
+  }
+  .newJobDetailsParaTextDiv p {
+    padding-right: 0px !important;
+    margin-bottom: 20px !important;
+  }
+  .businesstext {
+    display: block !important;
+  }
+  .adminjobpagination .page-item.active .page-link {
+    width: 33px !important;
+    height: 33px !important;
+    font-size: 13px !important;
+  }
+  .userlistbns button {
+    width: 100px;
+  }
+  h1.WelcomeTitle {
+    font-size: 20px !important;
+  }
+  .dialogcontent_and_actions_new {
+    padding: 20px !important;
+  }
+  .askQuestionArea {
+    margin: 13px 0px 0 !important;
+  }
+  img.profilepic-dialog-delPopup {
+    right: auto !important;
+  }
+  .companyprojectsfilter1 {
+    width: 100% !important;
+  }
+
+  .firstBoxHeadQuesans {
+    padding: 0 10px !important;
+  }
+  .quesAnsdiv {
+    display: block !important;
+  }
+  span.jobAppliedJobDetailsCreator {
+    position: unset !important;
+    padding: 0 15px !important;
+  }
+  textarea.replytextarea {
+    width: 100% !important;
+  }
+  .accountsettingEmailname {
+    width: 100% !important;
+  }
+  .Agencyworkflowpagetop {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  .pricename {
+    height: auto !important;
+  }
+  .dialogcontent_and_actions_new {
+    padding: 15px 20px !important;
+  }
+  .adminpagintionpage button {
+    min-width: 28px !important;
+    height: 27px !important;
+    padding: 0 2px !important;
+  }
+  .manager_contnet_type {
+    margin: 20px 0 0 !important;
+  }
+  .yelloBoxAccountSetting {
+    padding: 11px 15px !important;
+  }
+  button.shareNewPopPublic {
+    width: 164px !important;
+    font-size: 12px !important;
+  }
+  button.canceButtonnewPop {
+    font-size: 13px !important;
+  }
+  .image_and_names .MuiDialogActions-root.MuiDialogActions-spacing {
+    float: left !important;
+  }
+  .ChangeButtonDiv {
+    text-align: left !important;
+  }
+  .image_and_names {
+    padding: 0 !important;
+  }
+  .profilepic-dialog-button {
+    top: 5px !important;
+    right: 90px !important;
+  }
+  .emailAddresAccountSett {
+    display: block !important;
+  }
+  input.newSearchActInputPp {
+    width: 100% !important;
+  }
+  .ChangeButtonAcS {
+    width: 140px !important;
+    margin-top: 10px !important;
+  }
+  .agencyjoblistdivhi {
+    height: auto !important;
+  }
+  .inviteDraftTable {
+    padding: 0 !important;
+  }
+  .fiveStarsFeedbackFirst {
+    display: block !important;
+    width: 100% !important;
+  }
+  .privateProfileTonnyillis {
+    float: left !important;
+    margin-bottom: 30px !important;
+    width: 100% !important;
+  }
+  .fiveStarsFeedbackFirst {
+    float: left !important;
+  }
+  .fiveStartsAnddateFeedbackmain {
+    margin: 20px 0 !important;
+    width: 100% !important;
+    float: left !important;
+  }
+  .shareEditButtonsNew {
+    float: left !important;
+    margin: 10px 0 4px !important;
+    width: 100%;
+  }
+  .MostRecentFeedbackP {
+    float: left !important;
+    margin: 12px 0 10px !important;
+    width: 100% !important;
+  }
+  h6.currentlyWorkflow {
+    height: auto !important;
+  }
+  .Userpage {
+    padding: 18px 0 7px;
+  }
+  h1.Freshtitle_new {
+    display: flex;
+    align-items: center;
+    margin: 0 !important;
+  }
+  .userlist .col-sm-12 {
+    padding: 0 !important;
+  }
+  .agencyjoblistdivhi {
+    height: auto;
+  }
+  .Custompageskills .col-sm-12 {
+    padding: 0 !important;
+  }
+  .job-custom_popup .MuiDialogContent-root {
+    overflow-x: scroll !important;
+    padding: 20px 0 0 !important;
+    overflow-x: hidden !important;
+  }
+  .companylistdiv .col-sm-12 {
+    padding: 0 !important;
+  }
+
+  .job-custom_popup .MuiDialogContent-root {
+    overflow-x: scroll !important;
+    padding: 20px 0 0 !important;
+    overflow-x: hidden !important;
+  }
+  .Skillslistpage {
+    padding: 20px 0 5px !important;
+  }
+  .logo1 button.openbtn {
+    display: block !important;
+  }
+  .Workflowbtn1 {
+    margin: 10px 0 19px !important;
+  }
+  .Workflowadminbtn {
+    float: left;
+    width: 100%;
+    display: block !important;
+    padding: 0 20px;
+  }
+  .workflowadiv {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  .workflowtitle {
+    padding: 10px !important;
+  }
+  .workflowadiv .MuiTablePagination-toolbar {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+  .Category_p
+    .MuiToolbar-root.MuiToolbar-gutters.MuiToolbar-regular.MuiTablePagination-toolbar
+    p {
+    font-size: 12px !important;
+  }
+  .workflowadiv .MuiInputBase-root.MuiInputBase-colorPrimary {
+    margin-right: 0 !important;
+    margin-left: 0;
+    font-size: 14px !important;
+  }
+  .agencyprogress {
+    display: flex;
+    align-items: center;
+    margin: 13px 0 0;
+  }
+  .industrylist {
+    padding: 18px 0 6px !important;
+  }
+  .AWokflowButton {
+    margin-bottom: 30px !important;
+  }
+  .Induslist .col-sm-12 {
+    margin: 0;
+    padding: 0;
+  }
+  .vector_toggleNewUppers {
+    margin: 15px 0 15px;
+  }
+
+  .invitepagenew .ContentDiv {
+    margin: 0 auto 15px !important;
+  }
+
+  .savebtn {
+    margin: 23px 11px !important;
+  }
+  .invitepagenew .Status {
+    margin: 20px 0 0;
+  }
+  .invitepagenew {
+    padding: 0 0 35px !important;
+  }
+  .invitepagenew .dataTables_length.bs-select {
+    padding: 0 12px !important;
+  }
+  .invitepagenew .mdb-datatable-filter.flex-row {
+    padding: 0 12px;
+  }
+  span.MuiChip-label.MuiChip-labelMedium {
+    padding: 0 10px !important;
+  }
+  .agencycompanylist .col-sm-12 {
+    margin: 0 !important;
+    padding: 0;
+  }
+  .agencycompanydatadiv .col-sm-12 {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .agencycompanydatadiv .Categoriesdiv1PaddingZero {
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  .feedbackAboutAreaMainD span.MuiTabs-indicator {
+    height: 0 !important;
+  }
+  .agencytemplate .col-sm-12.col-md-6 {
+    padding: 0px 10px 0 !important;
+    margin-top: 10px !important;
+  }
+  .taskBoxJobListCardFirstHead {
+    margin: 0 0 15px !important;
+  }
+  .removeimgdevpage {
+    text-align: left !important;
+  }
+  label.lastdatesec {
+    height: 61px;
+    border: 2px solid #dddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .videoview {
+    max-width: 300px !important;
+  }
+  .TopMJobPgag {
+    padding: 30px 0 15px !important;
+  }
+  .logoDAMSidebar {
+    display: block !important;
+  }
+  .oldestQuesBtn {
+    margin: 0px 0 !important;
+  }
+  .media .Createmide {
+    display: block !important;
+  }
+  .Workflowadminadminlist {
+    padding-top: 0 !important;
+  }
+  .profileImgDialogagency .css-bdhsul-MuiTypography-root-MuiDialogTitle-root {
+    padding: 7px 12px !important;
+  }
+  .fixedclass {
+    left: 10px !important;
+    top: 183px !important;
+    width: 300px !important;
+  }
+  input.inputdatacollection {
+    margin-bottom: 0 !important;
+  }
+  .cancelButtonnewFolder {
+    margin-left: 4px !important;
+  }
+  .sliderleftsec {
+    display: block !important;
+  }
+  .profileImgHeadingAnew2 h2 {
+    margin: 0 0 0 !important;
+  }
+  .Topdivallpagemideapage {
+    overflow-x: hidden !important;
+  }
+  /* .profileImgDialogagency .MuiPaper-root.MuiPaper-elevation {
+    max-width: 300px !important;
+  } */
+  .media .main_manger {
+    width: 100% !important;
+  }
+  .sidepanel .closebtn {
+    display: block !important;
+  }
+  img.logoimgdam {
+    display: none !important;
+  }
+  .media .vector_toggleNew {
+    top: 66px !important;
+  }
+  .openbtnDam {
+    display: block !important;
+  }
+  .media .activity_main {
+    width: 100% !important;
+    padding-bottom: 30px !important;
+    margin-bottom: 40px !important;
+    box-shadow: none !important;
+    border: 1px solid #dddd !important;
+  }
+  button.openbtn {
+    position: absolute;
+    top: 18px;
+    z-index: 1;
+    left: 0;
+  }
+  .agencytemplate {
+    padding: 15px !important;
+  }
+  .react_pics_contnetNewImages {
+    margin-right: 0 !important;
+    padding: 10px !important;
+  }
+  .media i.fa.fa-search {
+    display: none !important;
+  }
+  .ForMobileview {
+    overflow-x: scroll !important;
+    float: left !important;
+  }
+  .dataTableMediaDiv {
+    width: 900px !important;
+  }
+  .firstRowMediaDataTable {
+    width: 900px !important;
+  }
+  .yourFavDayDayTime.collectionnewone {
+    width: 900px !important;
+  }
+  .Damlogo {
+    text-align: left !important;
+    width: auto !important;
+  }
+  .media .files_selected {
+    width: 100% !important;
+    margin-top: 14px !important;
+  }
+  .dammideanewdiv {
+    width: 100% !important;
+    display: block !important;
+  }
+  .sidebarclass {
+    display: block !important;
+  }
+  .damrightdiv {
+    padding-right: 10px !important;
+  }
+  .methodPhUpdateRemoveMain {
+    display: block !important;
+  }
+  .input_search22_New_media {
+    padding: 10px !important;
+  }
+  .media .Createmide {
+    padding: 10px !important;
+  }
+  .preferred_main_div label {
+    display: flex;
+    margin-top: 6px;
+  }
+  .media .loginRight1 {
+    position: absolute;
+    right: 0;
+    top: 10px;
+    width: 100% !important;
+  }
+  .media .logo1 {
+    width: auto !important;
+    padding: 0 10px !important;
+  }
+  .methodPhUpdateRemoveMain .methodagencyProfile {
+    width: 100% !important;
+    float: left !important;
+  }
+  .image_and_names .upload-profileImgHalfW {
+    width: 100% !important;
+  }
+  .preferred_main_div {
+    width: 100% !important;
+    float: left !important;
+  }
+  .preferred_main_div {
+    margin-top: 10px !important;
+  }
+  div#mySidepanel h1 {
+    position: relative;
+    cursor: pointer;
+    font-size: 28px !important;
+    text-align: right;
+    padding: 0 10px;
+  }
+
+  .sidepanel {
+    padding-top: 0 !important;
+  }
+
+  .preferred_main_div p {
+    margin-top: 0 !important;
+    margin-bottom: 0;
+    margin-right: 8px;
+  }
+  .Categoriesdiv1PaddingZero {
+    padding: 0 !important;
+  }
+  .agencyjobdetailspage .css-1aquho2-MuiTabs-indicator {
+    height: 0 !important;
+  }
+  .col-sm-12 {
+    padding: 0;
+  }
+  .aboutMeDesFullW .MuiDialogContent-root.profile_title_description {
+    padding: 0 !important;
+  }
+  .Categoriesdiv1 {
+    padding: 20px;
+  }
+  .Stage1_left_Workflow h2 {
+    font-size: 18px !important;
+  }
+  .row {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .formGroupOneProfilePop {
+    display: block !important;
+  }
+
+  .AgencyworkflowpagetopPaddingRest {
+    padding: 0 !important;
+  }
+  .feedbackAboutAreaMainD .dataTables_length label {
+    margin-left: 0px !important;
+  }
+  .company_users_profile_email {
+    width: 100% !important;
+  }
+  button.company_users_profile_invite_button {
+    margin-top: 20px !important;
+  }
+  .userforminput.Roleuserpage1Table {
+    display: block !important;
+  }
+  .company_users_profile {
+    display: block !important;
+  }
+  .company_users_profile_invite {
+    margin-left: 0 !important;
+  }
+  .company_users_profile_text {
+    width: 100% !important;
+  }
+  .company_users_profile_role {
+    width: 100% !important;
+  }
+  .NewMessTextFirstLine h3 {
+    font-size: 18px !important;
+  }
+  .feedbackAboutAreaMainD .MuiTabs-scroller.MuiTabs-fixed {
+    white-space: unset !important;
+  }
+  img.logoimg {
+    display: block !important;
+    cursor: pointer !important;
+  }
+  .dialogcontent_and_actions_new .input_search22_New_media {
+    left: 15px !important;
+  }
+  .media i.fa.fa-search {
+    display: none !important;
+  }
+  .media .Rightbar1 {
+    width: 100% !important;
+    border-right: none !important;
+  }
+  .sidebarmenu88 {
+    width: 100% !important;
+  }
+  .canceButtonnewPop {
+    padding: 4px 10px !important;
+  }
+  .assertSelectedArea .assertSelectedArea aside {
+    max-width: 300px !important;
+    margin: 0 auto !important;
+  }
+  .media .main_slider {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .cancelButtonnewWithSave {
+    display: flex !important;
+  }
+  .input_search_bar_new_media {
+    padding: 10px 10px 10px 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .BrowseVaultDialogMedia
+    .MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation24.MuiDialog-paper {
+    max-width: 96% !important;
+    margin: 10px !important;
+  }
+  .ChangeEmailAContent {
+    margin: 0;
+    padding: 0 0 !important;
+  }
+  .ChangeEmailAContent.css-ypiqx9-MuiDialogContent-root {
+    padding: 0 0 !important;
+  }
+  .sliderleftsec {
+    width: 100% !important;
+    margin: 20px 0 0 0 !important;
+    padding: 10px !important;
+  }
+  .profileImgDialog
+    .MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation24.MuiDialog-paper {
+    margin: 10px;
+  }
+  .edittitlework {
+    padding: 15px 13px 0 !important;
+  }
+  .swal-modal {
+    max-width: 300px !important;
+    min-width: 300px !important;
+  }
+  .slidertoppage {
+    display: block !important;
+  }
+  .sliderround3 {
+    width: 50px !important;
+  }
+  .MuiOutlinedInput-root.MuiInputBase-root.MuiInputBase-colorPrimary {
+    width: 100% !important;
+  }
+  .Observers1 h4 {
+    margin-left: 28px !important;
+  }
+  .sliderround {
+    width: 50px !important;
+  }
+
+  .cancelButtonnew {
+    width: 100% !important;
+    text-align: left !important;
+    margin-top: 20px !important;
+  }
+  h3.headingTaskOftaskBox {
+    width: 50% !important;
+  }
+  h3.headingDateOftaskBox {
+    width: 50% !important;
+  }
+  .folderImagesNewDFlex {
+    display: block !important;
+  }
+  .enterNameInputNewD {
+    padding: 0 10px !important;
+    overflow: hidden !important;
+  }
+  .Copylink {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+  .MuiTabs-flexContainer {
+    display: unset !important;
+  }
+  .profilePrivateHead {
+    padding: 20px 0px !important;
+  }
+  .Ajobshare h2 {
+    font-size: 18px !important;
+  }
+  .sharebuttonjobcontent {
+    display: block !important;
+  }
+
+  .dotsMessagehireMain {
+    width: 100% !important;
+  }
+  img.profile_image_dynamicly {
+    width: 70px !important;
+    height: 70px !important;
+  }
+  .stage-action-btn-right {
+    padding: 0 !important;
+  }
+  .workflow-heading {
+    float: left !important;
+  }
+  .textareacommentsjobDetails {
+    width: 100% !important;
+  }
+  .AG-Workflow {
+    width: 100% !important;
+    float: left !important;
+  }
+  .stage-action-btn-left {
+    margin: 0 0 20px !important;
+  }
+  input.newSearchActInput {
+    width: 100% !important;
+  }
+  .NewMessText h3 {
+    font-size: 16px !important;
+    line-height: 24px;
+  }
+  .activityDropdownButton {
+    display: block !important;
+  }
+  .inlineprivateProfileContent {
+    display: block !important;
+  }
+  .agencyjobproposal {
+    display: block !important;
+  }
+  .privateProfileContent {
+    width: 100% !important;
+  }
+  .tonnyWillisParaOfferPrice {
+    display: block !important;
+  }
+  .tonnyProposedPriceDateNew {
+    width: 100% !important;
+  }
+  .TonnyOfferPrice {
+    width: 100% !important;
+  }
+  .tonnyDueDate {
+    width: 100% !important;
+  }
+  .tonnyWillisChatBoxFinal {
+    margin: 5px 0;
+  }
+  .oldestActivityDiv {
+    margin: 5px 0 !important;
+  }
+  .NewMessTextThirdLine h3 {
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+  .tonnyWillisContentBoxColor {
+    padding: 20px 3px 22px 12px !important;
+    margin: 5px 7px 5px 15px !important;
+  }
+  .willisNameDate {
+    display: block !important;
+  }
+  .willisProposedDueDate {
+    display: block !important;
+  }
+  .offerPriceDueDate {
+    display: block !important;
+  }
+  .activitySelectNew {
+    margin-left: 0 !important;
+    margin: 10px 0 !important;
+  }
+  .shareEditButtonsNew button {
+    font-size: 12px !important;
+  }
+  .agencyjobdetailspage .MuiBox-root .MuiTabPanel-root {
+    padding: 25px 15px !important;
+  }
+  .agencyjobdetailspage .css-1ujnqem-MuiTabs-root {
+    padding: 0 0 !important;
+  }
+
+  .newJobDetailsParaTextBox {
+    display: block !important;
+  }
+  .agencyjobdetailspage .MuiTabs-scroller.MuiTabs-fixed {
+    white-space: unset !important;
+  }
+  .agencyjobdetailspage .MuiTabs-flexContainer {
+    display: unset !important;
+  }
+  .jobDetailsCompanyDateBoxMain {
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+  .jobDetailsCompanyDateBox {
+    width: 100% !important;
+  }
+  .jobTasksCompanyDateBoxMain {
+    width: 100% !important;
+  }
+  .Categoryadminworkflownew table {
+    width: 800px !important;
+  }
+  .newJobDetailsParaTextBox {
+    display: block !important;
+  }
+  span.backbtnlink {
+    float: left !important;
+    width: 100% !important;
+    margin-top: 20px !important;
+  }
+  .AG-Workflow {
+    padding: 15px !important;
+  }
+  .servicesworkflow {
+    padding: 15px !important;
+  }
+  .Work-C-Btt {
+    margin-bottom: 10px !important;
+  }
+  h1.approvaltitle {
+    font-size: 20px !important;
+  }
+  .Workflowadminadminlist input {
+    width: 100% !important;
+    margin-bottom: 10px !important;
+    margin-top: 35px !important;
+  }
+  .Categoryadminworkflownew {
+    padding-top: 30px !important;
+  }
+  .Workflowadminbtn {
+    position: unset !important;
+  }
+  .ApprovalNameInput {
+    width: 100% !important;
+    padding: 0 6px !important;
+  }
+  .Observersskillssec {
+    width: 100% !important;
+  }
+
+  h6.currentlyWorkflow {
+    width: 100% !important;
+    margin: 20px 0 !important;
+    display: inline-block !important;
+    padding: 10px !important;
+  }
+
+  .services.servicesworkflow .Observersskillssec {
+    width: 100% !important;
+  }
+  .page-item.active {
+    width: 25px !important;
+    height: 24px !important;
+    font-size: 13px !important;
+  }
+  input.form-control.form-control-sm.ml-0.my-1 {
+    float: left !important;
+  }
+  .paginationAdifect button {
+    min-width: 25px !important;
+    height: 25px !important;
+    padding: 0 6px !important;
+    font-size: 12px !important;
+  }
+  .expirebak {
+    margin-bottom: 0 !important;
+  }
+  p.expire {
+    margin-bottom: 0 !important;
+  }
+  .savebtnnew {
+    float: left !important;
+  }
+  .Categoriesdiv1 .row {
+    width: 100% !important;
+  }
+  li.page-item {
+    width: 25px !important;
+    height: 25px !important;
+  }
+  .logo {
+    display: block !important;
+  }
+  .headerTop .Damlogo {
+    display: none !important;
+  }
+  .JobsDashborad h1 {
+    font-size: 20px !important;
+  }
+  .Marketingcampaign2 h2 {
+    font-size: 20px !important;
+  }
+  .dashboardjob button {
+    width: 200px !important;
+  }
+  .bt-Title h2 {
+    font-size: 20px !important;
+  }
+  .Work-P-Title h1 {
+    font-size: 20px !important;
+    margin: 0 10px;
+  }
+
+  .dashboardjob {
+    width: 100% !important;
+    justify-content: left !important;
+  }
+  .CategorylistName h1 {
+    font-size: 20px !important;
+    align-items: center !important;
+    display: flex !important;
+  }
+  .agencyjobtoppage {
+    margin: 15px 0 0 !important;
+  }
+  .formjobsagencyadd {
+    width: 100% !important;
+  }
+  h1.Company_name_projects_page27 {
+    font-size: 20px !important;
+  }
+  .Performanceadsapplied .Topallpageprojects:nth-child(2n + 1) {
+    margin-right: 0 !important;
+  }
+  .Marketingcampaign {
+    min-height: auto !important;
+  }
+  .ApplyButton_2 button {
+    font-size: 12px !important;
+    padding: 9px 14px !important;
+    height: auto !important;
+  }
+  .ContentDiv414 {
+    padding: 1px 15px 40px !important;
+  }
+  .Topallpageprojects {
+    width: 100% !important;
+  }
+  .creatorProjectbtn {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+  .CreatorProjectdiv {
+    display: block !important;
+  }
+
+  button.all_jobs_poject_button {
+    font-size: 12px !important;
+    margin-bottom: 9px;
+  }
+  .tobbtnjoblistnewagency {
+    justify-content: left !important;
+  }
+  .Remotagencylistlistagency {
+    padding: 15px !important;
+  }
+  button.allpagetoggle {
+    position: unset !important;
+  }
+  .FreshBtn a {
+    font-size: 14px !important;
+    width: 120px !important;
+  }
+  h6.creatorprtite {
+    width: 100% !important;
+    text-align: left !important;
+    margin: 0 10px;
+  }
+  .Jobs {
+    margin: 0 auto 15px !important;
+  }
+  h1.Freshtitle_new {
+    font-size: 20px !important;
+  }
+  .agencyjoblistdiv {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 0 20px !important;
+  }
+  .Topdivallpage {
+    display: block !important;
+  }
+  .ReviewIn {
+    padding: 0 0px !important;
+  }
+
+  a.closebtn {
+    display: block !important;
+  }
+  .inProgressDashboardComponent {
+    width: 100% !important;
+  }
+  .inReviewDashboardComponent {
+    width: 100% !important;
+  }
+  .FreshTitl {
+    width: 90% !important;
+  }
+
+  .ApplyButton .Small {
+    width: auto !important;
+  }
+
+  .jobdes {
+    display: block !important;
+  }
+
+  .jobdes h2 {
+    width: 100% !important;
+    margin: 0 0 10px;
+    color: #000000;
+  }
+
+  .jobaplye {
+    width: 160px !important;
+  }
+
+  .backbtntop {
+    display: block !important;
+  }
+
+  .JobDetailsPage {
+    width: 100% !important;
+    margin-bottom: 30px !important;
+  }
+
+  .JobDetailsPageBack {
+    justify-content: flex-start !important;
+  }
+
+  .ApplyButton_2 .Small {
+    width: auto !important;
+  }
+
+  .CategorylistName {
+    display: block !important;
+  }
+
+  .FreshBtn {
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .jobBtnsub_Btn .jobclickBtnsubmint {
+    width: 120px !important;
+  }
+
+  .jobBtnsub_Btn .Canceljobapply a {
+    width: 120px !important;
+  }
+
+  .Canceljobapply a {
+    width: 120px !important;
+  }
+
+  .ApplyButton_2 {
+    margin-top: 10px !important;
+  }
+
+  .jobdes h2 {
+    margin: 0 0 10px !important;
+  }
+
+  .closeBtndasboard {
+    width: 10% !important;
+  }
+
+  .jobapplysec textarea {
+    width: 100% !important;
+  }
+
+  h1.toptitle {
+    width: 90% !important;
+  }
+
+  .margin_autoprpfiletopdiv {
+    width: 92% !important;
+  }
+
+  .profilepagediv1 {
+    width: 92% !important;
+  }
+
+  .job-custom_popup .css-1t1j96h-MuiPaper-root-MuiDialog-paper {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  li.MarketingCampaignJob {
+    display: flex !important;
+  }
+
+  .Categorypage {
+    width: 92% !important;
+  }
+
+  .bt-Title {
+    display: block !important;
+  }
+
+  .PerformanceadsGRPh2 h2 {
+    margin-bottom: 20px !important;
+  }
+
+  .ApplyButton {
+    width: 100% !important;
+    display: block !important;
+    margin-bottom: 8px !important;
+  }
+
+  li.MarketingCampaignJob label {
+    font-size: 14px !important;
+  }
+
+  li.MarketingCampaignJob span {
+    margin-right: 6px !important;
+  }
+
+  .allpageTitle h2 {
+    margin: 0;
+  }
+
+  .Skill a {
+    font-size: 12px !important;
+  }
+
+  .MarketingCampaignJob span {
+    margin: -5px 0 0 !important;
+  }
+
+  .Activitiesdiv {
+    padding: 0 !important;
+  }
+
+  .Performanceads {
+    display: block !important;
+  }
+
+  .PerformanceadsGRPh {
+    width: 100% !important;
+  }
+
+  .Performanceads {
+    width: 92% !important;
+  }
+
+  h1.Analyticstitle {
+    width: 92% !important;
+  }
+
+  .close,
+  .fresh_job_section_close {
+    width: 10% !important;
+  }
+
+  .Marketingcampaign1 {
+    width: 5px !important;
+  }
+
+  span.NewText {
+    float: left !important;
+    margin: 3px 0 12px !important;
+    width: 100% !important;
+  }
+
+  .Marketingcampaign2 {
+    padding: 20px !important;
+  }
+
+  .Skill li {
+    margin-right: 2px !important;
+  }
+
+  .Skill {
+    margin-top: 10px !important;
+  }
+
+  .Marketingcampaign p {
+    float: left !important;
+  }
+
+  .SubmitCancelBTN {
+    display: block !important;
+  }
+  .fresh_job_section .JobsDashborad {
+    width: 100% !important;
+  }
+  .fresh_job_section {
+    margin-top: 20px !important;
+  }
+  .Describe .styled-select {
+    width: 100% !important;
+  }
+  .InProgress {
+    margin: 20px 0 20px !important;
+  }
+  .fresh_job_section {
+    margin-top: 20px !important;
+  }
+  .fresh_job_section {
+    margin-top: 20px !important;
+  }
+  .buttomjobbtn {
+    width: 160px !important;
+    margin: 12px 0 0 !important;
+  }
+  .Job-Bott-Btn-Cancel a {
+    max-width: 100% !important;
+    min-width: 100% !important;
+  }
+  .Job-Bott-Btn-Cancel {
+    width: 160px !important;
+  }
+  .addpage .inputCntnr_1 {
+    height: 90px !important;
+  }
+  .col-sm-12.col-md-7 {
+    margin-top: 0 !important;
+  }
+
+  .jobdes {
+    width: 100% !important;
+  }
+
+  .addpage {
+    padding: 20px !important;
+  }
+
+  .dataTables_paginate {
+    margin-top: 30px !important;
+  }
+
+  .addeditbtn {
+    max-width: 100% !important;
+  }
+
+  .CancelAddBtN {
+    width: 100% !important;
+  }
+
+  .Profile {
+    padding: 0px 20px 0px !important;
+  }
+
+  .dt-bootstrap4 .form-control {
+    width: 100% !important;
+  }
+
+  .Categorybtn {
+    margin-top: 0 !important;
+    margin-bottom: 10px;
+  }
+
+  input.form-control.form-control-sm.ml-0.my-1 {
+    margin: 0 0 !important;
+  }
+
+  .Categorybtn {
+    width: 170px !important;
+  }
+
+  .mdb-datatable-filter.flex-row {
+    margin: 20px 0 0 !important;
+  }
+
+  .table-responsive table {
+    width: 1000px !important;
+  }
+
+  .pagination {
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .dataTables_info {
+    text-align: center !important;
+  }
+
+  .dataTables_length.bs-select {
+    margin: 0px 0px -8px !important;
+    float: left !important;
+    width: 100% !important;
+  }
+
+  .saveprofile {
+    display: block !important;
+  }
+
+  a.saveprofileBTN {
+    margin: 0 auto !important;
+    width: 100%;
+    max-width: 100% !important;
+  }
+
+  .Cancel_Profile {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .Saveprofilebtn {
+    width: 100% !important;
+  }
+
+  .tags-input-container {
+    width: 100% !important;
+  }
+
+  .Cancelprofilebtn {
+    width: 100% !important;
+    text-align: center;
+    margin-top: 15px;
+  }
+
+  .half-form-validation {
+    width: 100% !important;
+  }
+
+  .sidepanel {
+    position: fixed !important;
+    top: 0 !important;
+  }
+
+  .Rightbar {
+    width: 100% !important;
+    z-index: 222;
+    margin: 0px 0 !important;
+  }
+
+  .Creatnumber input {
+    width: 100% !important;
+  }
+
+  h2 {
+    font-size: 18px !important;
+  }
+
+  .Profile {
+    width: 100% !important;
+  }
+
+  .countdiv {
+    width: 100% !important;
+  }
+
+  .tag-item .close {
+    width: 20px !important;
+  }
+
+  .Category_p {
+    width: 92% !important;
+  }
+
+  .login-message p {
+    font-size: 14px !important;
+  }
+
+  .signupPage {
+    margin: 50px auto !important;
+    height: 100% !important;
+  }
+
+  .InCntnr {
+    padding: 0 !important;
+  }
+
+  .sidepanel {
+    box-shadow: 1px 7px 7px #00000047 !important;
+  }
+
+  .close {
+    width: 30% !important;
+  }
+
+  .Jobs {
+    width: 100% !important;
+    padding: 0px 10px 0px 10px;
+  }
+
+  .logo-content h3 {
+    margin-top: 0 !important;
+  }
+
+  .logo-content {
+    margin: 0 0 20px !important;
+  }
+
+  .form-group-one {
+    display: block !important;
+  }
+
+  .InCntnr {
+    width: 100% !important;
+  }
+
+  .w-95 {
+    width: 100% !important;
+  }
+
+  .ApplyButton_2 {
+    display: block !important;
+  }
+
+  .Sort {
+    display: none !important;
+  }
+
+  .Work-P-Title {
+    width: 100% !important;
+  }
+
+  .ToggleBtn {
+    display: block !important;
+  }
+
+  .signup {
+    padding: 30px 20px !important;
+    width: 90% !important;
+  }
+
+  .w-335 {
+    width: 100% !important;
+  }
+
+  .w-551 {
+    width: 100% !important;
+  }
+
+  .SearchBar {
+    display: none !important;
+  }
+
+  .SearchDiv {
+    display: none !important;
+  }
+
+  .display-f {
+    display: block !important;
+  }
+
+  .ContentDiv {
+    width: 92% !important;
+    margin: 15px auto 15px;
+  }
+
+  h1.ServiceTitle {
+    padding: 40px 29px !important;
+    font-size: 22px !important;
+    line-height: 26px !important;
+  }
+
+  li.icon1 {
+    display: none;
+  }
+
+  .nots {
+    position: relative;
+    display: none;
+  }
+
+  .icon2 {
+    display: none;
+  }
+
+  .loginName {
+    display: none;
+  }
+
+  img.dropdown {
+    display: none;
+  }
+
+  .Small {
+    width: 100% !important;
+  }
+
+  .Marketing {
+    padding: 15px 4px;
+    border-radius: 8px;
+  }
+
+  .Describe {
+    padding: 0px 20px !important;
+  }
+
+  .MarketingButton {
+    display: inline-block;
+    margin: 0 5px 12px 0 !important;
+  }
+
+  p.INvehicula {
+    width: 100% !important;
+  }
+
+  hr.b-top {
+    width: 100% !important;
+  }
+
+  .MarketingDetails {
+    padding: 15px !important;
+  }
+
+  .pageNest a {
+    padding: 12px 10px !important;
+  }
+
+  .Skill a {
+    margin-bottom: 10px !important;
+  }
+
+  .Fresh {
+    width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  .Work-D {
+    display: block !important;
+  }
+
+  .Work-In {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .InProgress {
+    display: flex;
+    padding: 0 8px;
+    border-left: none;
+    border-radius: 0;
+  }
+
+  .TitleRequired {
+    width: 100% !important;
+  }
+
+  .jobaddformtop {
+    padding: 12px 0 43px !important;
+  }
+
+  .css-fvipm8:hover .MuiOutlinedInput-notchedOutline {
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media (min-width: 2100px) and (max-width: 6000px) {
+  .media .Rightbar1 {
+    width: 100% !important;
+  }
+  .sliderleftsec {
+    width: 100% !important;
+  }
+  .media .vector_toggleNew {
+    right: 20px !important;
+  }
+}
+
+@media (min-width: 1170px) and (max-width: 1200px) {
+  .agencyjoblistdiv {
+    margin: 8px !important;
+    min-height: 360px !important;
+  }
+  .dataTables_length.bs-select {
+    margin: -17px 13px 0;
+  }
+}
+
+@media (min-width: 767px) and (max-width: 1024px) {
+  span.NewText {
+    margin-bottom: 10px !important;
+    margin-left: 0 !important;
+    float: left !important;
+    width: 100% !important;
+  }
+  .input_search22_New_media1 {
+    position: unset;
+    padding: 0 20px;
+  }
+  .backcllbtn {
+    position: unset;
+    float: right;
+    margin-bottom: 20px;
+  }
+  .Createjobfilemedia {
+    width: 100%;
+    margin-left: 0;
+  }
+  .damrightdiv {
+    padding-right: 10px;
+  }
+  span.header-profile-pic img {
+    width: 35px;
+    height: 35px;
+  }
+  .backcllbtn a.skillname_contnetmideaback {
+    padding: 10px 0px 0;
+  }
+  .backbtnallcollfav {
+    display: unset;
+  }
+  .backbtnallcollfav {
+    padding: 0 20px;
+  }
+  .Categoriesdiv2 {
+    padding: 30px !important;
+  }
+  img.assertbinLogo2 {
+    margin: 0% 0 !important;
+  }
+  .UpdateMethidBtnAgency {
+    padding: 5px 15px !important;
+  }
+  .deleteMethidBtnAgency {
+    padding: 5px 15px !important;
+  }
+  .due_date_box .diverrors44 {
+    width: 100% !important;
+  }
+  .buttomjobbtn {
+    margin-left: -10px !important;
+  }
+  .dropdown {
+    margin-left: 4px !important;
+  }
+  .ml-7 {
+    margin-left: 15px !important;
+  }
+
+  .portfolioImgContent {
+    width: 50% !important;
+  }
+  .dataTables_info {
+    text-align: center;
+  }
+  .userlist .col-md-7 {
+    width: 100% !important;
+  }
+  .loginRight {
+    width: 60% !important;
+  }
+
+  .MostRecentFeedbackP {
+    float: left !important;
+    width: 100% !important;
+    margin-top: 10px;
+  }
+  .profilepic-dialog-button {
+    top: 25px !important;
+    right: 337px !important;
+  }
+  .fiveStartsAnddateFeedbackmain {
+    float: left !important;
+    width: 100% !important;
+  }
+  .privateProfileTonnyillis {
+    float: left !important;
+    width: 100% !important;
+  }
+  .Induslist {
+    padding: 34px 20px !important;
+  }
+  .Workflowadminbtn {
+    left: 42px !important;
+  }
+  .Categoryadminworkflownew table {
+    width: 800px !important;
+  }
+
+  .agencyprogress {
+    display: flex !important;
+    align-items: center !important;
+    margin: 13px 0 0 !important;
+  }
+  .fixedclass {
+    left: 20px !important;
+    top: 301px !important;
+  }
+  .agencyprogress h6 {
+    margin: 0 !important;
+  }
+  .sliderleftsec {
+    display: block !important;
+  }
+  .media .main_manger {
+    width: 100% !important;
+  }
+  .Topdivallpagemideapage {
+    overflow: hidden !important;
+  }
+  .media .activity_main {
+    width: 100% !important;
+    box-shadow: -1px 1px 1px 1px #dddddda3 !important;
+    padding: 0 0 20px !important;
+  }
+  .media i.fa.fa-search {
+    display: none !important;
+  }
+  .input_search22_New_media {
+    float: left !important;
+    width: 100% !important;
+    margin: 17px !important;
+  }
+  .slidertoppage {
+    display: block !important;
+  }
+  .sliderleftsec {
+    width: 100% !important;
+    padding-right: 15px !important;
+  }
+  .sidebarclass {
+    display: block !important;
+  }
+  .media i.fa.fa-search {
+    display: none !important;
+  }
+  .media .main_slider {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .BrowseVaultDialogMedia
+    .MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation24.MuiDialog-paper {
+    max-width: 96% !important;
+  }
+  .recent_pics1NewImages {
+    width: 50% !important;
+  }
+  .agencysecjobadd {
+    width: 470px !important;
+  }
+  .first_date {
+    width: 100px !important;
+  }
+  .willisNameImg {
+    width: 200px !important;
+  }
+  .Marketingcampaign {
+    min-height: auto !important;
+  }
+  .privateProfileContent {
+    width: 100% !important;
+  }
+  .textareacommentsjobDetails {
+    width: 100% !important;
+  }
+  .jobDetailsCompanyDateBoxMain {
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+  .jobTasksCompanyDateBoxMain {
+    width: 100% !important;
+  }
+  .agencyjobdetailspage .MuiTabs-scroller.MuiTabs-fixed {
+    white-space: unset !important;
+  }
+  .agencyjobdetailspage .MuiTabs-flexContainer {
+    display: unset !important;
+  }
+
+  .services.servicesworkflow .Observersskillssec {
+    width: 100% !important;
+  }
+  .newJobDetailsParaTextBox {
+    display: block !important;
+  }
+  .agencyjobdetailspage .css-1ujnqem-MuiTabs-root {
+    padding: 0 0 !important;
+  }
+  .agencyjobdetailspage .MuiBox-root .MuiTabPanel-root {
+    padding: 25px 20px !important;
+  }
+  .ReviewIn {
+    padding: 0 !important;
+  }
+
+  .agencyjoblistdivhi {
+    height: auto !important;
+  }
+  .ContentDiv414 {
+    padding: 1px 20px 40px !important;
+  }
+  .agencyjoblistdiv {
+    width: 100% !important;
+    margin: 0 0 10px !important;
+    min-height: auto !important;
+  }
+
+  .inProgressDashboardComponent {
+    width: 100% !important;
+  }
+  .inReviewDashboardComponent {
+    width: 100% !important;
+  }
+  .Creatnumber input {
+    width: 100% !important;
+  }
+
+  .jobapplysec textarea {
+    width: 100% !important;
+  }
+
+  .formjobsagencyadd {
+    width: 100% !important;
+  }
+
+  h4.Describe_Job_add {
+    width: 100% !important;
+  }
+
+  .Activitiesdiv {
+    padding: 0 !important;
+  }
+
+  .ContentDivTop {
+    width: 92% !important;
+  }
+
+  .Performanceads {
+    width: 92% !important;
+  }
+
+  h1.Analyticstitle {
+    width: 92% !important;
+  }
+
+  .Performanceads {
+    display: block !important;
+  }
+
+  .PerformanceadsGRPh {
+    width: 100% !important;
+  }
+  h1 {
+    font-size: 20px !important;
+  }
+}
+@media (min-width: 570px) and (max-width: 767px) {
+  input.form-control.form-control-sm.ml-0.my-1 {
+    float: left !important;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1380px) {
+  .Remotagencylist {
+    margin: 8px !important;
+  }
+  .collectiondatallimg {
+    height: 160px !important;
+  }
+}
+
+@media (min-width: 767px) and (max-width: 1024px) {
+  .w-551 {
+    width: 100% !important;
+  }
+  .Sort_content {
+    display: block !important;
+  }
+  .port-singlecreator img {
+    height: 160px !important;
+  }
+  .addpage {
+    padding: 20px !important;
+  }
+  .searchActivityPublicP.agencyjoblistsearchfilterjob1 {
+    float: left !important;
+  }
+  h6.creatorprtite1 {
+    width: 100% !important;
+    text-align: left !important;
+    margin: 10px 0 0 !important;
+  }
+  .Sort {
+    display: none !important;
+  }
+  .Jobsnewdiv {
+    display: block !important;
+  }
+  input.newSearchActInputPp {
+    width: auto !important;
+  }
+  .FreshBtn {
+    justify-content: left !important;
+    margin-top: 12px !important;
+  }
+
+  .userlist .col-md-5 {
+    width: 100% !important;
+  }
+
+  .sidepanel {
+    padding-top: 10px !important;
+  }
+  .folderDisplayNewInline {
+    width: 50% !important;
+  }
+  .dialogcontent_and_actions_new .container {
+    padding: 0 !important;
+  }
+  .uploadmediapage h2 {
+    margin: 0 !important;
+  }
+  .media .Createmide {
+    display: block !important;
+    float: left !important;
+  }
+  .DAMSidebar {
+    width: 100% !important;
+  }
+  .media .files_selected {
+    width: 100% !important;
+    margin-top: 15px !important;
+  }
+  .logoGallerywithText span {
+    font-size: 14px;
+  }
+  .dataTableMediaDiv h5 {
+    font-size: 13px !important;
+  }
+  .firstRowMediaDataTable h3 {
+    font-size: 13px !important;
+  }
+  .dammideanewdiv {
+    width: 100% !important;
+  }
+  .collectionnameimgdiv {
+    width: 50% !important;
+  }
+  .agencyjobdetailspage .css-1aquho2-MuiTabs-indicator {
+    height: 0 !important;
+  }
+  .dotsMessagehireMain {
+    width: 50% !important;
+  }
+  .feedbackAboutAreaMainD .MuiTabs-flexContainer {
+    display: unset !important;
+    white-space: unset !important;
+  }
+
+  .company_users_profile_text {
+    width: 100% !important;
+  }
+  .company_users_profile_email {
+    width: 100% !important;
+  }
+  .company_users_profile_role {
+    width: 100% !important;
+  }
+  .feedbackAboutAreaMainD .MuiTabs-scroller {
+    display: unset !important;
+    white-space: unset !important;
+  }
+  .company_users_profile {
+    display: block !important;
+  }
+  .dammideanewdiv {
+    width: 100% !important;
+    display: block !important;
+  }
+  .media .loginRight1 {
+    width: 100% !important;
+  }
+  .related-jobs-check-box label {
+    font-size: 14px !important;
+  }
+  .agencyjoblistdiv {
+    min-height: 330px !important;
+  }
+  .formjobsagencyadd h4 {
+    font-size: 14px !important;
+  }
+
+  button.allpagetoggle {
+    left: 20px !important;
+  }
+  .Topallpageprojects {
+    width: 100% !important;
+  }
+  .creatorProjectbtn {
+    width: 100% !important;
+  }
+  .CreatorProjectdiv {
+    display: block !important;
+  }
+  .businesstext {
+    display: block !important;
+  }
+  h6.creatorprtite {
+    width: 100% !important;
+    text-align: left !important;
+    margin: 0;
+  }
+  .jobdes {
+    width: 100% !important;
+  }
+
+  .table-responsive table {
+    width: 1000px !important;
+  }
+
+  .Category_p {
+    width: 93% !important;
+  }
+
+  .tags-input-container {
+    width: 100% !important;
+  }
+
+  .countdiv {
+    width: 100% !important;
+  }
+
+  .Rightbar {
+    width: 95% !important;
+  }
+
+  .sidemenubar a {
+    padding: 12px 7px !important;
+    font-size: 14px !important;
+  }
+
+  .header {
+    padding: 14px 25px !important;
+  }
+
+  img.logoimg {
+    max-width: 100px !important;
+  }
+
+  .Profile {
+    width: 100% !important;
+  }
+
+  .signupPage {
+    max-width: 90% !important;
+    height: auto !important;
+    margin: 50px auto !important;
+  }
+
+  .form-group-one {
+    display: block !important;
+  }
+
+  .InProgress {
+    padding: 8px 0 !important;
+  }
+
+  .InCntnr {
+    width: 100% !important;
+  }
+
+  .w-95 {
+    width: 100% !important;
+  }
+
+  .ContentDiv {
+    width: 93% !important;
+  }
+
+  .SearchBar input {
+    width: 100% !important;
+  }
+
+  .Fresh {
+    width: 100% !important;
+  }
+
+  .Remotemarkeitng {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  h1.ServiceTitle {
+    padding: 20px 20px !important;
+  }
+
+  .Work-In {
+    width: 100% !important;
+  }
+
+  .Work-D {
+    display: block !important;
+  }
+
+  .display-f {
+    display: block;
+  }
+
+  h1.ServiceTitle {
+    padding: 40px 60px;
+    margin: 0;
+  }
+
+  .Marketing {
+    width: 100%;
+  }
+
+  .display-f {
+    display: block !important;
+  }
+
+  .MarketingButton {
+    padding: 8px 9px !important;
+    font-size: 12px !important;
+  }
+
+  p.INvehicula {
+    width: 100% !important;
+  }
+
+  hr.b-top {
+    width: 100% !important;
+  }
+
+  .Skill a {
+    margin-bottom: 10px;
+  }
+
+  .TopM {
+    margin: 22px 0 0px !important;
+  }
+  .agencyFilterProjectPage button.all_jobs_poject_button {
+    width: 85px !important;
+  }
+  button.all_jobs_poject_button {
+    height: 40px;
+    font-size: 13px;
+    width: 95px !important;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1170px) {
+  .activitySelectNew {
+    margin-left: 20px !important;
+  }
+  .sidemenubar a {
+    padding: 16px 16px !important;
+  }
+  .firstportfolioImgContentdiv {
+    height: 200px !important;
+  }
+
+  button.allpagetoggle {
+    left: 28px !important;
+  }
+  .Induslist {
+    padding: 30px 20px 10px !important;
+  }
+  .sliderleftsec {
+    display: block;
+  }
+  .dataTables_length label {
+    padding: 10px 15px !important;
+  }
+  .Custompage .table-responsive table {
+    width: 1000px !important;
+  }
+  .companylistdiv {
+    padding: 40px 20px !important;
+  }
+  .Custompageskills .col-md-5 {
+    flex: 0 0 auto;
+    width: 100% !important;
+  }
+  .agencyprogress {
+    display: flex !important;
+  }
+  .dataTableMediaDiv h5 {
+    font-size: 14px !important;
+  }
+  .dammideanewdiv {
+    width: 100% !important;
+  }
+  .agencyjobdetailspage .css-1aquho2-MuiTabs-indicator {
+    height: 0 !important;
+  }
+  .media i.fa.fa-search {
+    display: none !important;
+  }
+  .Custompageskills .Categoriesdiv1 {
+    padding: 30px !important;
+  }
+  .company_users_profile_text {
+    width: 100% !important;
+  }
+  .company_users_profile_email {
+    width: 100% !important;
+  }
+  .company_users_profile_role {
+    width: 100% !important;
+  }
+  .company_users_profile {
+    display: block !important;
+  }
+  .BrowseVaultDialogMedia
+    .MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation24.MuiDialog-paper {
+    max-width: 96% !important;
+  }
+  .agencyFilterProjectPage button.all_jobs_poject_button {
+    width: 90px !important;
+    font-size: 13px !important;
+  }
+  .services.servicesworkflow .Observersskillssec {
+    width: 100% !important;
+  }
+  .Remotagencylistlistagency {
+    padding: 15px !important;
+  }
+  .agencyjobtoppage {
+    padding: 0 !important;
+  }
+  .agencyjoblistdiv {
+    margin: 6px !important;
+  }
+
+  button.all_jobs_poject_button {
+    width: 100px;
+    font-size: 14px;
+  }
+  .agencyjoblistdiv {
+    min-height: 340px !important;
+  }
+
+  .Rightbar {
+    width: 95% !important;
+  }
+
+  .jobdes {
+    width: 100% !important;
+  }
+
+  .Work-In {
+    width: 100% !important;
+  }
+
+  .Profile {
+    width: 100% !important;
+  }
+
+  .Work-D {
+    padding: 15px !important;
+    display: block !important;
+  }
+
+  .Remotemarkeitng {
+    width: 100% !important;
+  }
+
+  .Fresh {
+    display: flex;
+    width: 98% !important;
+  }
+
+  .Skill a {
+    margin-bottom: 11px;
+  }
+
+  .TopM {
+    margin: 28px 0 0px !important;
+  }
+
+  p.INvehicula {
+    width: 100% !important;
+  }
+
+  hr.b-top {
+    width: 100% !important;
+  }
+
+  .portfolio_item_image {
+    height: 140px !important;
+  }
+
+  .react-multi-carousel-item {
+    height: 140px !important;
+  }
+  .inProgressDashboardComponent {
+    width: 50%;
+    min-height: 400px;
+    float: left;
+    margin-bottom: 45px;
+  }
+  .inReviewDashboardComponent {
+    width: 50%;
+    min-height: 400px;
+    float: left;
+  }
+  .Work-P-Title h1 {
+    font-size: 20px !important;
+  }
+  .sliderleftsec {
+    display: block !important;
+  }
+  .media .main_manger {
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 1171px) and (max-width: 1200px) {
+  .adstitle1 {
+    width: 85% !important;
+  }
+  .Custompage .table-responsive table {
+    width: 1000px !important;
+  }
+  .agencytemplate .col-sm-12 {
+    padding: 0 15px;
+  }
+  .dataTables_length label {
+    margin-top: 10px !important;
+  }
+  .media .main_manger {
+    width: 100% !important;
+  }
+  .sliderleftsec {
+    display: block !important;
+  }
+  .media .files_selected {
+    width: 100% !important;
+  }
+  .BrowseVaultDialogMedia
+    .MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation24.MuiDialog-paper {
+    max-width: 96% !important;
+  }
+  .portfolio_item_image {
+    height: 140px !important;
+  }
+
+  .react-multi-carousel-item {
+    height: 140px !important;
+  }
+
+  .Category_p {
+    width: 94% !important;
+  }
+
+  li.MarketingCampaignJob span {
+    margin-right: 5px !important;
+  }
+
+  .businesstext {
+    position: relative;
+  }
+
+  span.NewText {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .Work-D {
+    padding: 12px 20px 0 !important;
+  }
+
+  .Work-P-Title {
+    width: 60% !important;
+  }
+
+  .Marketingcampaign h2 {
+    font-size: 18px !important;
+  }
+
+  .Marketingcampaign2 {
+    padding: 20px !important;
+  }
+
+  .sidepanel {
+    padding-top: 15px !important;
+  }
+
+  .businesstext {
+    display: block !important;
+  }
+
+  .Fresh {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  .Jobs {
+    width: 94% !important;
+  }
+
+  .Rightbar {
+    width: 80% !important;
+  }
+
+  .Remotemarkeitng {
+    width: 100% !important;
+  }
+
+  .InProgress {
+    padding: 0 !important;
+  }
+
+  .Skill a {
+    margin-bottom: 10px !important;
+  }
+
+  p.INvehicula {
+    width: 100% !important;
+  }
+
+  hr.b-top {
+    width: 100% !important;
+  }
+
+  .signupPage {
+    height: unset !important;
+  }
+
+  .signup {
+    margin: 60px auto !important;
+  }
+
+  .Skill li {
+    margin-right: 6px !important;
+  }
+
+  .TopM {
+    margin: 22px 0 0px !important;
+  }
+  .DAMSidebar {
+    width: 100% !important;
+  }
+  button.allpagetoggle {
+    left: 29px !important;
+  }
+}
+@media (min-width: 1200px) and (max-width: 1350px) {
+  .Custompage .table-responsive table {
+    width: 1000px !important;
+  }
+}
+@media (min-width: 1200px) and (max-width: 1400px) {
+  li.MarketingCampaignJob span {
+    margin-right: 5px !important;
+  }
+
+  button.allpagetoggle {
+    left: 29px !important;
+  }
+
+  .portfolio_item_image {
+    height: 140px !important;
+  }
+
+  .react-multi-carousel-item {
+    height: 140px !important;
+  }
+
+  h1.applymuddel {
+    width: 94% !important;
+  }
+
+  .applyjobnewdiv {
+    width: 94% !important;
+  }
+
+  .Category_p {
+    width: 94% !important;
+  }
+
+  .FreshTitl {
+    width: 94% !important;
+  }
+
+  .ContentDiv {
+    width: 94% !important;
+  }
+
+  .TopM {
+    margin: 33px 0 0px !important;
+  }
+
+  .businesstext {
+    position: relative;
+  }
+
+  .Work-D {
+    padding: 12px 20px 0 !important;
+  }
+
+  .Work-P-Title {
+    width: 60% !important;
+  }
+
+  .Marketingcampaign h2 {
+    font-size: 19px !important;
+  }
+
+  .Marketingcampaign2 {
+    padding: 20px !important;
+  }
+
+  .sidepanel {
+    padding-top: 23px !important;
+  }
+
+  .Fresh {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  .Jobs {
+    width: 94% !important;
+  }
+  .Jobsnewdiv {
+    width: 98% !important;
+  }
+  .Remotemarkeitng {
+    width: 100% !important;
+  }
+
+  .InProgress {
+    padding: 0 !important;
+  }
+
+  .Skill a {
+    margin-bottom: 10px !important;
+  }
+
+  p.INvehicula {
+    width: 100% !important;
+  }
+
+  hr.b-top {
+    width: 100% !important;
+  }
+
+  .signupPage {
+    height: unset !important;
+  }
+
+  .signup {
+    margin: 60px auto !important;
+  }
+
+  .Skill li {
+    margin-right: 6px !important;
+  }
+  .adminjoblistpage {
+    width: 100% !important;
+  }
+}
+@media (min-width: 1025px) and (max-width: 1200px) {
+  h1.Analyticstitle {
+    width: 94% !important;
+  }
+  .media .activity_main {
+    width: 100% !important;
+  }
+  .Performanceads {
+    width: 94% !important;
+  }
+
+  li.MarketingCampaignJob {
+    display: flex !important;
+  }
+
+  .Category_p {
+    width: 94% !important;
+  }
+
+  .ContentDiv {
+    width: 94% !important;
+    padding: 15px;
+  }
+
+  .footersec p {
+    margin-top: 28px !important;
+  }
+  .invitepagenew .ContentDiv.Categoriesdiv1.draft {
+    padding: 20px !important;
+  }
+}
+@media (min-width: 1200px) and (max-width: 1400px) {
+  .Performanceads {
+    width: 94% !important;
+  }
+  .input_search22_New_media1 {
+    left: 40%;
+  }
+  .common-datatable-slider {
+    float: left;
+    width: 78%;
+  }
+
+  .input_search_bar_new_media {
+    width: 330px;
+  }
+  button.allpagetoggle {
+    left: 30px !important;
+  }
+  .agencyjoblistdiv {
+    margin: 9px !important;
+  }
+  h1.Analyticstitle {
+    width: 94% !important;
+    margin: 20px auto 0px;
+  }
+
+  .Performanceads {
+    width: 94% !important;
+  }
+
+  .profilepagediv1 {
+    width: 94% !important;
+  }
+
+  .margin_autoprpfiletopdiv {
+    width: 94% !important;
+  }
+
+  .FreshJobTop {
+    width: 94% !important;
+  }
+  .FreshJobTopagencynewdivadmin {
+    width: 96% !important;
+  }
+  .FreshJobTopagencynewdiv {
+    width: 100% !important;
+  }
+
+  .Categorypage {
+    width: 94% !important;
+  }
+
+  .profilepage {
+    width: 94% !important;
+  }
+
+  .SubmitProposalcr {
+    width: 94% !important;
+  }
+  .adminjoblistpage {
+    width: 100% !important;
+  }
+}
+@media (min-width: 1400px) and (max-width: 1600px) {
+  .Work-D {
+    padding: 0px 20px 0;
+  }
+  .common-datatable-slider {
+    float: left;
+    width: 80%;
+  }
+  .input_search22_New_media1 {
+    left: 40%;
+  }
+  button.allpagetoggle {
+    left: 35px !important;
+  }
+  .agencyjoblistdiv {
+    margin: 10px !important;
+  }
+  .profilepagediv1 {
+    width: 94% !important;
+  }
+
+  .SubmitProposalcr {
+    width: 94% !important;
+  }
+
+  .portfolio_item_image {
+    height: 140px !important;
+  }
+
+  .react-multi-carousel-item {
+    height: 140px !important;
+  }
+
+  .Jobs {
+    width: 94% !important;
+  }
+  .Jobsnewdiv {
+    width: 98% !important;
+  }
+
+  h1.toptitle {
+    width: 94% !important;
+  }
+
+  h1.applymuddel {
+    width: 94% !important;
+  }
+
+  .applyjobnewdiv {
+    width: 94% !important;
+  }
+
+  .Categorypage {
+    width: 94% !important;
+  }
+
+  .FreshJobTop {
+    width: 94% !important;
+  }
+  .FreshJobTopagencynewdiv {
+    width: 100% !important;
+  }
+  .FreshJobTopagencynewdivadmin {
+    width: 100% !important;
+  }
+  .Work-In H1 {
+    padding-left: unset;
+  }
+
+  .Marketingcampaign p {
+    line-height: 100%;
+    float: left;
+  }
+
+  .TopM {
+    margin: 27px 0 0px !important;
+  }
+
+  .margin_autoprpfiletopdiv {
+    width: 94% !important;
+  }
+
+  .Marketingcampaign h2 {
+    font-size: 20px !important;
+  }
+
+  .Performanceads {
+    width: 94%;
+  }
+
+  h1.Analyticstitle {
+    width: 94% !important;
+    margin: 20px auto 0px;
+  }
+
+  .Performanceads {
+    width: 94% !important;
+  }
+
+  .Category_p {
+    width: 94% !important;
+  }
+
+  .ContentDiv {
+    width: 94% !important;
+  }
+  .adminjoblistpage {
+    width: 100% !important;
+  }
+}
+@media (min-width: 1600px) and (max-width: 1800px) {
+  .agencyjoblistdiv {
+    margin: 13px !important;
+  }
+  .adminjoblistpage {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .input_search22_New_media {
+    position: unset;
+    top: 34px;
+    left: 48%;
+  }
+}
+@media (min-width: 767px) and (max-width: 1024px) {
+  .input_search22_New_media {
+    position: unset;
+    top: 34px;
+    left: 48%;
+  }
+
+  .input_search_bar_new_media {
+    border-radius: 4px;
+    border: 1px solid #afb4b7;
+    padding: 10px 0px 10px 15px;
+    width: 400px;
+    max-width: 100%;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1200px) {
+  .input_search22_New_media {
+    position: unset;
+    top: 10px;
+    left: 40%;
+  }
+  .input_search_bar_new_media {
+    border-radius: 4px;
+    border: 1px solid #afb4b7;
+    padding: 10px 0px 10px 10px;
+    width: 337px;
+    max-width: 100%;
+    margin-left: 20px;
+    margin-top: 16px;
+  }
+  .recent_pics1NewImages {
+    width: 50% !important;
+  }
+  .folderDisplayNewInline {
+    width: 50% !important;
+  }
+  .collectionnameimgdiv {
+    width: 50% !important;
+  }
+  .textDarkFileTypesData {
+    font-size: 13px !important;
+  }
+  .radioOneMarginTB label {
+    font-size: 13px !important;
+  }
+  .media .loginRight1 {
+    width: 100% !important;
+  }
+}
+@media (min-width: 1200px) and (max-width: 1400px) {
+  .input_search22_New_media {
+    position: absolute;
+    top: 10px;
+    left: 37%;
+  }
+}
+
+@media screen and (max-width: 992px) {
+  .col-sm-12 {
+    padding: 0 !important;
+  }
+}
+@media only screen and (max-width: 700px) {
+  .modal_content {
+    width: 100%;
+  }
+}

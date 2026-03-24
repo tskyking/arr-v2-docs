@@ -1,0 +1,61 @@
+import React, { useEffect, useState, useRef } from "react";
+import { Card, CardHeader, CardBody, Row, Col, Button } from "reactstrap";
+import { useDispatch, useSelector, } from "react-redux";
+import { Quickbookget } from "../../redux/actions/Admin-saasot-action";
+
+const QuickbookSetting = () => {
+  const dispatch = useDispatch();
+
+
+  const {
+    Quickbookupdate,
+    success
+  } = useSelector((state) => state. QuickbookReducer);
+
+  useEffect(() => {
+    if (Quickbookupdate) {
+      window.location.href = Quickbookupdate.url;
+    }
+  }, [success]);
+
+
+  const handleclick = () => {
+    dispatch(Quickbookget());
+  };
+
+
+
+
+  return (
+   <>
+   <div class="cont1 Quickbookdiv">
+    <h2>Quickbook Setting</h2>
+   </div>
+   <div class="cont">
+    <p>Your Quickbook Online App Dis-connected.Please re-connect to start all service.</p>
+   </div>
+   <div className="content">
+        <Row>
+         <Col md="12">
+            <Card className="card Quickbooksettingdiv">
+              <CardHeader>
+              <div className="Connection-div1121">
+              <p className="onlinetext">Quickbook Online Connection</p>
+                 
+              
+                  <div className="content1"            onClick={handleclick}>
+                <img src="data:image/jpeg;base64,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b4+o+2Z9TQaLH/DqunzGZrRM3Gde4zcZ17jGH6Prnvckj4J/zLNDRrSkQWU1D/1nt900Iknx5n4SfHmfgACgBQAB4AnZyJtt2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHYnIgdiciB2JyIHit7oyrLVb3RlWBPUU0GypHCfSeee2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiA57bCOe2wiIDntsI57bCIgOe2wjntsIiB1OKu2CQAPMscmn/CIiB//2Q=="onClick={handleclick}/>
+              </div>
+              </div>
+              </CardHeader>
+           
+            </Card>
+          </Col>
+        </Row>
+      </div>
+   
+   </>
+  )
+}
+
+export default QuickbookSetting
