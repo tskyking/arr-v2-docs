@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARR Rebuild Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121934;
+      --panel2: #182245;
+      --text: #eef2ff;
+      --muted: #a7b0d6;
+      --accent: #7dd3fc;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --line: #2a376d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(180deg, #0b1020 0%, #0d1430 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1150px; margin: 0 auto; padding: 24px; }
+    .hero, .card { background: rgba(18,25,52,.96); border: 1px solid var(--line); border-radius: 18px; }
+    .hero { padding: 24px; margin-bottom: 18px; }
+    h1,h2,h3 { margin: 0 0 10px 0; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 16px; color: var(--accent); }
+    p, li { color: var(--muted); line-height: 1.5; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    .col-4 { grid-column: span 4; }
+    .col-6 { grid-column: span 6; }
+    .col-8 { grid-column: span 8; }
+    .col-12 { grid-column: span 12; }
+    .card { padding: 18px; }
+    .badge { display:inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; margin-right: 8px; }
+    .done { background:#0f3d33; color:#9ff3d2; }
+    .active { background:#3a2b08; color:#fde68a; }
+    .todo { background:#1f2c59; color:#c7d2fe; }
+    .metric { font-size: 28px; font-weight: 700; color: var(--text); }
+    .sub { font-size: 13px; color: var(--muted); }
+    .timeline { position: relative; margin-top: 8px; }
+    .step { position: relative; padding-left: 28px; margin: 18px 0; }
+    .step:before {
+      content:""; position:absolute; left: 8px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted);
+    }
+    .step.done:before { background: var(--good); }
+    .step.active:before { background: var(--warn); }
+    .step:after {
+      content:""; position:absolute; left: 13px; top: 18px; width: 2px; height: calc(100% + 8px); background: var(--line);
+    }
+    .step:last-child:after { display:none; }
+    .progress { width:100%; height:10px; background:#0f1633; border-radius:999px; overflow:hidden; border:1px solid var(--line); }
+    .progress > div { height:100%; background: linear-gradient(90deg, var(--accent), var(--good)); width: 22%; }
+    ul { padding-left: 18px; }
+    a { color: var(--accent); }
+    code { color: #d8b4fe; }
+    @media (max-width: 900px) { .col-4,.col-6,.col-8,.col-12 { grid-column: span 12; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>ARR Rebuild Dashboard</h1>
+      <p>Main working dashboard for the SaaS ARR rebuild. Tracks milestones, current phase, next actions, and project cost/usage notes.</p>
+      <div>
+        <span class="badge active">Current Phase: Discovery → Planning</span>
+        <span class="badge todo">Target: MVP Definition</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card col-4">
+        <h3>Overall Progress</h3>
+        <div class="metric">22%</div>
+        <div class="sub">Early project setup, source recovery, architecture alignment complete enough to move into structured planning.</div>
+        <div style="margin-top:12px" class="progress"><div></div></div>
+      </div>
+
+      <div class="card col-4">
+        <h3>Current Objective</h3>
+        <p>Lock the working plan, establish durable project memory, gather representative ingestion test material, and define MVP schema + outputs.</p>
+      </div>
+
+      <div class="card col-4">
+        <h3>Next 3 Actions</h3>
+        <ul>
+          <li>Review working plan with Todd and Brian</li>
+          <li>Collect/anonymize sample source files for ingestion testing</li>
+          <li>Define MVP canonical schema and first supported input formats</li>
+        </ul>
+      </div>
+
+      <div class="card col-8">
+        <h2>Timeline & Milestones</h2>
+        <div class="timeline">
+          <div class="step done">
+            <strong>1. Source Recovery & Reference Collection</strong>
+            <p>Recovered frontend/backend source, workbook, spec, transcript, and demo references.</p>
+          </div>
+          <div class="step done">
+            <strong>2. Architecture Direction Chosen</strong>
+            <p>Agreed on V2 rebuild direction with separate ingestion/mapping layer and ARR/reporting application.</p>
+          </div>
+          <div class="step active">
+            <strong>3. MVP Planning & Canonical Schema</strong>
+            <p>Define initial schema, required fields, first supported file patterns, and MVP outputs.</p>
+          </div>
+          <div class="step">
+            <strong>4. Ingestion Prototype</strong>
+            <p>Build mapping/normalization flow for first source formats and ambiguity handling.</p>
+          </div>
+          <div class="step">
+            <strong>5. ARR Engine Validation</strong>
+            <p>Validate calculations against workbook/spec and identify reusable logic from legacy code.</p>
+          </div>
+          <div class="step">
+            <strong>6. MVP UI & Review Workflow</strong>
+            <p>Implement finance-user review screens, overrides, auditability, and reporting views.</p>
+          </div>
+          <div class="step">
+            <strong>7. Controlled Testing</strong>
+            <p>Test locally/private staging, compare expected outputs, review with stakeholders.</p>
+          </div>
+          <div class="step">
+            <strong>8. Staging / Production Prep</strong>
+            <p>Security hardening, hosting decisions, auth/roles, backups, and deployment.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card col-4">
+        <h2>Milestone Status</h2>
+        <ul>
+          <li><strong>Recovered code:</strong> done</li>
+          <li><strong>Working plan:</strong> done</li>
+          <li><strong>Project memory system:</strong> done</li>
+          <li><strong>Brian alignment docs:</strong> done</li>
+          <li><strong>Sample-source collection:</strong> in progress</li>
+          <li><strong>MVP schema:</strong> next</li>
+          <li><strong>Prototype build:</strong> upcoming</li>
+        </ul>
+      </div>
+
+      <div class="card col-6">
+        <h2>Cost / Usage Notes</h2>
+        <p>This section is for <strong>project-level cost awareness</strong>, especially anything that could create external spend.</p>
+        <ul>
+          <li><strong>Brave web search:</strong> used for lightweight research and references. Usually low-cost, but still an external API dependency.</li>
+          <li><strong>Other remote AI/search providers:</strong> may create usage costs if enabled later for memory retrieval or web research.</li>
+          <li><strong>Current file-based project memory:</strong> no external API cost by itself.</li>
+          <li><strong>Local memory search is currently unavailable</strong> on this machine, so structured docs are the current workaround.</li>
+          <li><strong>Hosting costs:</strong> not active yet for this project; staging/production decisions still pending.</li>
+        </ul>
+        <p class="sub">Note: detailed token/API billing is not yet wired into this dashboard. We can add a manual cost log or a more automated usage tracker later.</p>
+      </div>
+
+      <div class="card col-6">
+        <h2>Where the Source of Truth Lives</h2>
+        <ul>
+          <li><code>docs/saas/arr-rebuild/memory/project-summary.md</code></li>
+          <li><code>docs/saas/arr-rebuild/memory/decision-log.md</code></li>
+          <li><code>docs/saas/arr-rebuild/memory/feedback-log.md</code></li>
+          <li><code>docs/saas/arr-rebuild/memory/open-questions.md</code></li>
+          <li><code>docs/saas/arr-rebuild/memory/backlog.md</code></li>
+        </ul>
+        <p>This dashboard is a readable front door. The markdown files are the durable project memory behind it.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
