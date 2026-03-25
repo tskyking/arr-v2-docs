@@ -6,36 +6,36 @@
   <title>ARR Rebuild Dashboard</title>
   <style>
     :root {
-      --bg: #eef4fb;
-      --panel: #ffffff;
-      --panel2: #f7fafe;
-      --text: #18243d;
-      --muted: #5f6f8f;
+      --bg: #dfe7f2;
+      --panel: #f8fbff;
+      --panel2: #edf3fb;
+      --text: #1b2740;
+      --muted: #5a6b86;
       --accent: #2563eb;
       --good: #059669;
       --warn: #d97706;
-      --line: #d9e2f2;
+      --line: #c8d5e8;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: linear-gradient(180deg, #f4f7fb 0%, #e9eef8 100%);
+      background: linear-gradient(180deg, #dfe7f2 0%, #d4dfef 100%);
       color: var(--text);
     }
-    .wrap { max-width: 1600px; margin: 0 auto; padding: 24px; }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 14px; }
     .hero, .card { background: rgba(255,255,255,.97); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 10px 30px rgba(31,41,55,.06); }
-    .hero { padding: 24px; margin-bottom: 18px; }
+    .hero { padding: 14px; margin-bottom: 14px; }
     h1,h2,h3 { margin: 0 0 10px 0; }
-    h1 { font-size: 30px; }
-    h2 { font-size: 20px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 18px; }
     h3 { font-size: 16px; color: var(--accent); }
-    p, li { color: var(--muted); line-height: 1.5; }
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    p, li { color: var(--muted); line-height: 1.4; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
     .col-4 { grid-column: span 3; }
     .col-6 { grid-column: span 4; }
     .col-8 { grid-column: span 8; }
     .col-12 { grid-column: span 12; }
-    .card { padding: 18px; }
+    .card { padding: 14px; }
     .badge { display:inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; margin-right: 8px; }
     .done { background:#dcfce7; color:#166534; }
     .active { background:#fef3c7; color:#92400e; }
@@ -43,7 +43,7 @@
     .metric { font-size: 28px; font-weight: 700; color: var(--text); }
     .sub { font-size: 13px; color: var(--muted); }
     .timeline { position: relative; margin-top: 8px; }
-    .step { position: relative; padding-left: 28px; margin: 18px 0; }
+    .step { position: relative; padding-left: 28px; margin: 12px 0; }
     .step:before {
       content:""; position:absolute; left: 8px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted);
     }
@@ -54,7 +54,7 @@
     }
     .step:last-child:after { display:none; }
     .progress { width:100%; height:10px; background:#e5ebf5; border-radius:999px; overflow:hidden; border:1px solid var(--line); }
-    .progress > div { height:100%; background: linear-gradient(90deg, var(--accent), var(--good)); width: 22%; }
+    .progress > div { height:100%; background: linear-gradient(90deg, var(--accent), var(--good)); width: 24%; }
     ul { padding-left: 18px; }
     a { color: var(--accent); }
     code { color: #d8b4fe; }
@@ -65,7 +65,7 @@
   <div class="wrap">
     <div class="hero">
       <h1>ARR Rebuild Dashboard</h1>
-      <p>Main working dashboard for the SaaS ARR rebuild. Tracks milestones, current phase, next actions, and project cost/usage notes.</p>
+      <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, next actions, and cost awareness.</p>
       <div>
         <span class="badge active">Current Phase: Discovery → Planning</span>
         <span class="badge todo">Target: MVP Definition</span>
@@ -75,8 +75,8 @@
     <div class="grid">
       <div class="card col-4">
         <h3>Overall Progress</h3>
-        <div class="metric">22%</div>
-        <div class="sub">Early project setup, source recovery, architecture alignment complete enough to move into structured planning.</div>
+        <div class="metric">24%</div>
+        <div class="sub">Source recovery, architecture alignment, planning docs, and memory system are in place. Now moving into MVP definition.</div>
         <div style="margin-top:12px" class="progress"><div></div></div>
       </div>
 
