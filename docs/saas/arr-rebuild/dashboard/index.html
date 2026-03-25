@@ -6,24 +6,24 @@
   <title>ARR Rebuild Dashboard</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --panel: #121934;
-      --panel2: #182245;
-      --text: #eef2ff;
-      --muted: #a7b0d6;
-      --accent: #7dd3fc;
-      --good: #34d399;
-      --warn: #fbbf24;
-      --line: #2a376d;
+      --bg: #eef4fb;
+      --panel: #ffffff;
+      --panel2: #f7fafe;
+      --text: #18243d;
+      --muted: #5f6f8f;
+      --accent: #2563eb;
+      --good: #059669;
+      --warn: #d97706;
+      --line: #d9e2f2;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: linear-gradient(180deg, #0b1020 0%, #0d1430 100%);
+      background: linear-gradient(180deg, #f4f7fb 0%, #e9eef8 100%);
       color: var(--text);
     }
-    .wrap { max-width: 1150px; margin: 0 auto; padding: 24px; }
-    .hero, .card { background: rgba(18,25,52,.96); border: 1px solid var(--line); border-radius: 18px; }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 24px; }
+    .hero, .card { background: rgba(255,255,255,.97); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 10px 30px rgba(31,41,55,.06); }
     .hero { padding: 24px; margin-bottom: 18px; }
     h1,h2,h3 { margin: 0 0 10px 0; }
     h1 { font-size: 30px; }
@@ -31,15 +31,15 @@
     h3 { font-size: 16px; color: var(--accent); }
     p, li { color: var(--muted); line-height: 1.5; }
     .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
-    .col-4 { grid-column: span 4; }
-    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 3; }
+    .col-6 { grid-column: span 4; }
     .col-8 { grid-column: span 8; }
     .col-12 { grid-column: span 12; }
     .card { padding: 18px; }
     .badge { display:inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; margin-right: 8px; }
-    .done { background:#0f3d33; color:#9ff3d2; }
-    .active { background:#3a2b08; color:#fde68a; }
-    .todo { background:#1f2c59; color:#c7d2fe; }
+    .done { background:#dcfce7; color:#166534; }
+    .active { background:#fef3c7; color:#92400e; }
+    .todo { background:#dbeafe; color:#1d4ed8; }
     .metric { font-size: 28px; font-weight: 700; color: var(--text); }
     .sub { font-size: 13px; color: var(--muted); }
     .timeline { position: relative; margin-top: 8px; }
@@ -53,7 +53,7 @@
       content:""; position:absolute; left: 13px; top: 18px; width: 2px; height: calc(100% + 8px); background: var(--line);
     }
     .step:last-child:after { display:none; }
-    .progress { width:100%; height:10px; background:#0f1633; border-radius:999px; overflow:hidden; border:1px solid var(--line); }
+    .progress { width:100%; height:10px; background:#e5ebf5; border-radius:999px; overflow:hidden; border:1px solid var(--line); }
     .progress > div { height:100%; background: linear-gradient(90deg, var(--accent), var(--good)); width: 22%; }
     ul { padding-left: 18px; }
     a { color: var(--accent); }
