@@ -58,6 +58,13 @@
     ul { padding-left: 18px; }
     a { color: var(--accent); }
     code { color: #d8b4fe; }
+    
+    .pill { display:inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .pill-done { background:#dcfce7; color:#166534; }
+    .pill-progress { background:#fef3c7; color:#92400e; }
+    .pill-next { background:#dbeafe; color:#1d4ed8; }
+    .pill-upcoming { background:#fce7f3; color:#9d174d; }
+
     @media (max-width: 900px) { .col-4,.col-6,.col-8,.col-12 { grid-column: span 12; } }
   </style>
 </head>
@@ -135,13 +142,13 @@
       <div class="card col-4">
         <h2>Milestone Status</h2>
         <ul>
-          <li><strong>Recovered code:</strong> done</li>
-          <li><strong>Working plan:</strong> done</li>
-          <li><strong>Project memory system:</strong> done</li>
-          <li><strong>Brian alignment docs:</strong> done</li>
-          <li><strong>Sample-source collection:</strong> in progress</li>
-          <li><strong>MVP schema:</strong> next</li>
-          <li><strong>Prototype build:</strong> upcoming</li>
+          <li><strong>Recovered code:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Working plan:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Project memory system:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Brian alignment docs:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Sample-source collection:</strong> <span class="pill pill-progress">in progress</span></li>
+          <li><strong>MVP schema:</strong> <span class="pill pill-next">next</span></li>
+          <li><strong>Prototype build:</strong> <span class="pill pill-upcoming">upcoming</span></li>
         </ul>
       </div>
 
