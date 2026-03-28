@@ -8,3 +8,4 @@
 - What user roles and approval flows are required for overrides?
 - What sample/anonymized source files can Brian collect for ingestion testing?
 - Which parts of the legacy Python logic should be reused directly versus rewritten?
+- How should logo/site rollups affect ARR, churn, and retention reporting in edge cases like acquisitions and enterprise-wide conversions?

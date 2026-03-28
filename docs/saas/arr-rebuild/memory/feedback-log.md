@@ -18,3 +18,8 @@
 - Wants one working plan instead of fragmented planning.
 - Is comfortable letting technical architecture be chosen for maintainability/flexibility/polish.
 - Values practical execution over overexplaining technical stack debates.
+
+## Additional schema insight
+- Todd raised the need to distinguish parent logo/entity from site-level company/account in large enterprise relationships (e.g. Intel, AMD, Samsung).
+- Important scenario: acquired sites may retain local contracts temporarily and later be absorbed into enterprise-wide licensing.
+- This should be reflected in schema via Logo/LogoID, Site/SiteID, and contract scope/rollup behavior.

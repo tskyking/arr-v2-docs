@@ -41,23 +41,41 @@ Key examples:
 - processing status
 - warnings/errors
 
-### 3. Customer / Account
-Represents the end customer in the revenue dataset.
+### 3. Logo / Parent Customer
+Represents the broader commercial parent relationship.
+
+This is important for enterprise reporting because one logo may contain many sites, subsidiaries, or acquired entities.
 
 Key examples:
-- customer id
-- customer/account name
+- logo id
+- logo name
+- parent commercial account identifier
+- CRM parent account id if applicable
+- status
+
+### 4. Site / Account
+Represents the site-level, subsidiary-level, or billing-level entity in the revenue dataset.
+
+This allows the system to distinguish between a parent enterprise logo and the specific local entities that sign contracts, receive invoices, or hold licenses.
+
+Key examples:
+- site id
+- site name
+- logo id
 - ERP/customer external id
+- CRM account id
+- billing/legal entity details
 - parent account if applicable
 - status
 - region / segment if useful
 
-### 4. Contract
+### 5. Contract
 Represents the commercial agreement at a contract level.
 
 Key examples:
 - contract id
-- customer id
+- site id
+- logo id
 - source contract number
 - contract effective date
 - contract signature date if available
@@ -65,13 +83,14 @@ Key examples:
 - contract end date
 - renewal date
 - contract status
+- contract scope (site-specific, multi-site, enterprise-wide)
 - currency
 - auto-renew flag
 - notice period if applicable
 - early-out / cancellation-right description
 - earliest cancellation date or milestone
 
-### 5. Contract Line / SKU
+### 6. Contract Line / SKU
 Represents the line-level products or services sold within a contract.
 
 This is one of the most important entities because ARR treatment often happens at the SKU or line level.
@@ -94,7 +113,7 @@ Key examples:
 - term length in months
 - active / cancelled / pending renewal status
 
-### 6. Billing Schedule / Milestone
+### 7. Billing Schedule / Milestone
 Represents when and how the customer is billed.
 
 This should be separate from the contract line itself because many contracts have milestone or installment billing that does not map 1:1 to simple monthly recurring patterns.
@@ -109,7 +128,7 @@ Key examples:
 - billing type (monthly, annual upfront, milestone, one-time, etc.)
 - deferred revenue flag if relevant
 
-### 7. Revenue Recognition Schedule (Optional Derived Layer)
+### 8. Revenue Recognition Schedule (Optional Derived Layer)
 Represents how revenue should be recognized over time if this needs to be explicitly stored or reviewed.
 
 This may be derived from billing and contract terms rather than imported directly.
@@ -121,7 +140,7 @@ Key examples:
 - recognized revenue amount
 - deferred revenue movement
 
-### 8. Cancellation / Early-Out Terms
+### 9. Cancellation / Early-Out Terms
 Represents structured contract termination rights.
 
 Brian’s note strongly suggests this should not live only as free text.
@@ -135,7 +154,7 @@ Key examples:
 - free-text clause notes
 - mapped confidence level if parsed from messy source data
 
-### 9. Mapping / Normalization Metadata
+### 10. Mapping / Normalization Metadata
 Stores how a raw source field was interpreted.
 
 Purpose:
@@ -150,7 +169,7 @@ Key examples:
 - confidence level
 - unresolved ambiguity flag
 
-### 10. Manual Adjustment / Override
+### 11. Manual Adjustment / Override
 Represents user intervention after import.
 
 Purpose:
@@ -219,10 +238,13 @@ That means the system should always be able to answer:
 
 ## Bottom Line
 The ingestion layer should normalize source exports into a contract-aware schema built around:
+- logos / parent customers
+- sites / billing entities
 - contracts
 - contract lines / SKUs
 - billing schedules
 - cancellation / early-out terms
+- contract scope / rollup behavior
 - source lineage
 - manual adjustment metadata
 

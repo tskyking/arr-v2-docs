@@ -32,6 +32,8 @@ The exact implementation can evolve, but the priorities are maintainability, fle
 - ARR treatment must be configurable, not hard-coded as one universal rule
 - Admins should be able to override values where needed, with audit trail
 - Line-item / SKU-first model
+- Support logo/parent-customer and site/local-entity hierarchy
+- Preserve contract scope such as site-specific, multi-site, or enterprise-wide
 - Explainable outputs with drill-down
 - Review workflow for ambiguity and out-of-balance items
 - Clear separation between messy source normalization and ARR analytics

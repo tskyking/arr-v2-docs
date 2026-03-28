@@ -19,3 +19,7 @@
 ## 2026-03-24 — File-based project memory is required now
 - Decision: Maintain durable project memory in structured files under this folder.
 - Why: Local semantic memory retrieval is currently unavailable, so project continuity should not rely on chat memory alone.
+
+## 2026-03-27 — Include Logo/Site hierarchy in canonical model
+- Decision: Add Logo/LogoID (parent customer) and Site/SiteID (local/billing entity) to the canonical schema, along with contract scope/rollup behavior.
+- Why: Enterprise software relationships often span many sites under one logo, and reporting for churn, expansion, retention, acquisitions, and enterprise deals needs both levels.
