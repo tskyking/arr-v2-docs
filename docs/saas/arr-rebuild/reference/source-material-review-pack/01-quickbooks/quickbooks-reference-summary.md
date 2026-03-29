@@ -1,0 +1,1 @@
+QuickBooks import references suggest that item/product formatting and category structure matter a lot for CSV ingestion. Example guidance indicates formats like Category:Subcategory:Product/Service can affect successful import and mapping behavior.

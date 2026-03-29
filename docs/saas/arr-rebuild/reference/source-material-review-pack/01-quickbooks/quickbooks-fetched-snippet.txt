@@ -1,0 +1,1 @@
+QuickBooks community guidance suggests invoice CSV import success can depend on product/service item formatting, including category:subcategory:product conventions, which is useful for source-specific mapping and normalization design.

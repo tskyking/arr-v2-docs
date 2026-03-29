@@ -1,0 +1,1 @@
+NetSuite documentation shows strongly structured CSV expectations. One example includes columns such as Date, Payor/Payee Name, Transaction ID, Transaction Type, Amount, Memo, NS Internal Customer ID, NS Customer Name, and Invoice Number(s), which is useful for thinking about canonical field capture and source-specific constraints.

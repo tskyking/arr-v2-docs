@@ -1,0 +1,1 @@
+Chargebee export docs describe asynchronous export jobs returning export resources with statuses like in_process/completed/failed and downloadable ZIP/PDF outputs, which is useful for thinking about ingestion from subscription billing systems with bulk data export workflows.

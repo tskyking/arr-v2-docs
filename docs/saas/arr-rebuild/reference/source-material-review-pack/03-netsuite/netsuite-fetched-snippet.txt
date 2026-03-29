@@ -1,0 +1,1 @@
+NetSuite 'Preparing CSV Files for Import' highlights a concrete example of required CSV headings/order including Date, Payor/Payee Name, Transaction ID, Transaction Type, Amount, Memo, NS Internal Customer ID, NS Customer Name, and Invoice Number(s), plus formatting constraints like UTF-8 and single-account scope.

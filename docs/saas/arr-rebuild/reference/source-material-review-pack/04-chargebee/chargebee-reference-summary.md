@@ -1,0 +1,1 @@
+Chargebee export docs indicate asynchronous export jobs that produce downloadable ZIP/PDF outputs, often with import-friendly CSV data. This is a useful model for recurring billing/subscription export behavior and for thinking about ingestion of subscription-oriented systems.
