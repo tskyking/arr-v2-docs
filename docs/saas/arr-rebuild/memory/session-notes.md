@@ -16,3 +16,4 @@
 - Drafted initial backend/domain model covering customers, contracts, contract lines, billing schedules, ARR policy/overrides, audit, and imports.
 - Captured triangle-based cell edit/audit interaction pattern as a design decision for V2 UI.
 - Reviewed Brian-provided sample workbooks and drafted CSV/workbook ingestion spec v0 based on transaction rows, product/service mapping, and revenue recognition assumptions.
+- Drafted MVP ingestion field contract and validation rules from Brian sample workbook structure.
