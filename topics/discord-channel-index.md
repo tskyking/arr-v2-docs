@@ -8,9 +8,10 @@ Map Discord channel names and ids to their primary topic memory files so context
 - `#saas-build` — `1485512492934234112` — `topics/saas-build.md`
 - `#life-ops` — `1485512749642682449` — `topics/life-ops.md`
 - `#health-family` — `1485512852826755153` — `topics/health-family.md`
+- `#travel-fun` — `1485512943368929321` — `topics/travel-fun.md`
 
 ## Still to Confirm
-- `#travel-fun` — id not yet recorded here
+- none currently
 
 ## Notes
 - Stable, high-level context belongs in the topic file.

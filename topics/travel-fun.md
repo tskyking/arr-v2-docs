@@ -9,7 +9,7 @@ Track travel planning, outings, ideas, and lighter lifestyle topics.
 
 ## Discord Context
 - Channel: `#travel-fun`
-- Channel id: to be confirmed
+- Channel id: `1485512943368929321`
 - Use this file for stable context and important decisions; keep day-by-day details in `memory/YYYY-MM-DD.md`.
 
 ## Likely Uses
