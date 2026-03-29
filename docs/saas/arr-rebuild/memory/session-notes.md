@@ -12,3 +12,5 @@
 - Began build-start work without waiting on Brian feedback.
 - Created technical foundation package: legacy code audit, reuse-vs-rewrite assessment, canonical schema v0, and MVP scope v0.
 - Created clean V2 app skeleton under apps/arr-v2.
+
+- Drafted initial backend/domain model covering customers, contracts, contract lines, billing schedules, ARR policy/overrides, audit, and imports.

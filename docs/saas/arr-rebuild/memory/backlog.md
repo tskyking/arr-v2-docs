@@ -1,6 +1,7 @@
 # Backlog
 
 ## Now
+- [x] Draft initial backend/domain model
 - [x] Produce technical foundation package
 - [x] Create clean V2 app skeleton
 - [ ] Review and refine the consolidated working plan with Todd and Brian
