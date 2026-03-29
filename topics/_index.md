@@ -7,8 +7,10 @@ This folder holds topic-specific working memory.
 - `openclaw-setup.md` — setup, configuration, tooling, security, memory, git, and workflow infrastructure
 - `saas-build.md` — product requirements, roadmap, architecture, and coordination with coder + QA
 - `life-ops.md` — planning, systems, admin, finances, and day-to-day life organization
-- `health-family.md` — health, habits, kids' progress/guidance, and family-related planning
+- `health-family.md` — health, habits, kids' progress/guidance, family planning, and scoped Discord `#health-family` context
 - `travel-fun.md` — vacation planning, outings, ideas, research, and lighter lifestyle topics
+- `discord-server-ops.md` — Discord server structure, channel setup, invites, membership observations, and operational context
+- `discord-general-coordination.md` — cross-cutting Skylar↔Todd coordination decisions that happen in Discord
 
 ## Notes
 
