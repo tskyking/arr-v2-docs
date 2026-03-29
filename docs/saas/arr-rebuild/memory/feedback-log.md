@@ -23,3 +23,7 @@
 - Todd raised the need to distinguish parent logo/entity from site-level company/account in large enterprise relationships (e.g. Intel, AMD, Samsung).
 - Important scenario: acquired sites may retain local contracts temporarily and later be absorbed into enterprise-wide licensing.
 - This should be reflected in schema via Logo/LogoID, Site/SiteID, and contract scope/rollup behavior.
+
+## UI workflow preference
+- Todd proposed a triangle-in-corner interaction for editable fields: neutral outlined triangle to begin edit flow, red for needs review, yellow for pending approval, green for approved/authorized change.
+- Hover/click should reveal compact history/review details without cluttering the visible value.

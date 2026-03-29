@@ -14,3 +14,4 @@
 - Created clean V2 app skeleton under apps/arr-v2.
 
 - Drafted initial backend/domain model covering customers, contracts, contract lines, billing schedules, ARR policy/overrides, audit, and imports.
+- Captured triangle-based cell edit/audit interaction pattern as a design decision for V2 UI.

@@ -23,3 +23,8 @@
 ## 2026-03-27 — Include Logo/Site hierarchy in canonical model
 - Decision: Add Logo/LogoID (parent customer) and Site/SiteID (local/billing entity) to the canonical schema, along with contract scope/rollup behavior.
 - Why: Enterprise software relationships often span many sites under one logo, and reporting for churn, expansion, retention, acquisitions, and enterprise deals needs both levels.
+
+## 2026-03-29 — Adopt triangle-based field edit/audit UI pattern
+- Decision: Editable fields should show a single current value, with a small triangle indicator used for edit/review state and interaction.
+- States: outlined triangle for untouched but editable; red for flagged/review-needed; yellow for pending approval; green for approved/authorized change.
+- Why: Keeps the grid readable while making edit workflows, approval status, and audit history visible and accessible.
