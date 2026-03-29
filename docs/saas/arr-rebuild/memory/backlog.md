@@ -1,6 +1,7 @@
 # Backlog
 
 ## Now
+- [x] Review Brian sample workbook inputs and draft CSV ingestion spec v0
 - [x] Draft initial backend/domain model
 - [x] Produce technical foundation package
 - [x] Create clean V2 app skeleton
