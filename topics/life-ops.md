@@ -7,6 +7,11 @@ Track planning, systems, finances, admin, and day-to-day operational improvement
 - Todd wants help improving life and finances broadly.
 - He values quality, lower friction, practical structure, and cost-conscious decisions.
 
+## Discord Context
+- Channel: `#life-ops`
+- Channel id: `1485512749642682449`
+- Use this file for stable context and important decisions; keep day-by-day details in `memory/YYYY-MM-DD.md`.
+
 ## Likely Uses
 - Time management
 - Personal systems
