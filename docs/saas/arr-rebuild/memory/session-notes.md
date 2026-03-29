@@ -18,3 +18,4 @@
 - Reviewed Brian-provided sample workbooks and drafted CSV/workbook ingestion spec v0 based on transaction rows, product/service mapping, and revenue recognition assumptions.
 - Drafted MVP ingestion field contract and validation rules from Brian sample workbook structure.
 - Drafted implementation-ready import type docs, normalized import bundle shape, pipeline outline, and initial review reason codes.
+- Drafted onboarding, roles, permissions, and approval model v0 for ARR V2.

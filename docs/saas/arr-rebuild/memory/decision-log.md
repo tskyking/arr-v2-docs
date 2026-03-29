@@ -28,3 +28,7 @@
 - Decision: Editable fields should show a single current value, with a small triangle indicator used for edit/review state and interaction.
 - States: outlined triangle for untouched but editable; red for flagged/review-needed; yellow for pending approval; green for approved/authorized change.
 - Why: Keeps the grid readable while making edit workflows, approval status, and audit history visible and accessible.
+
+## 2026-03-29 — Use a simple role model as implementation baseline
+- Decision: Proceed with Viewer, Analyst, Approver/Finance Manager, Admin, and System roles as the initial permissions model.
+- Why: This is sufficient to implement onboarding, edit control, approvals, and auditability before final stakeholder refinement.
