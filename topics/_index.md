@@ -11,6 +11,10 @@ This folder holds topic-specific working memory.
 - `travel-fun.md` — vacation planning, outings, ideas, research, and lighter lifestyle topics
 - `discord-server-ops.md` — Discord server structure, channel setup, invites, membership observations, and operational context
 - `discord-general-coordination.md` — cross-cutting Skylar↔Todd coordination decisions that happen in Discord
+- `discord-life-ops.md` — scoped Discord memory for `#life-ops`
+- `discord-travel-fun.md` — scoped Discord memory for `#travel-fun`
+- `discord-saas-build.md` — scoped Discord memory for `#saas-build`
+- `discord-channel-index.md` — mapping of Discord channel ids/names to topic files
 
 ## Notes
 
