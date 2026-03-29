@@ -1,6 +1,7 @@
 # Backlog
 
 ## Now
+- [x] Draft implementation-ready import schema/types and pipeline outline
 - [x] Draft MVP ingestion field contract and validation rules
 - [x] Review Brian sample workbook inputs and draft CSV ingestion spec v0
 - [x] Draft initial backend/domain model
