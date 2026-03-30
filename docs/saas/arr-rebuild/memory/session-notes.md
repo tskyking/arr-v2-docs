@@ -19,3 +19,4 @@
 - Drafted MVP ingestion field contract and validation rules from Brian sample workbook structure.
 - Drafted implementation-ready import type docs, normalized import bundle shape, pipeline outline, and initial review reason codes.
 - Drafted onboarding, roles, permissions, and approval model v0 for ARR V2.
+- Compared legacy spreadsheet variant against current canonical model and identified refinements around contract metadata, renewal deltas, classification adjustment workflow, and comments/issues tracking.

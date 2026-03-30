@@ -249,3 +249,16 @@ The ingestion layer should normalize source exports into a contract-aware schema
 - manual adjustment metadata
 
 That gives the ARR application a stable foundation and keeps the reporting logic from being overloaded with source-format chaos.
+
+
+### 12. Notes / Issues (Recommended)
+Represents lightweight business comments, pending renewal notes, and issue tracking tied to customers, contracts, or review items.
+
+Key examples:
+- note id
+- related entity type/id
+- status
+- owner
+- note/comment text
+- created by
+- created at

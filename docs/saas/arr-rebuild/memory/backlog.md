@@ -1,6 +1,7 @@
 # Backlog
 
 ## Now
+- [x] Compare legacy spreadsheet against canonical model and identify gaps
 - [x] Draft onboarding and roles/permissions model
 - [x] Draft implementation-ready import schema/types and pipeline outline
 - [x] Draft MVP ingestion field contract and validation rules
