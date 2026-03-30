@@ -11,6 +11,7 @@
 
 ## Next
 - turn markdown domain model into implementation-ready schema/types
+- reflect spreadsheet-driven refinements in implementation model
 - define first MVP field set in more exact form
 - map legacy backend objects to new domain concepts
 - identify first endpoints/use-cases

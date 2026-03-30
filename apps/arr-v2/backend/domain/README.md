@@ -10,3 +10,8 @@ Initial priority:
 - ARR policy / overrides
 - audit trail
 - import lineage
+
+Additional refinement priorities:
+- comments/issues and classification adjustments
+- richer contract metadata
+- renewal-delta support

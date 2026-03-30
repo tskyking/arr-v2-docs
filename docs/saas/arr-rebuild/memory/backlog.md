@@ -1,6 +1,7 @@
 # Backlog
 
 ## Now
+- [x] Refine implementation-side domain model from spreadsheet gap analysis
 - [x] Compare legacy spreadsheet against canonical model and identify gaps
 - [x] Draft onboarding and roles/permissions model
 - [x] Draft implementation-ready import schema/types and pipeline outline

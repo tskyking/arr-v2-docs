@@ -20,6 +20,7 @@ Fields:
 - end_date
 - cancellation_date (optional)
 - status
+- renewal_arr_delta (optional)
 - notes (optional)
 - created_at
 - updated_at
