@@ -21,3 +21,4 @@
 - Drafted onboarding, roles, permissions, and approval model v0 for ARR V2.
 - Compared legacy spreadsheet variant against current canonical model and identified refinements around contract metadata, renewal deltas, classification adjustment workflow, and comments/issues tracking.
 - Refined implementation-side domain model to include richer contract metadata, renewal delta support, business notes/issues, and classification adjustment workflow support.
+- Started importer code skeleton with input types, constants, parsing utilities, header validation, and normalized import/review-flag generation.
