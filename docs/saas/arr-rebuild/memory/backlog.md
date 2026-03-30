@@ -1,6 +1,7 @@
 # Backlog
 
 ## Now
+- [x] Add workbook reader boundary and sheet detection layer
 - [x] Start importer code skeleton
 - [x] Refine implementation-side domain model from spreadsheet gap analysis
 - [x] Compare legacy spreadsheet against canonical model and identify gaps

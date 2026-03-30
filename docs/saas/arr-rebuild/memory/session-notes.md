@@ -22,3 +22,4 @@
 - Compared legacy spreadsheet variant against current canonical model and identified refinements around contract metadata, renewal deltas, classification adjustment workflow, and comments/issues tracking.
 - Refined implementation-side domain model to include richer contract metadata, renewal delta support, business notes/issues, and classification adjustment workflow support.
 - Started importer code skeleton with input types, constants, parsing utilities, header validation, and normalized import/review-flag generation.
+- Added workbook-reader boundary, sheet-detection heuristics, and workbook-to-import-bundle integration boundary for importer skeleton.
