@@ -1,6 +1,7 @@
 # Backlog
 
 ## Now
+- [x] Implement actual XLSX parsing for sample workbooks
 - [x] Add workbook reader boundary and sheet detection layer
 - [x] Start importer code skeleton
 - [x] Refine implementation-side domain model from spreadsheet gap analysis

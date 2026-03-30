@@ -1,0 +1,16 @@
+{
+  "name": "arr-v2-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "import:demo": "tsx services/imports/src/demo.ts"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "fast-xml-parser": "^4.5.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

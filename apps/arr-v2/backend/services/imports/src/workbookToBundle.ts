@@ -1,39 +1,127 @@
-import type { WorkbookImportBundle } from './types';
+import type { WorkbookImportBundle, TransactionDetailRow, ProductServiceMappingRow, RecognitionAssumptionRow } from './types';
 import type { RawSheetTable, RawWorkbook } from './readers/xlsxXmlReader';
 import { detectWorkbookSheets } from './sheetDetection';
+import { parseDateLike, parseNumber } from './utils';
 
-function notImplemented(name: string): never {
-  throw new Error(`${name} is not implemented yet.`);
+function findHeaderRowIndex(rows: string[][], requiredHeaders: string[]): number {
+  return rows.findIndex((row) => {
+    const normalized = row.map((c) => String(c).trim().toLowerCase());
+    return requiredHeaders.every((h) => normalized.includes(h.toLowerCase()));
+  });
 }
 
-export function parseTransactionDetailSheet(_sheet: RawSheetTable) {
-  return notImplemented('parseTransactionDetailSheet');
+function buildHeaderIndex(row: string[]): Map<string, number> {
+  const map = new Map<string, number>();
+  row.forEach((value, index) => map.set(String(value).trim().toLowerCase(), index));
+  return map;
 }
 
-export function parseProductServiceMappingSheet(_sheet: RawSheetTable) {
-  return notImplemented('parseProductServiceMappingSheet');
+function getCell(row: string[], headerMap: Map<string, number>, ...names: string[]): string {
+  for (const name of names) {
+    const idx = headerMap.get(name.toLowerCase());
+    if (idx !== undefined) return row[idx] ?? '';
+  }
+  return '';
 }
 
-export function parseRecognitionAssumptionsSheet(_sheet: RawSheetTable) {
-  return notImplemented('parseRecognitionAssumptionsSheet');
+export function parseTransactionDetailSheet(sheet: RawSheetTable): TransactionDetailRow[] {
+  const headerIndex = findHeaderRowIndex(sheet.rows, ['customer', 'product/service', 'amount']);
+  if (headerIndex < 0) throw new Error('Could not locate transaction detail header row');
+  const headers = buildHeaderIndex(sheet.rows[headerIndex]);
+  const dataRows = sheet.rows.slice(headerIndex + 1).filter((row) => row.some((c) => String(c).trim() !== ''));
+
+  return dataRows.map((row, i) => ({
+    customerName: getCell(row, headers, 'customer'),
+    invoiceDate: getCell(row, headers, 'date', 'invoice date'),
+    transactionType: getCell(row, headers, 'transaction type'),
+    invoiceNumber: getCell(row, headers, 'num', 'invoice number'),
+    productService: getCell(row, headers, 'product/service'),
+    memoDescription: getCell(row, headers, 'memo/description') || undefined,
+    quantity: parseNumber(getCell(row, headers, 'qty')) ?? 0,
+    salesPrice: parseNumber(getCell(row, headers, 'sales price')) ?? 0,
+    amount: parseNumber(getCell(row, headers, 'amount')) ?? 0,
+    subscriptionStartDate: parseDateLike(getCell(row, headers, 'subscription start date')),
+    subscriptionEndDate: parseDateLike(getCell(row, headers, 'subscription end date')),
+    account: getCell(row, headers, 'account') || undefined,
+    className: getCell(row, headers, 'class') || undefined,
+    balance: parseNumber(getCell(row, headers, 'balance')),
+    sourceRowNumber: headerIndex + i + 2,
+  }));
 }
 
-export function parseAliasSheet(_sheet: RawSheetTable) {
-  return notImplemented('parseAliasSheet');
+export function parseProductServiceMappingSheet(sheet: RawSheetTable): ProductServiceMappingRow[] {
+  const headerIndex = findHeaderRowIndex(sheet.rows, ['product/service']);
+  if (headerIndex < 0) throw new Error('Could not locate product/service mapping header row');
+  const headerRow = sheet.rows[headerIndex];
+  const headers = buildHeaderIndex(headerRow);
+  const categoryHeaders = headerRow.filter((h) => String(h).trim() !== '' && String(h).trim().toLowerCase() !== 'product/service');
+  const dataRows = sheet.rows.slice(headerIndex + 1).filter((row) => row.some((c) => String(c).trim() !== ''));
+
+  return dataRows.map((row, i) => {
+    const productService = getCell(row, headers, 'product/service');
+    const categoryFlags: Record<string, boolean> = {};
+    for (const category of categoryHeaders) {
+      const value = getCell(row, headers, category);
+      categoryFlags[category] = String(value).trim().toLowerCase() === 'yes';
+    }
+    const resolved = Object.entries(categoryFlags).filter(([, v]) => v).map(([k]) => k);
+    return {
+      productService,
+      categoryFlags,
+      resolvedPrimaryCategory: resolved.length === 1 ? resolved[0] : undefined,
+      sourceRowNumber: headerIndex + i + 2,
+    };
+  });
+}
+
+export function parseRecognitionAssumptionsSheet(sheet: RawSheetTable): RecognitionAssumptionRow[] {
+  const dataRows = sheet.rows.filter((row) => row.some((c) => String(c).trim() !== ''));
+  const assumptionRows = dataRows.slice(1).filter((row) => row[0] && row[1]);
+
+  return assumptionRows.map((row, i) => {
+    const categoryName = String(row[0] ?? '').trim();
+    const rawRuleText = String(row[1] ?? '').trim();
+    let resolvedRuleType: string | undefined;
+    const lower = rawRuleText.toLowerCase();
+    if (lower.includes('subscription start date') && lower.includes('subscription end date')) {
+      resolvedRuleType = 'subscription_term';
+    } else if (lower.includes('one year') && lower.includes('invoice date')) {
+      resolvedRuleType = 'fallback_one_year_from_invoice';
+    } else if (lower.includes('three years') && lower.includes('invoice date')) {
+      resolvedRuleType = 'fixed_36_months_from_invoice';
+    } else if (lower.includes('all revenue on the invoice date')) {
+      resolvedRuleType = 'invoice_date_immediate';
+    }
+    return {
+      categoryName,
+      rawRuleText,
+      resolvedRuleType,
+      sourceRowNumber: i + 2,
+    };
+  });
+}
+
+export function parseAliasSheet(sheet: RawSheetTable): Record<string, string>[] {
+  const headerIndex = findHeaderRowIndex(sheet.rows, ['customer from qb', 'customer', 'product/service']);
+  if (headerIndex < 0) return [];
+  const headers = sheet.rows[headerIndex];
+  const dataRows = sheet.rows.slice(headerIndex + 1).filter((row) => row.some((c) => String(c).trim() !== ''));
+  return dataRows.map((row) => {
+    const out: Record<string, string> = {};
+    headers.forEach((header, idx) => {
+      const key = String(header ?? '').trim();
+      if (key) out[key] = String(row[idx] ?? '').trim();
+    });
+    return out;
+  });
 }
 
 export function workbookToImportBundle(workbook: RawWorkbook): WorkbookImportBundle {
   const detected = detectWorkbookSheets(workbook);
 
-  if (!detected.transactionDetail) {
-    throw new Error('Could not detect transaction detail sheet.');
-  }
-  if (!detected.productServiceMappings) {
-    throw new Error('Could not detect product/service mapping sheet.');
-  }
-  if (!detected.recognitionAssumptions) {
-    throw new Error('Could not detect recognition assumptions sheet.');
-  }
+  if (!detected.transactionDetail) throw new Error('Could not detect transaction detail sheet.');
+  if (!detected.productServiceMappings) throw new Error('Could not detect product/service mapping sheet.');
+  if (!detected.recognitionAssumptions) throw new Error('Could not detect recognition assumptions sheet.');
 
   return {
     transactionDetailRows: parseTransactionDetailSheet(detected.transactionDetail),

@@ -23,3 +23,4 @@
 - Refined implementation-side domain model to include richer contract metadata, renewal delta support, business notes/issues, and classification adjustment workflow support.
 - Started importer code skeleton with input types, constants, parsing utilities, header validation, and normalized import/review-flag generation.
 - Added workbook-reader boundary, sheet-detection heuristics, and workbook-to-import-bundle integration boundary for importer skeleton.
+- Implemented actual XLSX parsing, workbook-to-bundle parsing, and demo import run against Brian sample workbook.
