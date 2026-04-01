@@ -127,7 +127,10 @@ export function readXlsxWorkbook(filePath: string): RawWorkbook {
     const rid = sheet['@_r:id'];
     const target = relMap.get(rid);
     if (!target) throw new Error(`Missing relationship target for sheet ${sheet['@_name']}`);
-    const sheetPath = target.startsWith('xl/') ? target : `xl/${target}`;
+    // Normalize path: some XLSX generators use ../xl/ or bare worksheet names
+    let sheetPath = target;
+    if (sheetPath.startsWith('../')) sheetPath = sheetPath.replace(/^\.\.\//, '');
+    if (!sheetPath.startsWith('xl/')) sheetPath = `xl/${sheetPath}`;
     return {
       name: sheet['@_name'],
       rows: readSheetRows(zip, sheetPath, sharedStrings),

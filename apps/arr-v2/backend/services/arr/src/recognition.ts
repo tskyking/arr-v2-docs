@@ -20,7 +20,10 @@ function computeArrContribution(amount: number, start: Date, end: Date, ruleType
   if (ruleType === 'invoice_date_immediate') return 0;
   const days = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   if (days <= 0) return 0;
-  return (amount / days) * 365;
+  // Use actual days in start year to avoid leap-year distortion (~0.27% error otherwise)
+  const year = start.getUTCFullYear();
+  const daysInYear = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
+  return (amount / days) * daysInYear;
 }
 
 export function recognizeRow(row: NormalizedImportRow): RevenueSegment | null {

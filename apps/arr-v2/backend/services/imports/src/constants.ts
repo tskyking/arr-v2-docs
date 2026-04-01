@@ -11,5 +11,10 @@ export const REQUIRED_TRANSACTION_COLUMNS = [
 
 export const RECURRING_CATEGORY_HINTS = new Set([
   'Dashboard Subscription',
-  'Website Hosting / Support Subscription?',
+  'Website Hosting / Support Subscription?',  // trailing ? is intentional — matches the workbook category name
 ]);
+
+// Normalized category names (strip trailing ? for display/matching when needed)
+export function normalizeCategoryName(name: string): string {
+  return name.replace(/\?$/, '').trim();
+}

@@ -32,7 +32,12 @@ export function addYears(d: Date, years: number): Date {
 
 export function addMonths(d: Date, months: number): Date {
   const result = new Date(d);
-  result.setUTCMonth(result.getUTCMonth() + months);
+  const targetMonth = result.getUTCMonth() + months;
+  const targetYear = result.getUTCFullYear() + Math.floor(targetMonth / 12);
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+  // Clamp to last day of target month to avoid overflow (e.g. Jan 31 + 1 month = Feb 28/29)
+  const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+  result.setUTCFullYear(targetYear, normalizedMonth, Math.min(d.getUTCDate(), lastDay));
   return result;
 }
 

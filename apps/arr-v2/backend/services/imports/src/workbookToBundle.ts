@@ -81,13 +81,26 @@ export function parseProductServiceMappingSheet(sheet: RawSheetTable): ProductSe
   });
 }
 
+// Known header/title values that should not be treated as assumption data rows
+const ASSUMPTION_HEADER_STRINGS = new Set([
+  'revenue recognition period assumptions',
+  'category',
+  'rule',
+  'revenue category',
+  'recognition rule',
+]);
+
 export function parseRecognitionAssumptionsSheet(sheet: RawSheetTable): RecognitionAssumptionRow[] {
   // Structure: row 0 is a title row with empty col 0 and header text in col 1
   // Data rows: col 0 is empty, col 1 is category name, col 2 is rule text
   const dataRows = sheet.rows.filter((row) => {
     const col1 = String(row[1] ?? '').trim();
     const col2 = String(row[2] ?? '').trim();
-    return col1 !== '' && col2 !== ''; // must have both category and rule
+    if (col1 === '' || col2 === '') return false;
+    // Skip rows that look like header/title rows
+    if (ASSUMPTION_HEADER_STRINGS.has(col1.toLowerCase())) return false;
+    if (ASSUMPTION_HEADER_STRINGS.has(col2.toLowerCase())) return false;
+    return true;
   });
 
   return dataRows.map((row, i) => {
