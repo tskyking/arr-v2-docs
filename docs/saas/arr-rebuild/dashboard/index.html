@@ -74,17 +74,17 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, next actions, and cost awareness.</p>
       <div>
-        <span class="badge active">Current Phase: Discovery → Planning</span>
-        <span class="badge todo">Target: MVP Definition</span>
+        <span class="badge active">Current Phase: Importer Implementation</span>
+        <span class="badge todo">Target: Core ARR pipeline + Review UI</span>
       </div>
     </div>
 
     <div class="grid">
       <div class="card col-4">
         <h3>Overall Progress</h3>
-        <div class="metric">24%</div>
-        <div class="sub">Source recovery, architecture alignment, planning docs, and memory system are in place. Now moving into MVP definition.</div>
-        <div style="margin-top:12px" class="progress"><div></div></div>
+        <div class="metric">38%</div>
+        <div class="sub">Foundation, domain model, and ingestion pipeline built. Real XLSX parsing working against Brian's sample. Refining correctness; moving toward backend API + review UI.</div>
+        <div style="margin-top:12px" class="progress"><div style="width:38%"></div></div>
       </div>
 
       <div class="card col-4">
@@ -95,9 +95,9 @@
       <div class="card col-4">
         <h3>Next 3 Actions</h3>
         <ul>
-          <li>Review working plan with Todd and Brian</li>
-          <li>Collect/anonymize sample source files for ingestion testing</li>
-          <li>Define MVP canonical schema and first supported input formats</li>
+          <li>Fix product/service mapping resolution accuracy</li>
+          <li>Fix exec approval blocker (enable Web UI or Discord approvals)</li>
+          <li>Wire up backend API layer for import pipeline</li>
         </ul>
       </div>
 
@@ -112,11 +112,11 @@
             <strong>2. Architecture Direction Chosen</strong>
             <p>Agreed on V2 rebuild direction with separate ingestion/mapping layer and ARR/reporting application.</p>
           </div>
-          <div class="step active">
+          <div class="step done">
             <strong>3. MVP Planning & Canonical Schema</strong>
             <p>Define initial schema, required fields, first supported file patterns, and MVP outputs.</p>
           </div>
-          <div class="step">
+          <div class="step active">
             <strong>4. Ingestion Prototype</strong>
             <p>Build mapping/normalization flow for first source formats and ambiguity handling.</p>
           </div>
@@ -146,23 +146,83 @@
           <li><strong>Working plan:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Project memory system:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Brian alignment docs:</strong> <span class="pill pill-done">done</span></li>
-          <li><strong>Sample-source collection:</strong> <span class="pill pill-progress">in progress</span></li>
-          <li><strong>MVP schema:</strong> <span class="pill pill-next">next</span></li>
-          <li><strong>Prototype build:</strong> <span class="pill pill-upcoming">upcoming</span></li>
+          <li><strong>Sample-source collection:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>MVP schema / ingestion spec:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>XLSX parser + importer skeleton:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Mapping/assumption accuracy:</strong> <span class="pill pill-progress">in progress</span></li>
+          <li><strong>Backend API layer:</strong> <span class="pill pill-next">next</span></li>
+          <li><strong>Review UI:</strong> <span class="pill pill-upcoming">upcoming</span></li>
         </ul>
       </div>
 
-      <div class="card col-6">
-        <h2>Cost / Usage Notes</h2>
-        <p>This section is for <strong>project-level cost awareness</strong>, especially anything that could create external spend.</p>
-        <ul>
-          <li><strong>Brave web search:</strong> used for lightweight research and references. Usually low-cost, but still an external API dependency.</li>
-          <li><strong>Other remote AI/search providers:</strong> may create usage costs if enabled later for memory retrieval or web research.</li>
-          <li><strong>Current file-based project memory:</strong> no external API cost by itself.</li>
-          <li><strong>Local memory search is currently unavailable</strong> on this machine, so structured docs are the current workaround.</li>
-          <li><strong>Hosting costs:</strong> not active yet for this project; staging/production decisions still pending.</li>
-        </ul>
-        <p class="sub">Note: detailed token/API billing is not yet wired into this dashboard. We can add a manual cost log or a more automated usage tracker later.</p>
+      <div class="card col-12">
+        <h2>💰 Token &amp; Cost Tracker</h2>
+        <p class="sub">Model: <strong>anthropic/claude-sonnet-4-6</strong> &nbsp;|&nbsp; Rates (approx): $3/MTok input · $15/MTok output · cache reads cheaper</p>
+        <div class="grid" style="margin-top:12px">
+          <div class="col-4" style="background:#f0f7ff;border-radius:12px;padding:12px;border:1px solid #c8d5e8">
+            <div class="sub">Estimated total spent (all sessions)</div>
+            <div class="metric">~$2.10</div>
+            <div class="sub">Last updated: 2026-04-01</div>
+          </div>
+          <div class="col-4" style="background:#f0f7ff;border-radius:12px;padding:12px;border:1px solid #c8d5e8">
+            <div class="sub">Budget remaining (of $100)</div>
+            <div class="metric" style="color:#059669">~$97.90</div>
+            <div class="sub">Rough estimate — actual may vary slightly</div>
+          </div>
+          <div class="col-4" style="background:#f0f7ff;border-radius:12px;padding:12px;border:1px solid #c8d5e8">
+            <div class="sub">Sessions logged</div>
+            <div class="metric">6</div>
+            <div class="sub">Since 2026-03-24</div>
+          </div>
+        </div>
+        <table style="width:100%;margin-top:16px;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:#edf3fb">
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #c8d5e8">Date</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #c8d5e8">Work Done</th>
+              <th style="text-align:right;padding:8px;border-bottom:1px solid #c8d5e8">Input Tokens (est.)</th>
+              <th style="text-align:right;padding:8px;border-bottom:1px solid #c8d5e8">Output Tokens (est.)</th>
+              <th style="text-align:right;padding:8px;border-bottom:1px solid #c8d5e8">Est. Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">2026-03-24</td>
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">Source recovery, reference collection, planning docs</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~80k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~12k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~$0.42</td>
+            </tr>
+            <tr style="background:#f8fbff">
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">2026-03-25</td>
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">Architecture, domain model, Brian alignment docs, dashboard</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~90k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~14k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~$0.48</td>
+            </tr>
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">2026-03-29</td>
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">Technical foundation, V2 skeleton, ingestion spec, importer skeleton, XLSX parser, domain model refinement</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~180k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~30k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~$0.99</td>
+            </tr>
+            <tr style="background:#f8fbff">
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">2026-03-30 – 04-01</td>
+              <td style="padding:8px;border-bottom:1px solid #e5ebf5">Status updates, scope discussion, exec approval blocker, dashboard update</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~30k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~8k</td>
+              <td style="text-align:right;padding:8px;border-bottom:1px solid #e5ebf5">~$0.21</td>
+            </tr>
+            <tr style="font-weight:700;background:#edf3fb">
+              <td style="padding:8px" colspan="2">Total estimated</td>
+              <td style="text-align:right;padding:8px">~380k</td>
+              <td style="text-align:right;padding:8px">~64k</td>
+              <td style="text-align:right;padding:8px">~$2.10</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="sub" style="margin-top:8px">⚠️ These are estimates based on context window sizes and session counts — not exact billing figures. Check your Anthropic API dashboard for precise usage. I'll update this table after each significant work session.</p>
       </div>
 
       <div class="card col-6">
