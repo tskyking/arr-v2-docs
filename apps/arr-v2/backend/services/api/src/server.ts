@@ -1,0 +1,154 @@
+/**
+ * ARR V2 API Server
+ * Minimal HTTP server using Node's built-in http module — no framework dependency yet.
+ * Routes:
+ *   POST /imports                     — upload and process a workbook
+ *   GET  /imports                     — list imports
+ *   GET  /imports/:id/summary         — import summary
+ *   GET  /imports/:id/arr             — ARR timeseries
+ *   GET  /imports/:id/review          — review queue
+ *   GET  /health                      — health check
+ */
+
+import http from 'node:http';
+import { createReadStream } from 'node:fs';
+import { writeFile, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import {
+  processImport,
+  getImportSummary,
+  getArrTimeseries,
+  getReviewQueue,
+  listImports,
+} from './importService.js';
+
+const PORT = Number(process.env.PORT ?? 3001);
+
+function json(res: http.ServerResponse, status: number, data: unknown) {
+  const body = JSON.stringify(data, null, 2);
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  res.end(body);
+}
+
+function err(res: http.ServerResponse, status: number, code: string, message: string) {
+  json(res, status, { code, message });
+}
+
+async function parseBody(req: http.IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  const path = url.pathname.replace(/\/$/, '') || '/';
+  const method = req.method ?? 'GET';
+
+  // OPTIONS preflight
+  if (method === 'OPTIONS') {
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
+    res.end();
+    return;
+  }
+
+  try {
+    // Health
+    if (path === '/health' && method === 'GET') {
+      json(res, 200, { status: 'ok', ts: new Date().toISOString() });
+      return;
+    }
+
+    // List imports
+    if (path === '/imports' && method === 'GET') {
+      json(res, 200, { imports: listImports() });
+      return;
+    }
+
+    // Upload + process import
+    if (path === '/imports' && method === 'POST') {
+      const contentType = req.headers['content-type'] ?? '';
+      let filePath: string;
+      let tempFile = false;
+
+      if (contentType.includes('application/json')) {
+        // Accept { filePath: "..." } for local testing
+        const body = await parseBody(req);
+        const data = JSON.parse(body.toString());
+        if (!data.filePath) { err(res, 400, 'MISSING_FILE_PATH', 'filePath required'); return; }
+        filePath = data.filePath;
+      } else if (contentType.includes('multipart/form-data') || contentType.includes('application/octet-stream')) {
+        // Save uploaded file to tmp
+        const tmpPath = join(tmpdir(), `arr-import-${randomUUID()}.xlsx`);
+        const body = await parseBody(req);
+        await writeFile(tmpPath, body);
+        filePath = tmpPath;
+        tempFile = true;
+      } else {
+        err(res, 415, 'UNSUPPORTED_MEDIA_TYPE', 'Send JSON {filePath} or multipart/form-data'); return;
+      }
+
+      try {
+        const result = processImport(filePath);
+        json(res, 200, {
+          importId: result.importId,
+          status: 'complete',
+          totalRows: result.bundle.normalizedRows.length,
+          reviewItems: result.bundle.reviewItems.length,
+          segments: result.segments.length,
+        });
+      } finally {
+        if (tempFile) await unlink(filePath).catch(() => {});
+      }
+      return;
+    }
+
+    // /imports/:id/*
+    const importMatch = path.match(/^\/imports\/([^/]+)(\/.*)?$/);
+    if (importMatch) {
+      const importId = importMatch[1];
+      const sub = importMatch[2] ?? '';
+
+      if (sub === '/summary' && method === 'GET') {
+        const summary = getImportSummary(importId);
+        if (!summary) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, summary);
+        return;
+      }
+
+      if (sub === '/arr' && method === 'GET') {
+        const from = url.searchParams.get('from') ?? undefined;
+        const to = url.searchParams.get('to') ?? undefined;
+        const ts = getArrTimeseries(importId, from, to);
+        if (!ts) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, ts);
+        return;
+      }
+
+      if (sub === '/review' && method === 'GET') {
+        const status = url.searchParams.get('status') ?? undefined;
+        const queue = getReviewQueue(importId, status);
+        if (!queue) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, queue);
+        return;
+      }
+    }
+
+    err(res, 404, 'NOT_FOUND', `No route: ${method} ${path}`);
+  } catch (e: any) {
+    console.error('API error:', e);
+    err(res, 500, 'INTERNAL_ERROR', e?.message ?? 'Unknown error');
+  }
+}
+
+const server = http.createServer(handleRequest);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`ARR V2 API running on http://0.0.0.0:${PORT}`);
+});
+
+export default server;
