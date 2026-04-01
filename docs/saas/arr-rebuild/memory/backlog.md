@@ -22,7 +22,7 @@
 - [x] Backend API layer (import, ARR timeseries, review queue endpoints)
 - [x] Frontend UI scaffold (React app skeleton)
 - [x] Review queue resolve/override workflow (PATCH endpoint + live UI actions)
-- [ ] ARR dashboard view wired to API
+- [x] ARR dashboard view wired to API
 - [ ] Define MVP ingestion flow
 - [ ] Define MVP ARR outputs and review screens
 - [ ] Identify legacy logic safe to reuse
