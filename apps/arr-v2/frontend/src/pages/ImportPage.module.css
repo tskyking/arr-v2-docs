@@ -1,0 +1,69 @@
+.page { max-width: 720px; }
+
+.heading {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.sub {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 24px;
+}
+
+.dropzone:hover {
+  border-color: var(--accent);
+  background: rgba(99,102,241,0.04);
+}
+
+.dropIcon { font-size: 32px; margin-bottom: 12px; }
+.dropLabel { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+.dropHint { font-size: 12px; color: var(--text-muted); }
+
+.orRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.orLine { flex: 1; height: 1px; background: var(--border); }
+.orText { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+.pathRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.pathInput {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  padding: 8px 12px;
+  font-family: monospace;
+}
+.pathInput:focus { outline: none; border-color: var(--accent); }
+.pathInput::placeholder { color: var(--text-muted); }
+
+.history { margin-top: 8px; }
+.historyHeading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}

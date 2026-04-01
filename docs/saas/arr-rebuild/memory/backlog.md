@@ -20,7 +20,7 @@
 
 ## Next
 - [x] Backend API layer (import, ARR timeseries, review queue endpoints)
-- [ ] Frontend UI scaffold (React app skeleton)
+- [x] Frontend UI scaffold (React app skeleton)
 - [ ] ARR dashboard view wired to API
 - [ ] Review queue UI
 - [ ] Define MVP ingestion flow

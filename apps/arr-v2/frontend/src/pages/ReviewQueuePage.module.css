@@ -1,0 +1,71 @@
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.heading {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sub { color: var(--text-muted); font-size: 13px; }
+.mono { font-family: monospace; font-size: 11px; }
+
+.summaryRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.row:hover td { background: rgba(255,255,255,0.02); }
+
+.expandedCell {
+  padding: 0 !important;
+  background: rgba(99,102,241,0.03);
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.expandedContent {
+  padding: 14px 16px;
+}
+
+.expandedMessage {
+  color: var(--text);
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.expandedMeta {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+
+.expandedActions {
+  display: flex;
+  gap: 8px;
+}
