@@ -1,10 +1,25 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useMatch } from 'react-router-dom';
 import styles from './Layout.module.css';
 import { useImportList } from '@/lib/hooks';
 
 export default function Layout() {
   const { data: imports } = useImportList();
   const navigate = useNavigate();
+
+  // Extract importId from any matching route
+  const dashboardMatch = useMatch('/dashboard/:importId');
+  const reviewMatch = useMatch('/review/:importId');
+  const activeImportId =
+    dashboardMatch?.params?.importId ??
+    reviewMatch?.params?.importId ??
+    (imports && imports.length > 0 ? imports[imports.length - 1].importId : undefined);
+
+  function handleImportChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value;
+    const current = window.location.pathname;
+    if (current.startsWith('/review')) navigate(`/review/${id}`);
+    else navigate(`/dashboard/${id}`);
+  }
 
   return (
     <div className={styles.root}>
@@ -17,16 +32,16 @@ export default function Layout() {
           <NavLink to="/import" className={({ isActive }) => isActive ? styles.activeLink : styles.link}>
             Import
           </NavLink>
-          {imports && imports.length > 0 && (
+          {activeImportId && (
             <>
               <NavLink
-                to={`/dashboard/${imports[imports.length - 1].importId}`}
+                to={`/dashboard/${activeImportId}`}
                 className={({ isActive }) => isActive ? styles.activeLink : styles.link}
               >
                 Dashboard
               </NavLink>
               <NavLink
-                to={`/review/${imports[imports.length - 1].importId}`}
+                to={`/review/${activeImportId}`}
                 className={({ isActive }) => isActive ? styles.activeLink : styles.link}
               >
                 Review Queue
@@ -39,12 +54,8 @@ export default function Layout() {
             <label className={styles.selectLabel}>Import</label>
             <select
               className={styles.select}
-              onChange={e => {
-                const id = e.target.value;
-                const current = window.location.pathname;
-                if (current.startsWith('/dashboard')) navigate(`/dashboard/${id}`);
-                else if (current.startsWith('/review')) navigate(`/review/${id}`);
-              }}
+              value={activeImportId ?? ''}
+              onChange={handleImportChange}
             >
               {[...imports].reverse().map(imp => (
                 <option key={imp.importId} value={imp.importId}>

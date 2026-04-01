@@ -39,9 +39,9 @@ export function useImportSummary(importId: string) {
   return useAsync<ImportSummary>(() => api.getImportSummary(importId), [importId]);
 }
 
-export function useArrTimeseries(importId: string, from?: string, to?: string) {
+export function useArrTimeseries(importId: string, from?: string | null, to?: string | null) {
   return useAsync<ArrTimeseries>(
-    () => api.getArrTimeseries(importId, from, to),
+    () => api.getArrTimeseries(importId, from ?? undefined, to ?? undefined),
     [importId, from, to],
   );
 }

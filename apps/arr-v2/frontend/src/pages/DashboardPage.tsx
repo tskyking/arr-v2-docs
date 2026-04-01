@@ -1,6 +1,8 @@
 /**
  * DashboardPage — ARR timeseries chart + summary stats for a given import.
+ * Includes date range filter and top-customers breakdown.
  */
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -25,34 +27,80 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
+// ─── Date range preset helpers ─────────────────────────────────────────────
+
+type Preset = 'all' | '1y' | '2y' | 'custom';
+
+function monthOffset(date: Date, months: number): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
+  return d.toISOString().slice(0, 7); // YYYY-MM
+}
+
+function toMonthStr(s: string): string {
+  // Accepts YYYY-MM or YYYY-MM-DD, returns YYYY-MM
+  return s.slice(0, 7);
+}
+
 export default function DashboardPage() {
   const { importId } = useParams<{ importId: string }>();
+
+  // ─── Date range state ──────────────────────────────────────────────────
+  const [preset, setPreset] = useState<Preset>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
   const { data: summary, loading: sumLoading, error: sumErr } = useImportSummary(importId!);
-  const { data: ts, loading: tsLoading, error: tsErr } = useArrTimeseries(importId!);
 
-  if (sumLoading || tsLoading) return <div className="loading">Loading…</div>;
+  // Derive from/to for API based on preset
+  const { fromParam, toParam } = useMemo(() => {
+    if (preset === 'all') return { fromParam: null, toParam: null };
+    if (preset === 'custom') {
+      return {
+        fromParam: customFrom || null,
+        toParam: customTo || null,
+      };
+    }
+    const months = preset === '1y' ? -12 : -24;
+    const now = new Date();
+    return {
+      fromParam: monthOffset(now, months),
+      toParam: null,
+    };
+  }, [preset, customFrom, customTo]);
+
+  const { data: ts, loading: tsLoading, error: tsErr } = useArrTimeseries(
+    importId!,
+    fromParam,
+    toParam,
+  );
+
+  if (sumLoading) return <div className="loading">Loading summary…</div>;
   if (sumErr) return <div className="error-banner">Summary error: {sumErr}</div>;
-  if (tsErr) return <div className="error-banner">Timeseries error: {tsErr}</div>;
-  if (!summary || !ts) return null;
+  if (!summary) return null;
 
-  const latestPeriod = ts.periods[ts.periods.length - 1];
-  const firstPeriod = ts.periods[0];
+  const periods = ts?.periods ?? [];
+  const latestPeriod = periods[periods.length - 1];
+  const firstPeriod = periods[0];
   const arrGrowth = latestPeriod && firstPeriod && firstPeriod.totalArr > 0
     ? (((latestPeriod.totalArr - firstPeriod.totalArr) / firstPeriod.totalArr) * 100).toFixed(1)
     : null;
 
-  // Build chart data
-  const chartData = ts.periods.map(p => ({
+  // Chart data
+  const chartData = periods.map(p => ({
     period: p.period,
     arr: p.totalArr,
     customers: p.activeCustomers,
   }));
 
   // Category breakdown from latest period
-  const categoryData = latestPeriod?.byCategory
+  const categoryData = (latestPeriod?.byCategory ?? [])
     .filter(c => c.arr > 0)
-    .slice(0, 8)
-    ?? [];
+    .slice(0, 8);
+
+  // Top customers from latest period
+  const topCustomers = (latestPeriod?.byCustomer ?? [])
+    .filter(c => c.arr > 0)
+    .slice(0, 10);
 
   return (
     <div>
@@ -71,6 +119,49 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* Date range filter */}
+      <div className={styles.filterRow}>
+        <span className={styles.filterLabel}>Period:</span>
+        {(['all', '1y', '2y', 'custom'] as Preset[]).map(p => (
+          <button
+            key={p}
+            className={preset === p ? 'primary' : 'ghost'}
+            style={{ fontSize: 12, padding: '5px 12px' }}
+            onClick={() => setPreset(p)}
+          >
+            {p === 'all' ? 'All time' : p === '1y' ? 'Last 12 mo' : p === '2y' ? 'Last 24 mo' : 'Custom'}
+          </button>
+        ))}
+        {preset === 'custom' && (
+          <span className={styles.customRange}>
+            <input
+              className={styles.dateInput}
+              type="month"
+              value={customFrom}
+              onChange={e => setCustomFrom(e.target.value)}
+              placeholder="From"
+            />
+            <span style={{ color: 'var(--text-muted)' }}>→</span>
+            <input
+              className={styles.dateInput}
+              type="month"
+              value={customTo}
+              onChange={e => setCustomTo(e.target.value)}
+              placeholder="To"
+            />
+          </span>
+        )}
+        {ts && (
+          <span className={styles.rangeInfo}>
+            {toMonthStr(ts.fromDate)} → {toMonthStr(ts.toDate)}
+            {' '}({periods.length} periods)
+          </span>
+        )}
+      </div>
+
+      {tsLoading && <div className={styles.tsLoading}>Updating…</div>}
+      {tsErr && <div className="error-banner">Timeseries error: {tsErr}</div>}
+
       {/* Stat row */}
       <div className={styles.statGrid}>
         <StatCard
@@ -85,7 +176,7 @@ export default function DashboardPage() {
         <StatCard
           label="ARR Growth"
           value={arrGrowth !== null ? `${arrGrowth}%` : '—'}
-          sub={`${firstPeriod?.period} → ${latestPeriod?.period}`}
+          sub={`${firstPeriod?.period ?? '—'} → ${latestPeriod?.period ?? '—'}`}
         />
         <StatCard
           label="Rows Imported"
@@ -151,6 +242,42 @@ export default function DashboardPage() {
               <Bar dataKey="arr" fill="var(--accent)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Top customers (latest period) */}
+      {topCustomers.length > 0 && (
+        <div className={`card ${styles.tableCard}`}>
+          <h2 className={styles.chartTitle}>Top Customers by ARR — {latestPeriod?.period}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th style={{ textAlign: 'right' }}>ARR</th>
+                <th style={{ textAlign: 'right' }}>% of Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topCustomers.map((c, i) => (
+                <tr key={c.customer}>
+                  <td style={{ color: 'var(--text-muted)', width: 32 }}>{i + 1}</td>
+                  <td>{c.customer}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(c.arr)}</td>
+                  <td style={{ textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                    {latestPeriod && latestPeriod.totalArr > 0
+                      ? `${((c.arr / latestPeriod.totalArr) * 100).toFixed(1)}%`
+                      : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(latestPeriod?.byCustomer?.length ?? 0) > 10 && (
+            <div style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: 12 }}>
+              + {(latestPeriod!.byCustomer.length - 10)} more customers
+            </div>
+          )}
         </div>
       )}
 

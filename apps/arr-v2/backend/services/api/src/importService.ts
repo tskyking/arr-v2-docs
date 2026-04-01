@@ -123,6 +123,9 @@ export function getArrTimeseries(importId: string, from?: string, to?: string): 
       byCategory: Object.entries(snap.byCategory)
         .map(([category, arr]) => ({ category, arr }))
         .sort((a, b) => b.arr - a.arr),
+      byCustomer: Object.entries(snap.byCustomer)
+        .map(([customer, arr]) => ({ customer, arr }))
+        .sort((a, b) => b.arr - a.arr),
     }));
 
   return { periods, fromDate, toDate };

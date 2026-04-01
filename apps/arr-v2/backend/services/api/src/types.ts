@@ -39,6 +39,7 @@ export interface ArrSnapshotResponse {
   totalArr: number;
   activeCustomers: number;
   byCategory: Array<{ category: string; arr: number }>;
+  byCustomer: Array<{ customer: string; arr: number }>;
 }
 
 export interface ArrTimeseriesResponse {
