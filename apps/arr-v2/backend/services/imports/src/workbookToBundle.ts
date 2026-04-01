@@ -25,10 +25,17 @@ function getCell(row: string[], headerMap: Map<string, number>, ...names: string
 }
 
 export function parseTransactionDetailSheet(sheet: RawSheetTable): TransactionDetailRow[] {
-  const headerIndex = findHeaderRowIndex(sheet.rows, ['customer', 'product/service', 'amount']);
+  // Transaction sheets may have title rows at top before the real column header
+  // Find the header row by looking for a row containing 'customer' AND 'product/service'
+  const headerIndex = findHeaderRowIndex(sheet.rows, ['customer', 'product/service']);
   if (headerIndex < 0) throw new Error('Could not locate transaction detail header row');
   const headers = buildHeaderIndex(sheet.rows[headerIndex]);
-  const dataRows = sheet.rows.slice(headerIndex + 1).filter((row) => row.some((c) => String(c).trim() !== ''));
+  const dataRows = sheet.rows.slice(headerIndex + 1).filter((row) => {
+    // Skip rows where the customer cell is empty — those are subtotal/blank spacer rows
+    const customerIdx = headers.get('customer');
+    const val = customerIdx !== undefined ? String(row[customerIdx] ?? '').trim() : '';
+    return val !== '';
+  });
 
   return dataRows.map((row, i) => ({
     customerName: getCell(row, headers, 'customer'),
@@ -75,12 +82,17 @@ export function parseProductServiceMappingSheet(sheet: RawSheetTable): ProductSe
 }
 
 export function parseRecognitionAssumptionsSheet(sheet: RawSheetTable): RecognitionAssumptionRow[] {
-  const dataRows = sheet.rows.filter((row) => row.some((c) => String(c).trim() !== ''));
-  const assumptionRows = dataRows.slice(1).filter((row) => row[0] && row[1]);
+  // Structure: row 0 is a title row with empty col 0 and header text in col 1
+  // Data rows: col 0 is empty, col 1 is category name, col 2 is rule text
+  const dataRows = sheet.rows.filter((row) => {
+    const col1 = String(row[1] ?? '').trim();
+    const col2 = String(row[2] ?? '').trim();
+    return col1 !== '' && col2 !== ''; // must have both category and rule
+  });
 
-  return assumptionRows.map((row, i) => {
-    const categoryName = String(row[0] ?? '').trim();
-    const rawRuleText = String(row[1] ?? '').trim();
+  return dataRows.map((row, i) => {
+    const categoryName = String(row[1] ?? '').trim();
+    const rawRuleText = String(row[2] ?? '').trim();
     let resolvedRuleType: string | undefined;
     const lower = rawRuleText.toLowerCase();
     if (lower.includes('subscription start date') && lower.includes('subscription end date')) {

@@ -25,9 +25,30 @@ export function normalizeImportBundle(bundle: WorkbookImportBundle): NormalizedI
   const mappingByProduct = new Map(bundle.productServiceMappings.map((row) => [row.productService, row]));
   const assumptionByCategory = new Map(bundle.recognitionAssumptions.map((row) => [row.categoryName, row]));
 
+  // Build alias lookup: real QB product name -> anonymized product name
+  // Alias rows have keys like 'Product/Service per QB' -> 'Product/Service'
+  const productAliasMap = new Map<string, string>();
+  if (bundle.aliasRows) {
+    for (const alias of bundle.aliasRows) {
+      const qbName = (alias['Product/Service per QB'] ?? '').trim();
+      const anonName = (alias['Product/Service'] ?? '').trim();
+      if (qbName && anonName) productAliasMap.set(qbName, anonName);
+    }
+  }
+
+  function lookupMapping(productService: string) {
+    // Try direct lookup first (external sheet already anonymized)
+    const direct = mappingByProduct.get(productService);
+    if (direct) return direct;
+    // Try via alias (internal sheet uses real QB names)
+    const aliased = productAliasMap.get(productService);
+    if (aliased) return mappingByProduct.get(aliased);
+    return undefined;
+  }
+
   for (const row of bundle.transactionDetailRows) {
     const reviewReasons: ReviewReasonCode[] = [];
-    const mapping = mappingByProduct.get(row.productService);
+    const mapping = lookupMapping(row.productService);
     const category = resolvePrimaryCategory(mapping);
     const assumption = category ? assumptionByCategory.get(category) : undefined;
     const ruleType = resolveRuleType(assumption);

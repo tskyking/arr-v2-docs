@@ -21,25 +21,33 @@ export function detectWorkbookSheets(workbook: RawWorkbook): DetectedWorkbookShe
 
   for (const sheet of workbook.sheets) {
     const name = sheet.name.toLowerCase();
-    const headers = sheetHeaders(sheet);
 
+    // Find the actual header row (first row where all non-empty cells look like column labels)
+    const headerRowIndex = sheet.rows.findIndex((row) =>
+      row.some((c) => String(c).trim() !== '')
+    );
+    const headers = headerRowIndex >= 0 ? sheet.rows[headerRowIndex] : [];
+
+    // --- Transaction detail: prefer internal (non-external) sheet ---
     if (!detected.transactionDetail && (
-      name.includes('sales by cust detail') ||
-      name.includes('sales by customer detail') ||
-      includesAll(headers, ['customer', 'product/service', 'amount'])
+      (name.includes('sales by cust detail') || name.includes('sales by customer detail')) &&
+      !name.includes('external')
     )) {
       detected.transactionDetail = sheet;
       continue;
     }
 
+    // --- Product/service mappings: prefer explicit name match ---
     if (!detected.productServiceMappings && (
       name.includes('mapping to revenue type') ||
-      (includesAll(headers, ['product/service']) && headers.length > 2)
+      name.includes('prodsvc mapping') ||
+      name.includes('product/service mapping')
     )) {
       detected.productServiceMappings = sheet;
       continue;
     }
 
+    // --- Recognition assumptions ---
     if (!detected.recognitionAssumptions && (
       name.includes('rev rec assumptions') ||
       name.includes('revenue recognition')
@@ -48,9 +56,10 @@ export function detectWorkbookSheets(workbook: RawWorkbook): DetectedWorkbookShe
       continue;
     }
 
+    // --- Alias/anonymizer mappings ---
     if (!detected.aliasMappings && (
       name.includes('anonymizer') ||
-      (includesAll(headers, ['customer from qb', 'customer', 'product/service']) )
+      includesAll(headers, ['customer from qb'])
     )) {
       detected.aliasMappings = sheet;
       continue;
