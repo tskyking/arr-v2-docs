@@ -145,6 +145,27 @@ export async function getReviewQueue(
   return request<ReviewQueue>(`/imports/${importId}/review${qs}`);
 }
 
+export async function resolveReviewItem(
+  importId: string,
+  itemId: string,
+): Promise<ReviewItem> {
+  return request<ReviewItem>(`/imports/${importId}/review/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'resolve' }),
+  });
+}
+
+export async function overrideReviewItem(
+  importId: string,
+  itemId: string,
+  note: string,
+): Promise<ReviewItem> {
+  return request<ReviewItem>(`/imports/${importId}/review/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'override', note }),
+  });
+}
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 export async function getHealth(): Promise<{ status: string; ts: string }> {

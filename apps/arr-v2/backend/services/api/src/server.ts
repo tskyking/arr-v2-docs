@@ -21,6 +21,7 @@ import {
   getImportSummary,
   getArrTimeseries,
   getReviewQueue,
+  patchReviewItem,
   listImports,
 } from './importService.js';
 
@@ -135,6 +136,27 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         const queue = getReviewQueue(importId, status);
         if (!queue) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, queue);
+        return;
+      }
+
+      // PATCH /imports/:id/review/:itemId — resolve or override a review item
+      const reviewPatchMatch = sub.match(/^\/review\/(.+)$/);
+      if (reviewPatchMatch && method === 'PATCH') {
+        const itemId = reviewPatchMatch[1];
+        const body = await parseBody(req);
+        let payload: { action?: string; note?: string } = {};
+        try { payload = JSON.parse(body.toString()); } catch { /* ignore */ }
+
+        if (payload.action !== 'resolve' && payload.action !== 'override') {
+          err(res, 400, 'INVALID_ACTION', 'action must be "resolve" or "override"'); return;
+        }
+        if (payload.action === 'override' && !payload.note?.trim()) {
+          err(res, 400, 'NOTE_REQUIRED', 'override requires a note'); return;
+        }
+
+        const updated = patchReviewItem(importId, itemId, payload.action, payload.note);
+        if (!updated) { err(res, 404, 'NOT_FOUND', 'Review item not found'); return; }
+        json(res, 200, updated);
         return;
       }
     }

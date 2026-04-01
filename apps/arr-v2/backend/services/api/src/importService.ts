@@ -11,7 +11,7 @@ import { recognizeAll } from '../../arr/src/recognition.js';
 import { buildMonthlySnapshots } from '../../arr/src/snapshots.js';
 import type { NormalizedImportBundle } from '../../imports/src/types.js';
 import type { RevenueSegment, ArrSnapshot } from '../../arr/src/types.js';
-import type { ImportSummaryResponse, ArrTimeseriesResponse, ReviewQueueResponse } from './types.js';
+import type { ImportSummaryResponse, ArrTimeseriesResponse, ReviewQueueResponse, ReviewItem } from './types.js';
 
 export interface ImportResult {
   importId: string;
@@ -26,6 +26,20 @@ export interface ImportResult {
 
 // In-memory store for now — will be replaced with DB persistence
 const importStore = new Map<string, ImportResult>();
+
+// Per-import map of itemId → override state
+interface ReviewOverride {
+  status: 'resolved' | 'overridden';
+  resolvedAt: string;
+  resolvedBy: string;
+  overrideNote?: string;
+}
+const reviewOverrides = new Map<string, ReviewOverride>();
+
+// Stable deterministic item ID used by both getReviewQueue and patchReviewItem
+function makeItemId(importId: string, sourceRowNumber: number, idx: number): string {
+  return `${importId}-${sourceRowNumber}-${idx}`;
+}
 
 export function processImport(filePath: string): ImportResult {
   const importId = randomUUID();
@@ -118,27 +132,82 @@ export function getReviewQueue(importId: string, status?: string): ReviewQueueRe
   const result = importStore.get(importId);
   if (!result) return null;
 
-  const items = result.bundle.reviewItems
-    .filter(item => !status || status === 'open')
-    .map((item, idx) => ({
-      id: `${importId}-${item.sourceRowNumber}-${idx}`,
+  const allItems = result.bundle.reviewItems.map((item, idx) => {
+    const id = makeItemId(importId, item.sourceRowNumber, idx);
+    const override = reviewOverrides.get(id);
+    const row = result.bundle.normalizedRows[item.sourceRowNumber - 1];
+    return {
+      id,
       importId,
       sourceRowNumber: item.sourceRowNumber,
       severity: item.severity as 'warning' | 'error',
       reasonCode: item.reasonCode,
       message: item.message,
-      customerName: result.bundle.normalizedRows[item.sourceRowNumber - 1]?.siteName ?? '',
-      productService: result.bundle.normalizedRows[item.sourceRowNumber - 1]?.productService ?? '',
-      amount: result.bundle.normalizedRows[item.sourceRowNumber - 1]?.amount ?? 0,
-      invoiceDate: result.bundle.normalizedRows[item.sourceRowNumber - 1]?.invoiceDate ?? '',
-      status: 'open' as const,
-    }));
+      customerName: row?.siteName ?? '',
+      productService: row?.productService ?? '',
+      amount: row?.amount ?? 0,
+      invoiceDate: row?.invoiceDate ?? '',
+      status: override?.status ?? ('open' as 'open' | 'resolved' | 'overridden'),
+      resolvedAt: override?.resolvedAt,
+      resolvedBy: override?.resolvedBy,
+      overrideNote: override?.overrideNote,
+    };
+  });
+
+  const filtered = status && status !== 'all'
+    ? allItems.filter(i => i.status === status)
+    : allItems;
+
+  const resolvedCount = allItems.filter(i => i.status === 'resolved' || i.status === 'overridden').length;
 
   return {
-    items,
-    total: items.length,
-    openCount: items.length,
-    resolvedCount: 0,
+    items: filtered,
+    total: allItems.length,
+    openCount: allItems.filter(i => i.status === 'open').length,
+    resolvedCount,
+  };
+}
+
+export function patchReviewItem(
+  importId: string,
+  itemId: string,
+  action: 'resolve' | 'override',
+  note?: string,
+): ReviewItem | null {
+  const result = importStore.get(importId);
+  if (!result) return null;
+
+  // Verify the itemId belongs to this import
+  const idx = result.bundle.reviewItems.findIndex((item, i) =>
+    makeItemId(importId, item.sourceRowNumber, i) === itemId
+  );
+  if (idx === -1) return null;
+
+  const item = result.bundle.reviewItems[idx];
+  const row = result.bundle.normalizedRows[item.sourceRowNumber - 1];
+  const override: ReviewOverride = {
+    status: action === 'override' ? 'overridden' : 'resolved',
+    resolvedAt: new Date().toISOString(),
+    resolvedBy: 'user',  // placeholder until auth is added
+    overrideNote: note,
+  };
+  reviewOverrides.set(itemId, override);
+
+  return {
+    id: itemId,
+    importId,
+    sourceRowNumber: item.sourceRowNumber,
+    severity: item.severity as 'warning' | 'error',
+    reasonCode: item.reasonCode,
+    message: item.message,
+    customerName: row?.siteName ?? '',
+    productService: row?.productService ?? '',
+    amount: row?.amount ?? 0,
+    invoiceDate: row?.invoiceDate ?? '',
+    status: override.status,
+    resolvedAt: override.resolvedAt,
+    resolvedBy: override.resolvedBy,
+    overrideNote: override.overrideNote,
   };
 }
 

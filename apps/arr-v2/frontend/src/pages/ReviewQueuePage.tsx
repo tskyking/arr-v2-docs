@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useReviewQueue } from '@/lib/hooks';
+import { resolveReviewItem, overrideReviewItem } from '@/lib/api';
 import styles from './ReviewQueuePage.module.css';
 import type { ReviewItem } from '@/lib/api';
 
@@ -16,16 +17,65 @@ function formatAmount(n: number) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }
 
-function ReviewRow({ item }: { item: ReviewItem }) {
+function ReviewRow({
+  item,
+  onUpdated,
+}: {
+  item: ReviewItem;
+  onUpdated: (updated: ReviewItem) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [showOverride, setShowOverride] = useState(false);
+  const [overrideNote, setOverrideNote] = useState('');
+
+  const isOpen = item.status === 'open';
+
+  async function handleResolve(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!isOpen) return;
+    setActing(true);
+    setActionError(null);
+    try {
+      const updated = await resolveReviewItem(item.importId, item.id);
+      onUpdated(updated);
+    } catch (err: any) {
+      setActionError(err.message ?? 'Failed to resolve');
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleOverrideSubmit(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!overrideNote.trim()) { setActionError('A note is required for overrides.'); return; }
+    setActing(true);
+    setActionError(null);
+    try {
+      const updated = await overrideReviewItem(item.importId, item.id, overrideNote.trim());
+      onUpdated(updated);
+      setShowOverride(false);
+      setOverrideNote('');
+    } catch (err: any) {
+      setActionError(err.message ?? 'Failed to override');
+    } finally {
+      setActing(false);
+    }
+  }
+
+  const statusPill = item.status !== 'open'
+    ? <span className={`badge ${item.status === 'resolved' ? 'success' : 'warning'}`}>{item.status}</span>
+    : null;
+
   return (
     <>
       <tr
         className={styles.row}
         onClick={() => setExpanded(e => !e)}
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: 'pointer', opacity: item.status !== 'open' ? 0.6 : 1 }}
       >
-        <td><SeverityBadge severity={item.severity} /></td>
+        <td><SeverityBadge severity={item.severity} />{statusPill && <> {statusPill}</>}</td>
         <td className={styles.mono}>{item.reasonCode}</td>
         <td>{item.customerName || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
         <td>{item.productService || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
@@ -45,16 +95,60 @@ function ReviewRow({ item }: { item: ReviewItem }) {
               <div className={styles.expandedMessage}>{item.message}</div>
               <div className={styles.expandedMeta}>
                 ID: <span className={styles.mono}>{item.id}</span>
+                {item.resolvedAt && (
+                  <span style={{ marginLeft: 16, color: 'var(--text-muted)' }}>
+                    {item.status === 'overridden' ? 'Overridden' : 'Resolved'} at{' '}
+                    {new Date(item.resolvedAt).toLocaleString()}
+                    {item.overrideNote && ` — "${item.overrideNote}"`}
+                  </span>
+                )}
               </div>
-              {/* Future: resolve/override actions will go here */}
-              <div className={styles.expandedActions}>
-                <button className="ghost" style={{ fontSize: 12 }} disabled>
-                  ✓ Mark resolved (coming soon)
-                </button>
-                <button className="ghost" style={{ fontSize: 12 }} disabled>
-                  ↩ Override (coming soon)
-                </button>
-              </div>
+
+              {actionError && (
+                <div className="error-banner" style={{ marginTop: 8, fontSize: 12 }}>{actionError}</div>
+              )}
+
+              {isOpen && !showOverride && (
+                <div className={styles.expandedActions}>
+                  <button
+                    className="ghost"
+                    style={{ fontSize: 12 }}
+                    onClick={handleResolve}
+                    disabled={acting}
+                  >
+                    {acting ? '…' : '✓ Mark resolved'}
+                  </button>
+                  <button
+                    className="ghost"
+                    style={{ fontSize: 12 }}
+                    onClick={e => { e.stopPropagation(); setShowOverride(true); }}
+                    disabled={acting}
+                  >
+                    ↩ Override
+                  </button>
+                </div>
+              )}
+
+              {isOpen && showOverride && (
+                <div className={styles.overrideForm} onClick={e => e.stopPropagation()}>
+                  <textarea
+                    className={styles.overrideNote}
+                    placeholder="Explain why this item is being overridden…"
+                    value={overrideNote}
+                    onChange={e => setOverrideNote(e.target.value)}
+                    rows={2}
+                    disabled={acting}
+                  />
+                  <div className={styles.expandedActions}>
+                    <button className="primary" style={{ fontSize: 12 }} onClick={handleOverrideSubmit} disabled={acting || !overrideNote.trim()}>
+                      {acting ? '…' : 'Submit override'}
+                    </button>
+                    <button className="ghost" style={{ fontSize: 12 }} onClick={e => { e.stopPropagation(); setShowOverride(false); setOverrideNote(''); }} disabled={acting}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </td>
         </tr>
@@ -66,18 +160,34 @@ function ReviewRow({ item }: { item: ReviewItem }) {
 export default function ReviewQueuePage() {
   const { importId } = useParams<{ importId: string }>();
   const [severityFilter, setSeverityFilter] = useState<'all' | 'warning' | 'error'>('all');
-  const { data: queue, loading, error } = useReviewQueue(importId!);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved' | 'overridden'>('all');
+  const { data: queue, loading, error, refetch } = useReviewQueue(importId!);
+  const [localItems, setLocalItems] = useState<ReviewItem[] | null>(null);
 
-  if (loading) return <div className="loading">Loading…</div>;
+  // Merge server-refreshed items with any local optimistic updates
+  const items = localItems ?? queue?.items ?? [];
+
+  function handleItemUpdated(updated: ReviewItem) {
+    const base = localItems ?? queue?.items ?? [];
+    setLocalItems(base.map(i => i.id === updated.id ? updated : i));
+    // Trigger a background refetch to sync counts
+    refetch();
+  }
+
+  if (loading && !queue) return <div className="loading">Loading…</div>;
   if (error) return <div className="error-banner">Error: {error}</div>;
   if (!queue) return null;
 
-  const filtered = queue.items.filter(
-    item => severityFilter === 'all' || item.severity === severityFilter,
-  );
+  const filtered = items.filter(item => {
+    if (severityFilter !== 'all' && item.severity !== severityFilter) return false;
+    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+    return true;
+  });
 
-  const errorCount = queue.items.filter(i => i.severity === 'error').length;
-  const warnCount = queue.items.filter(i => i.severity === 'warning').length;
+  const errorCount = items.filter(i => i.severity === 'error').length;
+  const warnCount = items.filter(i => i.severity === 'warning').length;
+  const openCount = items.filter(i => i.status === 'open').length;
+  const resolvedCount = items.filter(i => i.status !== 'open').length;
 
   return (
     <div>
@@ -98,24 +208,25 @@ export default function ReviewQueuePage() {
       <div className={styles.summaryRow}>
         <div className="card" style={{ flex: 1 }}>
           <div className={styles.statLabel}>Total</div>
-          <div className={styles.statValue}>{queue.total}</div>
+          <div className={styles.statValue}>{items.length}</div>
+        </div>
+        <div className="card" style={{ flex: 1 }}>
+          <div className={styles.statLabel}>Open</div>
+          <div className={styles.statValue} style={{ color: openCount > 0 ? 'var(--danger)' : undefined }}>{openCount}</div>
         </div>
         <div className="card" style={{ flex: 1 }}>
           <div className={styles.statLabel}>Errors</div>
           <div className={styles.statValue} style={{ color: 'var(--danger)' }}>{errorCount}</div>
         </div>
         <div className="card" style={{ flex: 1 }}>
-          <div className={styles.statLabel}>Warnings</div>
-          <div className={styles.statValue} style={{ color: 'var(--warning)' }}>{warnCount}</div>
-        </div>
-        <div className="card" style={{ flex: 1 }}>
-          <div className={styles.statLabel}>Resolved</div>
-          <div className={styles.statValue} style={{ color: 'var(--success)' }}>{queue.resolvedCount}</div>
+          <div className={styles.statLabel}>Resolved / Overridden</div>
+          <div className={styles.statValue} style={{ color: 'var(--success)' }}>{resolvedCount}</div>
         </div>
       </div>
 
       {/* Filters */}
       <div className={styles.filters}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 12, alignSelf: 'center', marginRight: 4 }}>Severity:</span>
         {(['all', 'error', 'warning'] as const).map(f => (
           <button
             key={f}
@@ -123,7 +234,18 @@ export default function ReviewQueuePage() {
             onClick={() => setSeverityFilter(f)}
             style={{ textTransform: 'capitalize' }}
           >
-            {f === 'all' ? `All (${queue.total})` : f === 'error' ? `Errors (${errorCount})` : `Warnings (${warnCount})`}
+            {f === 'all' ? `All (${items.length})` : f === 'error' ? `Errors (${errorCount})` : `Warnings (${warnCount})`}
+          </button>
+        ))}
+        <span style={{ color: 'var(--text-muted)', fontSize: 12, alignSelf: 'center', marginLeft: 12, marginRight: 4 }}>Status:</span>
+        {(['all', 'open', 'resolved', 'overridden'] as const).map(s => (
+          <button
+            key={s}
+            className={statusFilter === s ? 'primary' : 'ghost'}
+            onClick={() => setStatusFilter(s)}
+            style={{ textTransform: 'capitalize' }}
+          >
+            {s === 'all' ? `All` : s === 'open' ? `Open (${openCount})` : s === 'resolved' ? `Resolved (${resolvedCount})` : `Overridden`}
           </button>
         ))}
       </div>
@@ -149,7 +271,7 @@ export default function ReviewQueuePage() {
             </thead>
             <tbody>
               {filtered.map(item => (
-                <ReviewRow key={item.id} item={item} />
+                <ReviewRow key={item.id} item={item} onUpdated={handleItemUpdated} />
               ))}
             </tbody>
           </table>
