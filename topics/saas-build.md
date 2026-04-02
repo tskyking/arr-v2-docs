@@ -36,6 +36,13 @@ Hold product, roadmap, architecture, and coordination notes for Todd's SaaS work
 
 ## Documentation Plan (near MVP)
 - Produce a user manual covering:
+  - **Data import section (first and most important)**
+    - Supported file formats (currently: XLSX)
+    - Required sheet structure and naming conventions
+    - Required columns and data types
+    - What "clean" source data looks like vs common problems
+    - Step-by-step import walkthrough with screenshots
+    - Clear error messages and how to fix common import failures
   - New user onboarding flow
   - Frequent user workflows
   - Step-by-step for each major function
@@ -45,3 +52,12 @@ Hold product, roadmap, architecture, and coordination notes for Todd's SaaS work
 - Coordinator or dedicated Doc Agent can handle this
 - Spawn doc agent when MVP is 80-90% complete
 - Output format: Markdown → PDF or styled HTML
+
+## Pre-MVP requirement (data import UX)
+- Build agent should ensure clear, human-readable error messages when:
+  - File format is wrong
+  - Required sheets are missing
+  - Expected columns are not found
+  - Data is malformed (bad dates, nulls, unexpected types)
+- Users should never see a raw code error or silent failure on import
+- This is a blocker before any customer-facing demo or release
