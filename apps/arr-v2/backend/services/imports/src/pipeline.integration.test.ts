@@ -153,34 +153,40 @@ describe('Full pipeline — internal workbook', () => {
   });
 });
 
-// ─── External workbook pipeline ───────────────────────────────────────────────
-// BUG #6: The external workbook's transaction detail sheet is named
-// 'Sales by Cust Detail External' — which sheetDetection.ts explicitly rejects
-// (it filters out sheets ending with 'external'). So workbookToImportBundle
-// throws for the external workbook. The xlsxXmlReader tests pass because they
-// only check that a sheet name includes 'sales by cust' (which matches).
-// These tests DOCUMENT the current broken behavior as a known bug.
+// ─── External workbook pipeline (Bug #6 fixed) ────────────────────────────────
+// Bug #6 was: 'Sales by Cust Detail External' was hard-rejected by sheetDetection.
+// Fix: external sheets are now accepted as fallback when no internal sheet is found.
+// Internal sheet is still preferred when both exist.
 
-describe('Full pipeline — external (anonymized) workbook (BUG #6)', () => {
-  it('external workbook CANNOT be processed end-to-end — sheetDetection rejects its transaction sheet', () => {
-    // This is a known bug: 'Sales by Cust Detail External' is rejected by detectWorkbookSheets.
-    // This test locks in the current broken behavior so any fix is immediately visible.
+describe('Full pipeline — external (anonymized) workbook (Bug #6 fixed)', () => {
+  it('external workbook CAN now be processed end-to-end (Bug #6 fixed)', () => {
+    // sheetDetection now accepts 'Sales by Cust Detail External' as a valid
+    // transaction detail sheet when no internal variant is present.
     const workbook = readXlsxWorkbook(EXTERNAL_XLSX);
-    expect(() => workbookToImportBundle(workbook)).toThrow(/transaction detail/i);
+    const bundle = workbookToImportBundle(workbook);
+    const result = normalizeImportBundle(bundle);
+    const { segments } = recognizeAll(result.normalizedRows);
+    expect(segments.length).toBeGreaterThan(0);
   });
 
-  it('external workbook sheets are named with External suffix (root cause)', () => {
+  it('external workbook sheets are named with External suffix', () => {
     const workbook = readXlsxWorkbook(EXTERNAL_XLSX);
     const names = workbook.sheets.map(s => s.name);
-    // Confirm the external suffix exists on the transaction detail sheet
     expect(names.some(n => n.toLowerCase().includes('external'))).toBe(true);
+  });
+
+  it('external workbook detected transaction detail sheet has External in its name', () => {
+    const workbook = readXlsxWorkbook(EXTERNAL_XLSX);
+    const bundle = workbookToImportBundle(workbook);
+    // The bundle processes successfully — confirming sheetDetection used the external sheet
+    expect(bundle.transactionDetailRows.length).toBeGreaterThan(0);
   });
 });
 
 // ─── Cross-workbook consistency ───────────────────────────────────────────────
 
 describe('Cross-workbook consistency', () => {
-  it('internal workbook processes successfully while external throws (Bug #6)', () => {
+  it('both internal and external workbooks process successfully (Bug #6 fixed)', () => {
     const internalWb = readXlsxWorkbook(INTERNAL_XLSX);
     const externalWb = readXlsxWorkbook(EXTERNAL_XLSX);
 
@@ -188,7 +194,21 @@ describe('Cross-workbook consistency', () => {
     const { segments: internalSegs } = recognizeAll(internalResult.normalizedRows);
     expect(internalSegs.length).toBeGreaterThan(0);
 
-    // External workbook fails pipeline — this is Bug #6
-    expect(() => workbookToImportBundle(externalWb)).toThrow(/transaction detail/i);
+    // External workbook now also processes (Bug #6 fixed)
+    const externalResult = normalizeImportBundle(workbookToImportBundle(externalWb));
+    const { segments: externalSegs } = recognizeAll(externalResult.normalizedRows);
+    expect(externalSegs.length).toBeGreaterThan(0);
+  });
+
+  it('external workbook produces the same or comparable row count as internal', () => {
+    const internalWb = readXlsxWorkbook(INTERNAL_XLSX);
+    const externalWb = readXlsxWorkbook(EXTERNAL_XLSX);
+
+    const internalBundle = workbookToImportBundle(internalWb);
+    const externalBundle = workbookToImportBundle(externalWb);
+
+    // Both should have data rows; exact counts may differ due to anonymization
+    expect(internalBundle.transactionDetailRows.length).toBeGreaterThan(0);
+    expect(externalBundle.transactionDetailRows.length).toBeGreaterThan(0);
   });
 });

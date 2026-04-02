@@ -68,7 +68,10 @@ export class ImportError extends Error {
 
   constructor(code: ImportErrorCode, detail?: string) {
     const userMessage = ERROR_MESSAGES[code];
-    super(detail ? `${code}: ${detail}` : code);
+    // Use userMessage as the primary .message so that regex-on-message checks in tests
+    // and standard try/catch handlers see human-readable text, not the code token.
+    const message = detail ? `${userMessage} (${detail})` : userMessage;
+    super(message);
     this.name = 'ImportError';
     this.code = code;
     this.userMessage = userMessage;

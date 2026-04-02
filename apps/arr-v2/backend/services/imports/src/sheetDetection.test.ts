@@ -25,10 +25,14 @@ describe('detectWorkbookSheets', () => {
       expect(detected.transactionDetail).toBeDefined();
     });
 
-    it('ignores "external" transaction detail sheets', () => {
+    it('accepts "external" transaction detail sheets as fallback (Bug #6 fix)', () => {
+      // When only the external sheet is present (customer-facing workbook format),
+      // it should be accepted rather than rejected. Bug #6 was a hard-reject that
+      // made external workbooks completely unprocessable.
       const wb = makeWorkbook([makeSheet('Sales by Cust Detail External')]);
       const detected = detectWorkbookSheets(wb);
-      expect(detected.transactionDetail).toBeUndefined();
+      expect(detected.transactionDetail).toBeDefined();
+      expect(detected.transactionDetail!.name).toBe('Sales by Cust Detail External');
     });
 
     it('prefers internal over external when both present', () => {

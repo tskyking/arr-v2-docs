@@ -86,17 +86,18 @@ export function detectWorkbookSheets(workbook: RawWorkbook): DetectedWorkbookShe
   for (const sheet of workbook.sheets) {
     const name = sheet.name.toLowerCase();
 
-    if (!detected.transactionDetail && (
+    if (
       name.includes('sales by cust detail') ||
       name.includes('sales by customer detail')
-    )) {
-      // Prefer internal over external if both match — keep first match,
-      // but if a later sheet is more "internal" (no 'external' in name), upgrade.
+    ) {
+      // Prefer internal over external: accept any match, but upgrade to internal
+      // if we previously only had an external match.
       const isExternal = name.includes('external');
-      if (!isExternal) {
+      const currentIsExternal = detected.transactionDetail
+        ? detected.transactionDetail.name.toLowerCase().includes('external')
+        : false;
+      if (!detected.transactionDetail || (currentIsExternal && !isExternal)) {
         detected.transactionDetail = sheet;
-      } else if (!detected.transactionDetail) {
-        detected.transactionDetail = sheet; // accept external as fallback
       }
       continue;
     }
@@ -132,6 +133,16 @@ export function detectWorkbookSheets(workbook: RawWorkbook): DetectedWorkbookShe
   // This handles arbitrary sheet names from any XLSX generator.
 
   for (const sheet of workbook.sheets) {
+    // Check alias mapping first — 'customer from qb' header is highly specific and
+    // must take priority before generic product/service mapping detection fires.
+    if (!detected.aliasMappings) {
+      const headerRow = findHeaderRow(sheet);
+      if (includesAll(headerRow, ['customer from qb'])) {
+        detected.aliasMappings = sheet;
+        continue;
+      }
+    }
+
     if (!detected.transactionDetail && isTransactionDetailByStructure(sheet)) {
       detected.transactionDetail = sheet;
       continue;
@@ -148,14 +159,6 @@ export function detectWorkbookSheets(workbook: RawWorkbook): DetectedWorkbookShe
     if (!detected.recognitionAssumptions && isRecognitionAssumptionsByStructure(sheet)) {
       if (sheet !== detected.transactionDetail && sheet !== detected.productServiceMappings) {
         detected.recognitionAssumptions = sheet;
-        continue;
-      }
-    }
-
-    if (!detected.aliasMappings) {
-      const headerRow = findHeaderRow(sheet);
-      if (includesAll(headerRow, ['customer from qb'])) {
-        detected.aliasMappings = sheet;
         continue;
       }
     }
