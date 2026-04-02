@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARR V2 — User Manual</title>
+  <style>
+    :root { --bg: #f0f4fa; --panel: #ffffff; --text: #1b2740; --muted: #5a6b86; --accent: #2563eb; --good: #059669; --warn: #d97706; --line: #c8d5e8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+    h1 { font-size: 28px; margin-bottom: 4px; }
+    h2 { font-size: 20px; border-bottom: 2px solid var(--line); padding-bottom: 6px; margin-top: 40px; }
+    h3 { font-size: 16px; color: var(--accent); margin-top: 24px; }
+    h4 { font-size: 14px; margin-top: 20px; }
+    p, li { color: var(--muted); }
+    a { color: var(--accent); }
+    code { background: #edf2fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #1e40af; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #e8eef8; text-align: left; padding: 8px 12px; font-weight: 600; }
+    td { padding: 8px 12px; border-top: 1px solid var(--line); }
+    blockquote { margin: 12px 0; padding: 10px 16px; border-left: 4px solid var(--accent); background: #eef3fd; border-radius: 0 8px 8px 0; color: var(--text); }
+    blockquote.warn { border-left-color: var(--warn); background: #fff8ed; }
+    .toc { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+    .toc ol { margin: 8px 0 0 0; padding-left: 20px; }
+    .toc li { margin: 4px 0; }
+    .meta { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    ul.checklist { list-style: none; padding-left: 0; }
+    ul.checklist li::before { content: '☐ '; color: var(--accent); }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: #dbeafe; color: #1d4ed8; margin-right: 4px; }
+    .last-updated { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>ARR V2 — User Manual</h1>
+  <p class="meta">
+    <span class="last-updated" id="last-updated">Last updated: 2026-04-02</span> &nbsp;·&nbsp;
+    <a href="../dashboard/">← Back to Dashboard</a>
+  </p>
+
+  <div class="toc">
+    <strong>Table of Contents</strong>
+    <ol>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#start">Getting Started</a></li>
+      <li><a href="#import">Data Import</a></li>
+      <li><a href="#dashboard">ARR Dashboard</a></li>
+      <li><a href="#review">Review Queue</a></li>
+      <li><a href="#movements">ARR Movement Analysis</a></li>
+      <li><a href="#roles">User Roles and Permissions</a></li>
+      <li><a href="#troubleshoot">Troubleshooting</a></li>
+      <li><a href="#glossary">Glossary</a></li>
+    </ol>
+  </div>
+
+  <div class="section" id="intro">
+    <h2>1. Introduction</h2>
+    <p><strong>ARR V2</strong> is a tool for tracking and analyzing your company's Annual Recurring Revenue (ARR). It reads invoice and subscription data from your accounting system, calculates how much recurring revenue you have at any point in time, and helps you understand how that revenue is growing or changing.</p>
+    <h3>Who is this for?</h3>
+    <ul>
+      <li>Finance and operations teams who need accurate ARR figures for board reporting, investor updates, or internal planning</li>
+      <li>Managers who want to understand which customers are expanding, contracting, or churning</li>
+      <li>Anyone responsible for reviewing and cleaning up subscription data before it flows into a revenue report</li>
+    </ul>
+    <h3>What it does not do (yet)</h3>
+    <ul>
+      <li>It does not connect directly to QuickBooks, Salesforce, or other systems — you export a file and upload it</li>
+      <li>It does not send invoices or manage billing</li>
+    </ul>
+  </div>
+
+  <div class="section" id="start">
+    <h2>2. Getting Started</h2>
+    <p><em><!-- TODO: add screenshots when UI is stable --></em></p>
+    <h3>First Login</h3>
+    <ol>
+      <li>Open the ARR V2 application in your browser.</li>
+      <li>Sign in with the credentials provided by your administrator.</li>
+      <li>You will land on the <strong>Dashboard</strong> page.</li>
+    </ol>
+    <h3>Navigation Overview</h3>
+    <ul>
+      <li><strong>Dashboard</strong> — your ARR summary and trend charts</li>
+      <li><strong>Import</strong> — upload a new data file</li>
+      <li><strong>Review Queue</strong> — rows that need your attention before ARR is finalized</li>
+      <li><strong>Movements</strong> — waterfall breakdown of ARR changes over time</li>
+    </ul>
+    <blockquote>💡 <strong>Tip:</strong> If you're using the tool for the first time, go to <strong>Import</strong> first. The dashboard and review queue won't show any data until you've uploaded a file.</blockquote>
+  </div>
+
+  <div class="section" id="import">
+    <h2>3. Data Import</h2>
+    <p>This is the most important section to get right. Everything downstream — the dashboard, the review queue, the movement analysis — depends on a clean import.</p>
+
+    <h3>3.1 Supported File Formats</h3>
+    <p>ARR V2 currently accepts <strong>Excel workbooks only</strong> (<code>.xlsx</code> format).</p>
+    <blockquote class="warn">⚠️ <strong>Warning:</strong> <code>.xls</code>, <code>.csv</code>, <code>.numbers</code>, and other formats are <strong>not supported</strong>. Convert to <code>.xlsx</code> first.</blockquote>
+    <blockquote class="warn">⚠️ <strong>Warning:</strong> Password-protected workbooks cannot be read. Remove the password before uploading.</blockquote>
+
+    <h3>3.2 Required Workbook Structure</h3>
+    <p>Your workbook must contain <strong>three specific sheets</strong>. The system detects them by content and column structure — sheet names are flexible.</p>
+
+    <h4>Sheet 1: Transaction Detail</h4>
+    <p>Your main invoice/transaction export from QuickBooks ("Sales by Customer Detail" format).</p>
+    <table>
+      <tr><th>Column</th><th>Accepted Names</th></tr>
+      <tr><td>Customer name</td><td><code>Customer</code></td></tr>
+      <tr><td>Invoice date</td><td><code>Date</code> or <code>Invoice Date</code></td></tr>
+      <tr><td>Transaction type</td><td><code>Transaction Type</code></td></tr>
+      <tr><td>Invoice number</td><td><code>Num</code> or <code>Invoice Number</code></td></tr>
+      <tr><td>Product or service</td><td><code>Product/Service</code></td></tr>
+      <tr><td>Quantity</td><td><code>Qty</code></td></tr>
+      <tr><td>Sales price</td><td><code>Sales Price</code></td></tr>
+      <tr><td>Amount</td><td><code>Amount</code></td></tr>
+    </table>
+    <blockquote>💡 <strong>Tip:</strong> Subscription Start Date and End Date are critical for recurring items. Without them, the system flags rows and estimates a 1-year term from the invoice date.</blockquote>
+
+    <h4>Sheet 2: Product/Service Mapping</h4>
+    <p>Maps each product/service name to a revenue category. If a product is not listed here, it will be flagged in the Review Queue.</p>
+    <blockquote class="warn">⚠️ Product names must match <strong>exactly</strong> between the transaction sheet and this mapping sheet.</blockquote>
+
+    <h4>Sheet 3: Revenue Recognition Assumptions</h4>
+    <p>Defines the rules for how each revenue category is recognized over time.</p>
+    <table>
+      <tr><th>Rule Type</th><th>What it means</th></tr>
+      <tr><td><code>subscription_term</code></td><td>Spread evenly over subscription start/end date range</td></tr>
+      <tr><td><code>fallback_one_year_from_invoice</code></td><td>Assume 1-year term if no subscription dates exist</td></tr>
+      <tr><td><code>fixed_36_months_from_invoice</code></td><td>Spread evenly over 36 months from invoice date</td></tr>
+      <tr><td><code>invoice_date_immediate</code></td><td>Recognize full amount in invoice month (one-time fees)</td></tr>
+    </table>
+
+    <h3>3.3 Clean Data Checklist</h3>
+    <ul class="checklist">
+      <li>File is <code>.xlsx</code> and not password-protected</li>
+      <li>Workbook has all three required sheets</li>
+      <li>Transaction rows have customer names, dates, products, and amounts</li>
+      <li>Recurring items have subscription start and end dates</li>
+      <li>Product/service mapping sheet covers all products in the transaction sheet</li>
+      <li>Recognition assumptions sheet has a rule for each product category</li>
+    </ul>
+
+    <h3>3.4 Step-by-Step Import</h3>
+    <ol>
+      <li>From the main navigation, click <strong>Import</strong>.</li>
+      <li>Click <strong>Choose File</strong> or drag and drop your <code>.xlsx</code> file.</li>
+      <li>Click <strong>Upload</strong>.</li>
+      <li>The system processes the file (usually a few seconds).</li>
+      <li>On success, you'll see: rows processed, rows flagged, and date range covered.</li>
+      <li>Click <strong>Go to Dashboard</strong> or <strong>Go to Review Queue</strong>.</li>
+    </ol>
+
+    <h3>3.5 Common Import Errors</h3>
+    <table>
+      <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+      <tr><td>Only .xlsx workbooks are supported</td><td>Wrong format</td><td>Export as <code>.xlsx</code></td></tr>
+      <tr><td>File could not be read</td><td>Encrypted or damaged</td><td>Remove password, re-export</td></tr>
+      <tr><td>Could not find a transaction detail sheet</td><td>Missing sheet or wrong columns</td><td>Add required columns (see 3.2)</td></tr>
+      <tr><td>Could not find product/service mapping sheet</td><td>Missing sheet</td><td>Add mapping sheet</td></tr>
+      <tr><td>Could not find recognition assumptions sheet</td><td>Missing sheet</td><td>Add assumptions sheet</td></tr>
+    </table>
+  </div>
+
+  <div class="section" id="dashboard">
+    <h2>4. ARR Dashboard</h2>
+    <p><em><!-- TODO: add screenshots when UI is stable --></em></p>
+    <p>The Dashboard shows your ARR at a glance — total ARR, trend over time, top customers, and a date range filter.</p>
+    <h3>Understanding the ARR Number</h3>
+    <p>ARR is the annualized value of active recurring subscriptions. It is <strong>not</strong> the same as cash collected or invoiced revenue in a given month.</p>
+    <ul>
+      <li>A $12,000 annual subscription → $1,000/month ARR</li>
+      <li>A $1,200/month subscription → $14,400/year ARR</li>
+      <li>A one-time setup fee → $0 ARR</li>
+    </ul>
+  </div>
+
+  <div class="section" id="review">
+    <h2>5. Review Queue</h2>
+    <p><em><!-- TODO: add screenshots when UI is stable --></em></p>
+    <p>The Review Queue shows rows the system couldn't process with full confidence. Resolving these ensures your ARR numbers are accurate.</p>
+    <h3>Common Flags</h3>
+    <table>
+      <tr><th>Flag</th><th>What it means</th></tr>
+      <tr><td><code>MISSING_PRODUCT_SERVICE_MAPPING</code></td><td>Product not found in mapping sheet</td></tr>
+      <tr><td><code>MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM</code></td><td>Recurring item missing start/end date</td></tr>
+      <tr><td><code>SUSPICIOUS_NEGATIVE_AMOUNT</code></td><td>May be a credit or refund</td></tr>
+      <tr><td><code>INVALID_DATE</code></td><td>Date couldn't be parsed</td></tr>
+      <tr><td><code>AMOUNT_PRICE_QUANTITY_MISMATCH</code></td><td>Amount doesn't match price × quantity</td></tr>
+    </table>
+    <h3>Resolving a Flag</h3>
+    <ol>
+      <li>Find the row in the Review Queue.</li>
+      <li>Click to expand details.</li>
+      <li>Choose <strong>Resolve</strong> (accept as-is) or <strong>Override</strong> (enter correct value).</li>
+    </ol>
+  </div>
+
+  <div class="section" id="movements">
+    <h2>6. ARR Movement Analysis</h2>
+    <p><em><!-- TODO: add screenshots when UI is stable --></em></p>
+    <p>The Movements page shows a waterfall breakdown of ARR changes period-over-period.</p>
+    <table>
+      <tr><th>Component</th><th>What it means</th></tr>
+      <tr><td><strong>New</strong></td><td>ARR from customers with no prior ARR</td></tr>
+      <tr><td><strong>Expansion</strong></td><td>ARR added from existing customers</td></tr>
+      <tr><td><strong>Contraction</strong></td><td>ARR lost from existing customers</td></tr>
+      <tr><td><strong>Churn</strong></td><td>ARR lost from customers who left entirely</td></tr>
+    </table>
+    <p>Formula: <code>Closing ARR = Opening ARR + New + Expansion − Contraction − Churn</code></p>
+  </div>
+
+  <div class="section" id="roles">
+    <h2>7. User Roles and Permissions</h2>
+    <table>
+      <tr><th>Role</th><th>Permissions</th></tr>
+      <tr><td><strong>Viewer</strong></td><td>View dashboard, charts, movements. Cannot import or resolve review items.</td></tr>
+      <tr><td><strong>Analyst</strong></td><td>All Viewer permissions + upload imports, resolve/override review queue</td></tr>
+      <tr><td><strong>Admin</strong></td><td>All Analyst permissions + manage users, configure ARR policies, apply overrides</td></tr>
+    </table>
+    <blockquote>💡 Role definitions are subject to finalization as the auth system is completed.</blockquote>
+  </div>
+
+  <div class="section" id="troubleshoot">
+    <h2>8. Troubleshooting</h2>
+    <h3>Dashboard shows no data</h3>
+    <p><strong>Fix:</strong> Go to Import and upload an <code>.xlsx</code> workbook.</p>
+    <h3>ARR numbers look wrong</h3>
+    <p><strong>Fix:</strong> Check the Review Queue for unresolved flags. Verify recognition assumptions are correct.</p>
+    <h3>Unexpected error on upload</h3>
+    <p><strong>Fix:</strong> Try again. If it persists, re-export from QuickBooks and try the fresh file.</p>
+  </div>
+
+  <div class="section" id="glossary">
+    <h2>9. Glossary</h2>
+    <p><strong>ARR</strong> — Annual Recurring Revenue. The annualized value of active recurring subscriptions.</p>
+    <p><strong>Churn</strong> — When a customer cancels and their ARR drops to zero.</p>
+    <p><strong>Expansion</strong> — An existing customer's subscription value increases.</p>
+    <p><strong>Contraction</strong> — An existing customer's subscription value decreases.</p>
+    <p><strong>Recognition Rule</strong> — How a revenue item's value is spread over time.</p>
+    <p><strong>Review Item / Flag</strong> — A row the system couldn't process with full confidence.</p>
+    <p><strong>Waterfall Chart</strong> — Shows how ARR moved period-to-period, broken down by New, Expansion, Contraction, and Churn.</p>
+    <p><strong>Workbook</strong> — An Excel <code>.xlsx</code> file with the three required sheets.</p>
+  </div>
+
+</div>
+</body>
+</html>
