@@ -32,8 +32,15 @@
 - Projected overnight (8:52 PM → 11:00 AM = ~14hrs): **~$85-98**
 - 1-2 auto-reloads expected overnight at $60 trigger
 
+| 2026-04-02 03:20 | $78.01 | Overnight agents running. No reload triggered yet. Progress at 72%. |
+
 ## Current Balance (last known)
-$86.81 as of 2026-04-01 20:52 PDT
+$78.01 as of 2026-04-02 03:20 PDT
+
+## Revised Overnight Burn
+- 8:52 PM → 3:20 AM (6.5hrs): $86.81 → $78.01 = **$8.80 spent** (~$1.35/hr)
+- Far lower than early estimate. Agents are efficient when no active conversation.
+- Projected remaining burn (3:20 AM → 11:00 AM ~7.5hrs): ~$10
 
 ---
 _Update this file when you check the Anthropic dashboard. Coordinator reads this file each hour._
