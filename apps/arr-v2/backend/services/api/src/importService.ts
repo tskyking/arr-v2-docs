@@ -34,6 +34,7 @@ import {
 } from './store.js';
 
 export interface ImportResult {
+  tenantId: string;        // Tenant this import belongs to — never cross-tenant accessible
   importId: string;
   importedAt: string;
   bundle: NormalizedImportBundle & { normalizedRows: any[]; reviewItems: any[] };
@@ -44,30 +45,44 @@ export interface ImportResult {
   toDate: string;
 }
 
-// Import store — file-backed, loaded at startup so data survives restarts
-const importStore: Map<string, ImportResult> = loadAllImports();
+// ─── Tenant-scoped in-memory store ──────────────────────────────────────────
+//
+// All data is keyed by tenantId at the top level.
+// No cross-tenant access is possible by construction.
+//
+// Structure:
+//   tenantStores:    tenantId → Map<importId, ImportResult>
+//   tenantOverrides: tenantId → Map<itemId, ReviewOverride>
+//   overridesByImport: tenantId:importId → Map<itemId, ReviewOverride>
 
-// Per-import map of itemId → override state — persisted to disk per import
-// Key: itemId (stable deterministic string), Value: override record
 type ReviewOverride = PersistedOverride;
 
-// Flat map of itemId → override — merged from all loaded imports
-// Populated at startup and kept in sync with every patch/resolve
-const reviewOverrides = new Map<string, ReviewOverride>();
+const tenantStores = new Map<string, Map<string, ImportResult>>();
+const tenantOverrides = new Map<string, Map<string, ReviewOverride>>();
+const overridesByImport = new Map<string, Map<string, ReviewOverride>>();
 
-// Bootstrap: load all existing overrides from disk
-for (const [importId] of importStore) {
-  const loaded = loadOverrides(importId);
-  for (const [itemId, override] of loaded) {
-    reviewOverrides.set(itemId, override);
+function getTenantStore(tenantId: string): Map<string, ImportResult> {
+  if (!tenantStores.has(tenantId)) {
+    // Lazy-load from disk on first access for this tenant
+    const loaded = loadAllImports(tenantId);
+    tenantStores.set(tenantId, loaded);
+    // Also bootstrap overrides for this tenant
+    const overrides = new Map<string, ReviewOverride>();
+    tenantOverrides.set(tenantId, overrides);
+    for (const [importId] of loaded) {
+      const importOverrides = loadOverrides(tenantId, importId);
+      overridesByImport.set(`${tenantId}:${importId}`, importOverrides);
+      for (const [itemId, override] of importOverrides) {
+        overrides.set(itemId, override);
+      }
+    }
   }
+  return tenantStores.get(tenantId)!;
 }
 
-// Per-import tracking so we know which items to persist when saving
-const overridesByImport = new Map<string, Map<string, ReviewOverride>>();
-for (const [importId] of importStore) {
-  const loaded = loadOverrides(importId);
-  overridesByImport.set(importId, loaded);
+function getTenantOverrides(tenantId: string): Map<string, ReviewOverride> {
+  getTenantStore(tenantId); // ensure bootstrapped
+  return tenantOverrides.get(tenantId) ?? new Map();
 }
 
 // Stable deterministic item ID used by both getReviewQueue and patchReviewItem
@@ -75,7 +90,7 @@ function makeItemId(importId: string, sourceRowNumber: number, idx: number): str
   return `${importId}-${sourceRowNumber}-${idx}`;
 }
 
-export function processImport(filePath: string): ImportResult {
+export function processImport(tenantId: string, filePath: string): ImportResult {
   const importId = randomUUID();
   const importedAt = new Date().toISOString();
 
@@ -117,6 +132,7 @@ export function processImport(filePath: string): ImportResult {
   const snapshots = buildMonthlySnapshots(segments, fromDate, toDate);
 
   const result: ImportResult = {
+    tenantId,
     importId,
     importedAt,
     bundle: normalized as any,
@@ -127,17 +143,17 @@ export function processImport(filePath: string): ImportResult {
     toDate,
   };
 
-  importStore.set(importId, result);
-  saveImport(result);
+  getTenantStore(tenantId).set(importId, result);
+  saveImport(tenantId, result);
   return result;
 }
 
-export function getImport(importId: string): ImportResult | undefined {
-  return importStore.get(importId);
+export function getImport(tenantId: string, importId: string): ImportResult | undefined {
+  return getTenantStore(tenantId).get(importId);
 }
 
-export function getImportSummary(importId: string): ImportSummaryResponse | null {
-  const result = importStore.get(importId);
+export function getImportSummary(tenantId: string, importId: string): ImportSummaryResponse | null {
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   const categoryMap = new Map<string, { rowCount: number; totalAmount: number }>();
@@ -164,11 +180,12 @@ export function getImportSummary(importId: string): ImportSummaryResponse | null
 }
 
 export function getArrMovements(
+  tenantId: string,
   importId: string,
   from?: string,
   to?: string,
 ): ArrMovementsResult | null {
-  const result = importStore.get(importId);
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   const fromDate = from ?? result.fromDate;
@@ -176,8 +193,8 @@ export function getArrMovements(
   return buildArrMovements(result.snapshots, fromDate, toDate);
 }
 
-export function getArrTimeseries(importId: string, from?: string, to?: string): ArrTimeseriesResponse | null {
-  const result = importStore.get(importId);
+export function getArrTimeseries(tenantId: string, importId: string, from?: string, to?: string): ArrTimeseriesResponse | null {
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   const fromDate = from ?? result.fromDate;
@@ -203,13 +220,13 @@ export function getArrTimeseries(importId: string, from?: string, to?: string): 
   return { periods, fromDate, toDate };
 }
 
-export function getReviewQueue(importId: string, status?: string): ReviewQueueResponse | null {
-  const result = importStore.get(importId);
+export function getReviewQueue(tenantId: string, importId: string, status?: string): ReviewQueueResponse | null {
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   const allItems = result.bundle.reviewItems.map((item, idx) => {
     const id = makeItemId(importId, item.sourceRowNumber, idx);
-    const override = reviewOverrides.get(id);
+    const override = getTenantOverrides(tenantId).get(id);
     const row = result.bundle.normalizedRows[item.sourceRowNumber - 1];
     return {
       id,
@@ -244,12 +261,13 @@ export function getReviewQueue(importId: string, status?: string): ReviewQueueRe
 }
 
 export function patchReviewItem(
+  tenantId: string,
   importId: string,
   itemId: string,
   action: 'resolve' | 'override',
   note?: string,
 ): ReviewItem | null {
-  const result = importStore.get(importId);
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   // Verify the itemId belongs to this import
@@ -266,16 +284,17 @@ export function patchReviewItem(
     resolvedBy: 'user',  // placeholder until auth is added
     overrideNote: note,
   };
-  reviewOverrides.set(itemId, override);
+  getTenantOverrides(tenantId).set(itemId, override);
 
   // Persist the updated override map for this import
-  let importOverrides = overridesByImport.get(importId);
+  const overrideKey = `${tenantId}:${importId}`;
+  let importOverrides = overridesByImport.get(overrideKey);
   if (!importOverrides) {
     importOverrides = new Map();
-    overridesByImport.set(importId, importOverrides);
+    overridesByImport.set(overrideKey, importOverrides);
   }
   importOverrides.set(itemId, override);
-  saveOverrides(importId, importOverrides);
+  saveOverrides(tenantId, importId, importOverrides);
 
   return {
     id: itemId,
@@ -304,12 +323,13 @@ export function patchReviewItem(
  * Body: { action: 'resolve' | 'override'; note?: string; itemIds?: string[] }
  */
 export function bulkResolveReview(
+  tenantId: string,
   importId: string,
   action: 'resolve' | 'override',
   itemIds?: string[],
   note?: string,
 ): { updatedCount: number; items: ReviewItem[] } | null {
-  const result = importStore.get(importId);
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   // Build the full queue to know which items are open
@@ -320,16 +340,17 @@ export function bulkResolveReview(
   }));
 
   // Filter to target set
+  const tenantOvr = getTenantOverrides(tenantId);
   const targets = itemIds && itemIds.length > 0
-    ? allItems.filter(i => itemIds.includes(i.id) && !reviewOverrides.has(i.id))
-    : allItems.filter(i => !reviewOverrides.has(i.id));
+    ? allItems.filter(i => itemIds.includes(i.id) && !tenantOvr.has(i.id))
+    : allItems.filter(i => !tenantOvr.has(i.id));
 
   const updatedItems: ReviewItem[] = [];
-
-  let importOverrides = overridesByImport.get(importId);
+  const overrideKey = `${tenantId}:${importId}`;
+  let importOverrides = overridesByImport.get(overrideKey);
   if (!importOverrides) {
     importOverrides = new Map();
-    overridesByImport.set(importId, importOverrides);
+    overridesByImport.set(overrideKey, importOverrides);
   }
 
   for (const target of targets) {
@@ -339,7 +360,7 @@ export function bulkResolveReview(
       resolvedBy: 'user',
       overrideNote: note,
     };
-    reviewOverrides.set(target.id, override);
+    tenantOvr.set(target.id, override);
     importOverrides.set(target.id, override);
 
     const row = result.bundle.normalizedRows[target.item.sourceRowNumber - 1];
@@ -361,27 +382,26 @@ export function bulkResolveReview(
     });
   }
 
-  // Persist all changes in one write
   if (updatedItems.length > 0) {
-    saveOverrides(importId, importOverrides);
+    saveOverrides(tenantId, importId, importOverrides);
   }
 
   return { updatedCount: updatedItems.length, items: updatedItems };
 }
 
-export function removeImport(importId: string): boolean {
-  if (!importStore.has(importId)) return false;
-  importStore.delete(importId);
-  deleteImport(importId);
-  // Clean up overrides from disk and in-memory maps
-  const importOverrides = overridesByImport.get(importId);
+export function removeImport(tenantId: string, importId: string): boolean {
+  const store = getTenantStore(tenantId);
+  if (!store.has(importId)) return false;
+  store.delete(importId);
+  deleteImport(tenantId, importId);
+  const overrideKey = `${tenantId}:${importId}`;
+  const importOverrides = overridesByImport.get(overrideKey);
   if (importOverrides) {
-    for (const itemId of importOverrides.keys()) {
-      reviewOverrides.delete(itemId);
-    }
-    overridesByImport.delete(importId);
+    const tenantOvr = getTenantOverrides(tenantId);
+    for (const itemId of importOverrides.keys()) tenantOvr.delete(itemId);
+    overridesByImport.delete(overrideKey);
   }
-  deleteOverrides(importId);
+  deleteOverrides(tenantId, importId);
   return true;
 }
 
@@ -407,8 +427,8 @@ function csvRow(cells: Array<string | number | undefined | null>): string {
  *
  * Returns null if the import does not exist.
  */
-export function exportArrCsv(importId: string, from?: string, to?: string): string | null {
-  const ts = getArrTimeseries(importId, from, to);
+export function exportArrCsv(tenantId: string, importId: string, from?: string, to?: string): string | null {
+  const ts = getArrTimeseries(tenantId, importId, from, to);
   if (!ts) return null;
 
   if (ts.periods.length === 0) {
@@ -458,8 +478,8 @@ export function exportArrCsv(importId: string, from?: string, to?: string): stri
  *
  * Returns null if the import does not exist.
  */
-export function exportMovementsCsv(importId: string, from?: string, to?: string): string | null {
-  const movements = getArrMovements(importId, from, to);
+export function exportMovementsCsv(tenantId: string, importId: string, from?: string, to?: string): string | null {
+  const movements = getArrMovements(tenantId, importId, from, to);
   if (!movements) return null;
 
   const headers = [
@@ -540,8 +560,8 @@ export interface ReviewStatsResponse {
  * Provides all the aggregates a review screen needs to render its status bar
  * without re-fetching the full item list.
  */
-export function getReviewStats(importId: string): ReviewStatsResponse | null {
-  const queue = getReviewQueue(importId);
+export function getReviewStats(tenantId: string, importId: string): ReviewStatsResponse | null {
+  const queue = getReviewQueue(tenantId, importId);
   if (!queue) return null;
 
   const { items } = queue;
@@ -596,8 +616,8 @@ export function getReviewStats(importId: string): ReviewStatsResponse | null {
   };
 }
 
-export function listImports(): Array<{ importId: string; importedAt: string; totalRows: number }> {
-  return [...importStore.values()].map(r => ({
+export function listImports(tenantId: string): Array<{ importId: string; importedAt: string; totalRows: number }> {
+  return [...getTenantStore(tenantId).values()].map(r => ({
     importId: r.importId,
     importedAt: r.importedAt,
     totalRows: r.bundle.normalizedRows.length,
@@ -611,8 +631,8 @@ export function listImports(): Array<{ importId: string; importedAt: string; tot
  * For each customer, reports current ARR (most recent snapshot),
  * whether any rows require review, and the last invoice date.
  */
-export function getCustomerList(importId: string): CustomerListResponse | null {
-  const result = importStore.get(importId);
+export function getCustomerList(tenantId: string, importId: string): CustomerListResponse | null {
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   // Determine the latest snapshot period for "current" ARR
@@ -650,10 +670,11 @@ export function getCustomerList(importId: string): CustomerListResponse | null {
  * Returns the full ARR-per-period history, peak ARR, and review summary.
  */
 export function getCustomerDetail(
+  tenantId: string,
   importId: string,
   customerName: string,
 ): CustomerDetailResponse | null {
-  const result = importStore.get(importId);
+  const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   const sortedPeriods = [...result.snapshots.keys()].sort();

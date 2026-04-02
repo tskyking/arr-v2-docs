@@ -1,10 +1,13 @@
 /**
- * Import Store — file-based persistence layer
+ * Import Store — tenant-scoped file-based persistence layer
  *
- * Persists each import as a JSON file under {DATA_DIR}/{importId}.json.
- * Loaded on startup so imports survive server restarts.
+ * Data layout:
+ *   data/tenants/{tenantId}/imports/{importId}.json
+ *   data/tenants/{tenantId}/imports/{importId}.overrides.json
  *
- * Map serialization:  Map<K, V>  ↔  Array<[K, V]> in JSON
+ * All store functions require a tenantId. Cross-tenant access is impossible
+ * by construction — paths are always built from the tenantId, never from
+ * user-supplied strings directly.
  */
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
@@ -12,85 +15,79 @@ import { join, resolve } from 'node:path';
 import type { ArrSnapshot } from '../../arr/src/types.js';
 import type { ImportResult } from './importService.js';
 
-// DATA_DIR defaults to <repo-root>/apps/arr-v2/backend/data/imports
-// Override via DATA_DIR env var for deployment flexibility
-const DATA_DIR = process.env.DATA_DIR
+// Base data directory — override via DATA_DIR env var for deployment
+const BASE_DATA_DIR = process.env.DATA_DIR
   ? resolve(process.env.DATA_DIR)
-  : resolve(new URL('.', import.meta.url).pathname, '../../../data/imports');
+  : resolve(new URL('.', import.meta.url).pathname, '../../../data/tenants');
 
-function ensureDir(): void {
-  mkdirSync(DATA_DIR, { recursive: true });
+/** Safely build a tenant-scoped path. Rejects any tenantId containing path separators. */
+function tenantDir(tenantId: string): string {
+  if (!tenantId || /[/\\.]/.test(tenantId)) {
+    throw new Error(`Invalid tenantId: "${tenantId}"`);
+  }
+  return join(BASE_DATA_DIR, tenantId, 'imports');
 }
 
-// ─── Serialization helpers ──────────────────────────────────────────────────
+function ensureDir(dir: string): void {
+  mkdirSync(dir, { recursive: true });
+}
 
-/** Convert a Map<string, ArrSnapshot> to a plain array for JSON */
+// ─── Serialization helpers ───────────────────────────────────────────────────
+
 function snapshotsToJSON(snapshots: Map<string, ArrSnapshot>): Array<[string, ArrSnapshot]> {
   return [...snapshots.entries()];
 }
 
-/** Restore a Map<string, ArrSnapshot> from the stored array */
 function snapshotsFromJSON(data: Array<[string, ArrSnapshot]>): Map<string, ArrSnapshot> {
   return new Map(data);
 }
 
-// ─── Public API ─────────────────────────────────────────────────────────────
+// ─── Import persistence ──────────────────────────────────────────────────────
 
-/** Persist an ImportResult to disk. */
-export function saveImport(result: ImportResult): void {
-  ensureDir();
-  const serializable = {
-    ...result,
-    snapshots: snapshotsToJSON(result.snapshots),
-  };
-  const filePath = join(DATA_DIR, `${result.importId}.json`);
-  writeFileSync(filePath, JSON.stringify(serializable, null, 2), 'utf8');
+/** Persist an ImportResult for a tenant. */
+export function saveImport(tenantId: string, result: ImportResult): void {
+  const dir = tenantDir(tenantId);
+  ensureDir(dir);
+  const serializable = { ...result, tenantId, snapshots: snapshotsToJSON(result.snapshots) };
+  writeFileSync(join(dir, `${result.importId}.json`), JSON.stringify(serializable, null, 2), 'utf8');
 }
 
-/** Load all previously persisted imports from disk. Returns a Map keyed by importId. */
-export function loadAllImports(): Map<string, ImportResult> {
-  ensureDir();
+/** Load all imports for a tenant. Returns a Map keyed by importId. */
+export function loadAllImports(tenantId: string): Map<string, ImportResult> {
+  const dir = tenantDir(tenantId);
+  ensureDir(dir);
   const store = new Map<string, ImportResult>();
 
   let files: string[];
   try {
-    files = readdirSync(DATA_DIR).filter(f => f.endsWith('.json') && !f.endsWith('.overrides.json'));
+    files = readdirSync(dir).filter(
+      f => f.endsWith('.json') && !f.endsWith('.overrides.json'),
+    );
   } catch {
     return store;
   }
 
   for (const file of files) {
     try {
-      const raw = readFileSync(join(DATA_DIR, file), 'utf8');
+      const raw = readFileSync(join(dir, file), 'utf8');
       const parsed = JSON.parse(raw);
-      // Restore snapshots Map from serialized array
       parsed.snapshots = snapshotsFromJSON(parsed.snapshots ?? []);
       store.set(parsed.importId, parsed as ImportResult);
     } catch (e) {
-      console.warn(`[store] Failed to load import file ${file}:`, e);
+      console.warn(`[store] Failed to load import file ${file} for tenant ${tenantId}:`, e);
     }
   }
 
-  console.log(`[store] Loaded ${store.size} import(s) from ${DATA_DIR}`);
   return store;
 }
 
-/** Delete a persisted import file. Returns true if it existed and was removed. */
-export function deleteImport(importId: string): boolean {
-  const filePath = join(DATA_DIR, `${importId}.json`);
-  try {
-    unlinkSync(filePath);
-    return true;
-  } catch {
-    return false;
-  }
+/** Delete a persisted import for a tenant. Returns true if it existed. */
+export function deleteImport(tenantId: string, importId: string): boolean {
+  const filePath = join(tenantDir(tenantId), `${importId}.json`);
+  try { unlinkSync(filePath); return true; } catch { return false; }
 }
 
 // ─── Override persistence ────────────────────────────────────────────────────
-//
-// Review overrides are stored in a sidecar file alongside each import:
-//   {DATA_DIR}/{importId}.overrides.json
-// Format: Array<[itemId, ReviewOverride]> (same serialization pattern as snapshots)
 
 export interface PersistedOverride {
   status: 'resolved' | 'overridden';
@@ -99,31 +96,31 @@ export interface PersistedOverride {
   overrideNote?: string;
 }
 
-/** Persist the override map for one import (full overwrite). */
 export function saveOverrides(
+  tenantId: string,
   importId: string,
   overrides: Map<string, PersistedOverride>,
 ): void {
-  ensureDir();
-  const filePath = join(DATA_DIR, `${importId}.overrides.json`);
-  const serializable = [...overrides.entries()];
-  writeFileSync(filePath, JSON.stringify(serializable, null, 2), 'utf8');
+  const dir = tenantDir(tenantId);
+  ensureDir(dir);
+  writeFileSync(
+    join(dir, `${importId}.overrides.json`),
+    JSON.stringify([...overrides.entries()], null, 2),
+    'utf8',
+  );
 }
 
-/** Load the override map for one import. Returns empty Map if not found. */
-export function loadOverrides(importId: string): Map<string, PersistedOverride> {
-  const filePath = join(DATA_DIR, `${importId}.overrides.json`);
+export function loadOverrides(tenantId: string, importId: string): Map<string, PersistedOverride> {
+  const filePath = join(tenantDir(tenantId), `${importId}.overrides.json`);
   try {
     const raw = readFileSync(filePath, 'utf8');
-    const parsed: Array<[string, PersistedOverride]> = JSON.parse(raw);
-    return new Map(parsed);
+    return new Map(JSON.parse(raw) as Array<[string, PersistedOverride]>);
   } catch {
     return new Map();
   }
 }
 
-/** Delete the override sidecar file for an import. */
-export function deleteOverrides(importId: string): void {
-  const filePath = join(DATA_DIR, `${importId}.overrides.json`);
+export function deleteOverrides(tenantId: string, importId: string): void {
+  const filePath = join(tenantDir(tenantId), `${importId}.overrides.json`);
   try { unlinkSync(filePath); } catch { /* no-op */ }
 }

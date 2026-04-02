@@ -96,14 +96,33 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       return;
     }
 
+    // ── Tenant-scoped routes (/tenants/:tenantId/...) ──────────────────────
+    // All data access requires a tenantId. No cross-tenant access is possible.
+    // For MVP single-tenant deployments, use tenantId = 'default'.
+
+    // Extract tenant from path: /tenants/:tenantId/... or legacy /imports/... (default tenant)
+    let tenantId = 'default';
+    let routePath = path;
+
+    const tenantMatch = path.match(/^\/tenants\/([^/]+)(\/.*)$/);
+    if (tenantMatch) {
+      const rawTenantId = tenantMatch[1];
+      // Validate tenantId — must be alphanumeric/hyphen/underscore only
+      if (!/^[a-zA-Z0-9_-]+$/.test(rawTenantId)) {
+        err(res, 400, 'INVALID_TENANT_ID', 'Tenant ID must be alphanumeric (hyphens and underscores allowed)'); return;
+      }
+      tenantId = rawTenantId;
+      routePath = tenantMatch[2]; // strip /tenants/:tenantId prefix
+    }
+
     // List imports
-    if (path === '/imports' && method === 'GET') {
-      json(res, 200, { imports: listImports() });
+    if (routePath === '/imports' && method === 'GET') {
+      json(res, 200, { tenantId, imports: listImports(tenantId) });
       return;
     }
 
     // Upload + process import
-    if (path === '/imports' && method === 'POST') {
+    if (routePath === '/imports' && method === 'POST') {
       const contentType = req.headers['content-type'] ?? '';
       let filePath: string;
       let tempFile = false;
@@ -126,8 +145,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       }
 
       try {
-        const result = processImport(filePath);
+        const result = processImport(tenantId, filePath);
         json(res, 200, {
+          tenantId,
           importId: result.importId,
           status: 'complete',
           totalRows: result.bundle.normalizedRows.length,
@@ -140,14 +160,14 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       return;
     }
 
-    // /imports/:id/*
-    const importMatch = path.match(/^\/imports\/([^/]+)(\/.*)?$/);
+    // /imports/:id/*  (tenant context already resolved above)
+    const importMatch = routePath.match(/^\/imports\/([^/]+)(\/.*)?$/);
     if (importMatch) {
       const importId = importMatch[1];
       const sub = importMatch[2] ?? '';
 
       if (sub === '/summary' && method === 'GET') {
-        const summary = getImportSummary(importId);
+        const summary = getImportSummary(tenantId, importId);
         if (!summary) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, summary);
         return;
@@ -156,37 +176,34 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       if (sub === '/arr' && method === 'GET') {
         const from = url.searchParams.get('from') ?? undefined;
         const to = url.searchParams.get('to') ?? undefined;
-        const ts = getArrTimeseries(importId, from, to);
+        const ts = getArrTimeseries(tenantId, importId, from, to);
         if (!ts) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, ts);
         return;
       }
 
-      // GET /imports/:id/arr/movements — period-over-period ARR waterfall
       if (sub === '/arr/movements' && method === 'GET') {
         const from = url.searchParams.get('from') ?? undefined;
         const to = url.searchParams.get('to') ?? undefined;
-        const movements = getArrMovements(importId, from, to);
+        const movements = getArrMovements(tenantId, importId, from, to);
         if (!movements) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, movements);
         return;
       }
 
-      // GET /imports/:id/arr/export.csv — ARR timeseries as CSV download
       if (sub === '/arr/export.csv' && method === 'GET') {
         const from = url.searchParams.get('from') ?? undefined;
         const to = url.searchParams.get('to') ?? undefined;
-        const csv = exportArrCsv(importId, from, to);
+        const csv = exportArrCsv(tenantId, importId, from, to);
         if (!csv) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         csvResponse(res, `arr-${importId.slice(0, 8)}.csv`, csv);
         return;
       }
 
-      // GET /imports/:id/arr/movements/export.csv — ARR movements waterfall as CSV
       if (sub === '/arr/movements/export.csv' && method === 'GET') {
         const from = url.searchParams.get('from') ?? undefined;
         const to = url.searchParams.get('to') ?? undefined;
-        const csv = exportMovementsCsv(importId, from, to);
+        const csv = exportMovementsCsv(tenantId, importId, from, to);
         if (!csv) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         csvResponse(res, `arr-movements-${importId.slice(0, 8)}.csv`, csv);
         return;
@@ -194,47 +211,42 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
       if (sub === '/review' && method === 'GET') {
         const status = url.searchParams.get('status') ?? undefined;
-        const queue = getReviewQueue(importId, status);
+        const queue = getReviewQueue(tenantId, importId, status);
         if (!queue) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, queue);
         return;
       }
 
-      // DELETE /imports/:id — remove an import
       if (sub === '' && method === 'DELETE') {
-        const removed = removeImport(importId);
+        const removed = removeImport(tenantId, importId);
         if (!removed) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, { deleted: true, importId });
         return;
       }
 
-      // GET /imports/:id/customers — list all customers with ARR summary
       if (sub === '/customers' && method === 'GET') {
-        const list = getCustomerList(importId);
+        const list = getCustomerList(tenantId, importId);
         if (!list) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, list);
         return;
       }
 
-      // GET /imports/:id/customers/:name — customer ARR detail
       const customerDetailMatch = sub.match(/^\/customers\/(.+)$/);
       if (customerDetailMatch && method === 'GET') {
         const customerName = decodeURIComponent(customerDetailMatch[1]);
-        const detail = getCustomerDetail(importId, customerName);
+        const detail = getCustomerDetail(tenantId, importId, customerName);
         if (!detail) { err(res, 404, 'NOT_FOUND', 'Customer not found in this import'); return; }
         json(res, 200, detail);
         return;
       }
 
-      // GET /imports/:id/review/stats — review queue statistics summary
       if (sub === '/review/stats' && method === 'GET') {
-        const stats = getReviewStats(importId);
+        const stats = getReviewStats(tenantId, importId);
         if (!stats) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, stats);
         return;
       }
 
-      // POST /imports/:id/review/bulk-resolve — bulk-resolve open review items
       if (sub === '/review/bulk-resolve' && method === 'POST') {
         const body = await parseBody(req);
         let payload: { action?: string; note?: string; itemIds?: string[] } = {};
@@ -246,19 +258,12 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (payload.action === 'override' && !payload.note?.trim()) {
           err(res, 400, 'NOTE_REQUIRED', 'override requires a note'); return;
         }
-
-        const result = bulkResolveReview(
-          importId,
-          payload.action,
-          payload.itemIds,
-          payload.note,
-        );
+        const result = bulkResolveReview(tenantId, importId, payload.action, payload.itemIds, payload.note);
         if (!result) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, result);
         return;
       }
 
-      // PATCH /imports/:id/review/:itemId — resolve or override a review item
       const reviewPatchMatch = sub.match(/^\/review\/(.+)$/);
       if (reviewPatchMatch && method === 'PATCH') {
         const itemId = reviewPatchMatch[1];
@@ -272,8 +277,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (payload.action === 'override' && !payload.note?.trim()) {
           err(res, 400, 'NOTE_REQUIRED', 'override requires a note'); return;
         }
-
-        const updated = patchReviewItem(importId, itemId, payload.action, payload.note);
+        const updated = patchReviewItem(tenantId, importId, itemId, payload.action, payload.note);
         if (!updated) { err(res, 404, 'NOT_FOUND', 'Review item not found'); return; }
         json(res, 200, updated);
         return;
