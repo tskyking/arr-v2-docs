@@ -40,7 +40,7 @@
   </div>
   <h1>ARR V2 — User Manual</h1>
   <p class="meta">
-    <span class="last-updated" id="last-updated">Last updated: 2026-04-02 (Session 9)</span>
+    <span class="last-updated" id="last-updated">Last updated: 2026-04-02 (Session 10)</span>
   </p>
 
   <div class="toc">
@@ -198,17 +198,27 @@
   </div>
 
   <div class="section" id="review">
-    <h2>5. Review Queue</h2>
+    <h2>6. Review Queue</h2>
     <p><em><!-- TODO: add screenshots when UI is stable --></em></p>
     <p>The Review Queue shows rows the system couldn't process with full confidence. Resolving these ensures your ARR numbers are accurate.</p>
+    <h3>Flag Severity Levels</h3>
+    <table>
+      <tr><th>Severity</th><th>What it means</th><th>ARR Impact</th></tr>
+      <tr><td><strong>Error</strong></td><td>Row could not be processed</td><td>Excluded from ARR until resolved</td></tr>
+      <tr><td><strong>Warning</strong></td><td>Processed using a system assumption</td><td>Included, but may be inaccurate</td></tr>
+      <tr><td><strong>Info</strong></td><td>Awareness only</td><td>No impact</td></tr>
+    </table>
+    <blockquote class="warn">⚠️ <strong>Warning:</strong> Error-severity rows are excluded from ARR. Unresolved errors will cause your ARR to be understated.</blockquote>
     <h3>Common Flags</h3>
     <table>
-      <tr><th>Flag</th><th>What it means</th></tr>
-      <tr><td><code>MISSING_PRODUCT_SERVICE_MAPPING</code></td><td>Product not found in mapping sheet</td></tr>
-      <tr><td><code>MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM</code></td><td>Recurring item missing start/end date</td></tr>
-      <tr><td><code>SUSPICIOUS_NEGATIVE_AMOUNT</code></td><td>May be a credit or refund</td></tr>
-      <tr><td><code>INVALID_DATE</code></td><td>Date couldn't be parsed</td></tr>
-      <tr><td><code>AMOUNT_PRICE_QUANTITY_MISMATCH</code></td><td>Amount doesn't match price × quantity</td></tr>
+      <tr><th>Flag</th><th>Severity</th><th>What it means</th></tr>
+      <tr><td><code>MISSING_PRODUCT_SERVICE_MAPPING</code></td><td>Error</td><td>Product not found in mapping sheet</td></tr>
+      <tr><td><code>MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM</code></td><td>Warning</td><td>Recurring item missing start/end date — 1-year term assumed</td></tr>
+      <tr><td><code>SUSPICIOUS_NEGATIVE_AMOUNT</code></td><td>Warning</td><td>May be a credit or refund</td></tr>
+      <tr><td><code>INVALID_DATE</code></td><td>Error</td><td>Date couldn’t be parsed</td></tr>
+      <tr><td><code>AMOUNT_PRICE_QUANTITY_MISMATCH</code></td><td>Warning</td><td>Amount doesn’t match price × quantity</td></tr>
+      <tr><td><code>MISSING_INVOICE_NUMBER</code></td><td>Info</td><td>Invoice number is blank</td></tr>
+      <tr><td><code>MISSING_RECOGNITION_ASSUMPTION</code></td><td>Error</td><td>No recognition rule found for this category</td></tr>
     </table>
     <h3>Resolving a Flag</h3>
     <ol>
@@ -216,6 +226,7 @@
       <li>Click to expand details.</li>
       <li>Choose <strong>Resolve</strong> (accept as-is) or <strong>Override</strong> (enter correct value).</li>
     </ol>
+    <blockquote class="warn">⚠️ <strong>Important:</strong> Overrides are tied to the specific import they were applied to. If you re-import a corrected workbook, you must re-apply overrides — they do not carry forward automatically.</blockquote>
   </div>
 
   <div class="section" id="movements">

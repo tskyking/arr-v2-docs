@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 9 — Added Customer Explorer section; expanded troubleshooting with customer-level scenarios; extended glossary)_
+_Last updated: 2026-04-02 (Session 10 — Expanded Review Queue section: severity levels, override scoping, bulk resolve guidance; added "my override disappeared" troubleshooting item; clarified data export workflow)_
 
 ---
 
@@ -269,37 +269,57 @@ ARR history is shown in chronological order. You can use this view to:
 
 The **Review Queue** shows you rows from your imported data that the system couldn't process with full confidence. Reviewing and resolving these items ensures your ARR numbers are accurate.
 
+### Flag Severity Levels
+
+Every flag in the Review Queue has a severity level that tells you how urgently it needs attention:
+
+| Severity | What it means | Impact on ARR |
+|---|---|---|
+| **Error** | The row could not be processed. | **Excluded** from ARR calculations until resolved. |
+| **Warning** | The row was processed using an assumption the system made on your behalf. | **Included** in ARR, but may be inaccurate. Review recommended. |
+| **Info** | The row is fine — this is for your awareness only. | **No impact.** No action required. |
+
+> ⚠️ **Warning:** Any row with an **Error** severity flag is not counted in your ARR. If you have many unresolved error-level flags, your ARR numbers will be understated. Check the Review Queue after every import.
+
 ### Why Rows Get Flagged
 
 Rows are flagged for a variety of reasons. Each flag has a code and a plain-language description:
 
-| Flag | What it means |
-|---|---|
-| `MISSING_PRODUCT_SERVICE_MAPPING` | This product/service name wasn't found in the mapping sheet |
-| `MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM` | A recurring item is missing a start or end date |
-| `SUSPICIOUS_NEGATIVE_AMOUNT` | The row has a negative dollar amount (may be a credit or refund) |
-| `INVALID_DATE` | A date value couldn't be parsed |
-| `INVALID_NUMBER` | A quantity or amount couldn't be parsed as a number |
-| `UNKNOWN_TRANSACTION_TYPE` | The transaction type isn't recognized |
-| `MISSING_INVOICE_NUMBER` | The invoice number is blank |
-| `AMOUNT_PRICE_QUANTITY_MISMATCH` | The amount doesn't match price × quantity |
-| `MULTIPLE_PRODUCT_SERVICE_CATEGORIES` | The product maps to more than one revenue category |
-| `MISSING_RECOGNITION_ASSUMPTION` | No recognition rule was found for this category |
-| `UNSUPPORTED_RECOGNITION_RULE` | The recognition rule text couldn't be interpreted |
-
-> 💡 **Tip:** Flags with severity **error** mean the row was excluded from ARR calculations. Flags with severity **warning** mean the row was included, but with assumptions the system made on your behalf. Flags with severity **info** are for your awareness only.
+| Flag | Typical Severity | What it means |
+|---|---|---|
+| `MISSING_PRODUCT_SERVICE_MAPPING` | Error | This product/service name wasn't found in the mapping sheet |
+| `MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM` | Warning | A recurring item is missing a start or end date — system estimated a 1-year term |
+| `SUSPICIOUS_NEGATIVE_AMOUNT` | Warning | The row has a negative dollar amount (may be a credit or refund) |
+| `INVALID_DATE` | Error | A date value couldn't be parsed |
+| `INVALID_NUMBER` | Error | A quantity or amount couldn't be parsed as a number |
+| `UNKNOWN_TRANSACTION_TYPE` | Warning | The transaction type isn't recognized |
+| `MISSING_INVOICE_NUMBER` | Info | The invoice number is blank |
+| `AMOUNT_PRICE_QUANTITY_MISMATCH` | Warning | The amount doesn't match price × quantity |
+| `MULTIPLE_PRODUCT_SERVICE_CATEGORIES` | Error | The product maps to more than one revenue category |
+| `MISSING_RECOGNITION_ASSUMPTION` | Error | No recognition rule was found for this category |
+| `UNSUPPORTED_RECOGNITION_RULE` | Error | The recognition rule text couldn't be interpreted |
 
 ### Resolving a Flag
 
 1. In the Review Queue, find the row you want to review.
 2. Click the row to expand its details — you'll see the raw data and the reason it was flagged.
 3. Choose one of two actions:
-   - **Resolve** — mark the flag as reviewed and accepted as-is (the system's assumption stands)
-   - **Override** — enter the correct value or category, and the system will re-calculate ARR for that row
+   - **Resolve** — mark the flag as reviewed and accepted as-is. The system's assumption stands and the row is counted in ARR at the estimated value.
+   - **Override** — enter the correct value or category. The system will recalculate ARR for that row using your correction.
+
+> 💡 **Tip:** Use **Resolve** when the system's assumption is close enough and you don't have better source data. Use **Override** when you know the correct value and want the ARR calculation to reflect it precisely.
+
+### A Note on Overrides and Re-Imports
+
+> ⚠️ **Important:** Overrides are tied to the specific import they were applied to. If you upload a corrected workbook (re-import), the overrides you applied to the previous import **do not carry forward** to the new one. You will need to re-apply any overrides after each re-import.
+>
+> **Best practice:** Fix data issues in the source workbook and re-import a clean file, rather than relying on overrides to patch a recurring problem. Overrides are for exceptions, not systematic corrections.
 
 ### Bulk Resolve
 
 If you have many similar flags (e.g., all rows with a missing invoice number that you don't need for ARR purposes), you can select multiple rows and **Resolve All** at once.
+
+> 💡 **Tip:** Bulk resolve is most useful for `MISSING_INVOICE_NUMBER` and `SUSPICIOUS_NEGATIVE_AMOUNT` flags where the rows are correctly categorized and you just want to acknowledge them.
 
 > ⚠️ **Warning:** Resolving a flag does not change the underlying data in your workbook. If the source data has an error, fix it in QuickBooks and re-import the file.
 
@@ -375,6 +395,20 @@ If you choose **Yes**, the system generates a clean, re-uploadable Excel workboo
 
 > 💡 **Tip:** Always export before clearing if there is any chance you will want to refer back to the current data set.
 
+### What the Export Contains
+
+When you export before clearing, the exported workbook contains:
+
+- All rows from your imported transaction data, in the same sheet structure as the original
+- The product/service mapping sheet
+- The revenue recognition assumptions sheet
+
+The exported workbook is formatted to be re-imported directly into ARR V2. You can open it in Excel, correct any errors, and re-upload it using the standard import flow.
+
+> 💡 **Tip:** Exporting before clearing is also a useful way to create a "backup snapshot" of your data at a specific point in time, even if you're not planning to clear immediately.
+
+> ⚠️ **Warning:** Overrides and resolved flags from the Review Queue are **not** included in the export. They are stored at the system level and cannot be re-imported. If you have important overrides, note them down before clearing.
+
 ---
 
 ## 9. Troubleshooting
@@ -437,6 +471,16 @@ If you choose **Yes**, the system generates a clean, re-uploadable Excel workboo
 
 **Cause:** If customers had ARR in a prior import but that import is not currently active, they will appear as "new" in the current import even if they are returning customers.
 **Fix:** This is expected when switching between separate imports. For period-over-period analysis to be meaningful, each import should cover a continuous time range. Consider importing a longer date range in a single workbook rather than multiple short imports.
+
+### My review queue override disappeared after re-importing
+
+**Cause:** Overrides are scoped to a specific import. When you upload a new workbook (re-import), a brand-new import record is created. Overrides from the previous import are not attached to the new one.
+**Fix:**
+1. Go to the Review Queue for the new import.
+2. Find the row(s) you previously overrode.
+3. Re-apply the override with the correct value.
+
+> 💡 **Tip:** If you find yourself re-applying the same overrides repeatedly, that's a sign the underlying source data should be corrected in QuickBooks instead. Fix the data at the source, re-import a clean file, and the override won't be needed.
 
 ### My Review Queue shows items that seem to belong to a different period
 

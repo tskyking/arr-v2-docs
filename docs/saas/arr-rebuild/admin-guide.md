@@ -1,6 +1,6 @@
-# ARR V2 — Admin & Super User Guide
+# ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 9 — Added notes on getCustomerDetail override scope; ARR history sort order; dashboard UI progress)_
+_Last updated: 2026-04-02 (Session 10 — Expanded ARR Policy Configuration: override workflow, policy vs override distinction; expanded Data Management with import lifecycle guidance; added override scoping note to Section 4)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -64,7 +64,7 @@ Super Users sit above all tenant-level roles. A SU can:
 
 - A SU cannot be "accidentally" in a tenant context. Tenant context must be explicitly selected for every session.
 - A SU in tenant context A **cannot** view or access tenant context B simultaneously. You must switch explicitly.
-- SU actions inside a tenant context are always tagged with your SU identity — there is no "acting as" a regular user without attribution.
+- SU actions inside a tenant context are always tagged with your SU identity - there is no "acting as" a regular user without attribution.
 
 ### Responsibilities
 
@@ -74,7 +74,7 @@ As a Super User, you are responsible for:
 2. Never discussing one client's data in the context of another
 3. Ensuring context switches are intentional and logged correctly
 4. Handling archived client data with the same care as live data
-5. Keeping your SU credentials confidential — do not share access
+5. Keeping your SU credentials confidential - do not share access
 
 > 💡 **Tip:** Treat each client's data as if it were your firm's own confidential financial records. The trust clients place in this system depends on your discretion.
 
@@ -90,9 +90,9 @@ The multi-tenant architecture of ARR V2 stores each client's data in an isolated
 
 ### How Tenant Context Works
 
-Each client (company using ARR V2) has a **tenant ID** — a stable unique identifier assigned when they are onboarded. All data, imports, review queue items, and user accounts are scoped to this tenant ID.
+Each client (company using ARR V2) has a **tenant ID** - a stable unique identifier assigned when they are onboarded. All data, imports, review queue items, and user accounts are scoped to this tenant ID.
 
-- **Default tenant context:** The system has a default tenant for single-tenant deployments. In production multi-tenant mode, there is no default — you must always select a tenant explicitly.
+- **Default tenant context:** The system has a default tenant for single-tenant deployments. In production multi-tenant mode, there is no default - you must always select a tenant explicitly.
 - **URL structure:** All data API routes are scoped under `/tenants/:tenantId/`. The server rejects requests where the tenantId in the URL does not match the authenticated session context.
 
 ### Switching to a Client Context
@@ -109,7 +109,7 @@ Each client (company using ARR V2) has a **tenant ID** — a stable unique ident
 
 <!-- TODO: add UI indicator details when implemented -->
 
-The header bar should display the current client name when you are in a tenant context. If you see "Super User — No Tenant Selected," you are in the tenant-neutral state and no client data is accessible.
+The header bar should display the current client name when you are in a tenant context. If you see "Super User - No Tenant Selected," you are in the tenant-neutral state and no client data is accessible.
 
 ### Exiting a Client Context
 
@@ -139,7 +139,7 @@ Client data is loaded via the **Import** function within a client's tenant conte
 1. Switch into the client's tenant context (see Section 3).
 2. Navigate to **Import**.
 3. Upload the client's `.xlsx` workbook.
-4. Verify the import summary — row count, flagged items, date range.
+4. Verify the import summary - row count, flagged items, date range.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -147,15 +147,32 @@ Client data is loaded via the **Import** function within a client's tenant conte
 
 Each client can have multiple import records. Imports are not automatically replaced — each upload creates a new import record with a unique ID. This means:
 
-- A client can have several months' worth of imports in the system simultaneously
+- A client can have several months’ worth of imports in the system simultaneously
 - The dashboard defaults to the most recent import
 - Older imports remain accessible for comparison or audit purposes
 
 > ⚠️ **Warning:** The `removeImport` operation permanently deletes the import record and all associated review overrides. It cannot be undone. Always verify you are removing the correct import ID before confirming.
 
+### Import Lifecycle and Best Practices
+
+A well-managed import lifecycle looks like this:
+
+1. **Client exports** their QuickBooks workbook and sends it to you (or uploads it directly).
+2. **Upload the workbook** from within the client’s tenant context.
+3. **Review the import summary** — check row counts, flagged item counts, and date range.
+4. **Work the Review Queue** — resolve or override flagged items before finalizing ARR.
+5. **Confirm ARR numbers** with the Tenant Admin before presenting to stakeholders.
+6. **Archive or retain** the source XLSX workbook externally as your authoritative record.
+
+For ongoing monthly use:
+
+- Each month’s import should cover a **continuous and complete** date range — gaps or overlaps between imports can distort ARR movement calculations.
+- If a prior workbook needs correction, the correct path is: **export → correct → re-import** (using the reset/export flow), then re-apply any critical overrides.
+- Use `removeImport` to clean up test or duplicate imports. Do not use it to “replace” a finalized import that has been seen by stakeholders.
+
 ### Review Override Scope
 
-Review queue overrides are scoped to a specific import ID. When a client asks "why does my override seem missing," this is almost always because:
+Review queue overrides are scoped to a specific import ID. When a client asks “why does my override seem missing,” this is almost always because:
 
 1. A new import was uploaded after the override was applied (overrides do not carry over to new imports), or
 2. The active import context in the UI has changed.
@@ -164,13 +181,27 @@ Remind Tenant Admins of this behavior when they apply overrides: **overrides mus
 
 **Technical detail (for admin reference):** Override records are stored alongside the import ID at the store layer. The `getCustomerDetail` service resolves overrides within the scope of a specific import — overrides from import A are never visible when viewing import B. This is by design and matches the per-import scoping of all review data.
 
+### Re-Import Workflow (Corrected Workbook)
+
+Use this workflow when a client discovers errors in their source data after an import has already been reviewed:
+
+1. **Switch into the client’s tenant context.**
+2. **Export current data** (Settings → Reset Data → Export before clearing) — this gives the client a starting point for corrections.
+3. **Confirm the client has corrected their workbook** — ensure the source errors are actually fixed, not just masked by overrides.
+4. **Clear current data** (confirm the export has been received first).
+5. **Import the corrected workbook.**
+6. **Re-apply any critical overrides** from the prior import — these do not carry forward automatically.
+7. **Log a note** in the audit trail (via override reason fields or external documentation) explaining the re-import and why it was necessary.
+
+> 💡 **Tip:** For minor data errors (a handful of rows), prefer applying overrides rather than triggering a full re-import. Reserve re-import for structural errors that affect many rows or the workbook’s sheet layout.
+
 ### Customer ARR History Sort Order
 
-When using the Customer Explorer or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
+When using the Customer Explorer or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem - check the browser console or file a bug report.
 
 ### Archiving Client Data
 
-<!-- TODO: archive/restore UI is post-MVP — document when feature is built -->
+<!-- TODO: archive/restore UI is post-MVP - document when feature is built -->
 
 > ⚠️ **Note:** XLSX archive storage and encrypted data retention are planned for post-MVP. During MVP, client data exists as processed JSON on the server. Clients should retain their source XLSX workbooks independently.
 
@@ -179,7 +210,7 @@ Post-MVP, the archive workflow will be:
 1. Navigate to the client's tenant (switch context).
 2. Go to **Client Settings** → **Data Archive**.
 3. Select the import(s) to archive.
-4. Click **Archive** — the system will store a secure copy and set the tenant status to `archived`.
+4. Click **Archive** - the system will store a secure copy and set the tenant status to `archived`.
 
 Archived tenants will not appear in active client lists but their data will be retrievable.
 
@@ -207,15 +238,15 @@ ARR V2 enforces strict data isolation at multiple layers:
 
 2. **API layer:** All data routes require a `tenantId` in the URL. The server validates that the tenantId matches the authenticated session. Requests with a mismatched or missing tenantId are rejected with a `403 Forbidden` response.
 
-3. **Service layer:** All store functions (`saveImport`, `loadAllImports`, `deleteImport`, etc.) require a `tenantId` parameter. There are no global queries — every read and write is tenant-scoped.
+3. **Service layer:** All store functions (`saveImport`, `loadAllImports`, `deleteImport`, etc.) require a `tenantId` parameter. There are no global queries - every read and write is tenant-scoped.
 
 4. **Invalid tenantId rejection:** TenantId values containing path traversal characters (`..`, `/`, `\`, etc.) are rejected at the route layer before any file system operation.
 
 ### What "Data Isolation" Means in Practice
 
-- A Viewer or Analyst logged into Client A's tenant will never see Client B's data — it is structurally impossible given the data model.
+- A Viewer or Analyst logged into Client A's tenant will never see Client B's data - it is structurally impossible given the data model.
 - A Tenant Admin in Client A cannot query or access Client B's routes, even if they know Client B's tenant ID, because the server checks that their session is authenticated to Client A's context.
-- A SU in Client A's context cannot perform operations on Client B's data in the same API call — they must explicitly exit and switch contexts.
+- A SU in Client A's context cannot perform operations on Client B's data in the same API call - they must explicitly exit and switch contexts.
 
 ### Verifying Isolation
 
@@ -231,7 +262,7 @@ If you ever want to verify isolation for a client:
 
 ## 6. User Management
 
-<!-- TODO: user management UI is post-MVP — draft below reflects planned model -->
+<!-- TODO: user management UI is post-MVP - draft below reflects planned model -->
 
 ### Role Hierarchy
 
@@ -263,9 +294,9 @@ Only SUs can reassign a user to a different tenant.
 2. Search for the user by email.
 3. Click **Reassign Tenant**.
 4. Select the new tenant from the list.
-5. Confirm — the change is logged in the audit trail with your identity, the old tenant, and the new tenant.
+5. Confirm - the change is logged in the audit trail with your identity, the old tenant, and the new tenant.
 
-> ⚠️ **Warning:** The user's existing session is invalidated immediately upon reassignment. They will need to log in again. Users do not receive notification of the reassignment — coordinate externally if needed.
+> ⚠️ **Warning:** The user's existing session is invalidated immediately upon reassignment. They will need to log in again. Users do not receive notification of the reassignment - coordinate externally if needed.
 
 ### Changing a User's Role
 
@@ -299,11 +330,11 @@ Super User accounts are provisioned separately from tenant accounts. SU credenti
 
 ### What ARR Policy Controls
 
-Each tenant has an **ARR Policy** — a named configuration that governs how the system recognizes revenue. The policy is applied during import and determines which recognition rules are valid, what defaults are used for missing data, and how edge cases are handled.
+Each tenant has an **ARR Policy** - a named configuration that governs how the system recognizes revenue. The policy is applied during import and determines which recognition rules are valid, what defaults are used for missing data, and how edge cases are handled.
 
 The policy is defined in the tenant's **Recognition Assumptions sheet** (in the XLSX workbook) but Admins can also configure overrides at the policy level in the UI.
 
-> ⚠️ **Previously known issue — now resolved (Session 7/8):** The import system previously rejected transaction sheets named with the word "External" (e.g., "Sales by Cust Detail External"). This was fixed in Session 7/8. The system now correctly detects such sheets as a valid fallback when no internal-named sheet is present. If a client reported this issue previously, ask them to re-attempt the upload without renaming.
+> ⚠️ **Previously known issue - now resolved (Session 7/8):** The import system previously rejected transaction sheets named with the word "External" (e.g., "Sales by Cust Detail External"). This was fixed in Session 7/8. The system now correctly detects such sheets as a valid fallback when no internal-named sheet is present. If a client reported this issue previously, ask them to re-attempt the upload without renaming.
 
 ### Current UI Status
 
@@ -313,30 +344,46 @@ As of Session 9, the Dev Dashboard UI has been updated with improved navigation 
 
 | Rule | What it Does |
 |---|---|
-| `subscription_term` | Spread revenue evenly over the subscription's start–end date range |
+| `subscription_term` | Spread revenue evenly over the subscription's start-end date range |
 | `fallback_one_year_from_invoice` | If no subscription dates exist, assume 12 months from invoice date |
 | `fixed_36_months_from_invoice` | Spread revenue evenly over 36 months from the invoice date |
 | `invoice_date_immediate` | Recognize the full amount in the invoice month (one-time revenue) |
 
+### Policy vs Override: When to Use Each
+
+ARR V2 has two distinct mechanisms for adjusting ARR: **policy configuration** and **monthly overrides**. Understanding the difference matters:
+
+| Mechanism | What it changes | Scope | Retroactive? |
+|---|---|---|---|
+| **ARR Policy** | Recognition rules for a product/service category | All future imports for this tenant | No — re-import required |
+| **Monthly Override** | The ARR value for a specific contract line in a specific month | Single line + period only | Yes — takes effect immediately |
+
+**Use ARR Policy changes when:** The recognition rule for a category is wrong or has changed (e.g., switching from `invoice_date_immediate` to `subscription_term` for a product that is now sold as a subscription). Policy changes affect future imports; to apply to historical data, re-import after updating the policy.
+
+**Use Monthly Overrides when:** A specific contract’s ARR doesn’t match the agreed-upon terms due to a one-off situation — for example, a contract amendment, partial period, or an unusual billing arrangement. The automated calculation is correct in general, but wrong for this specific case.
+
+> ⚠️ **Warning:** Do not use monthly overrides as a substitute for fixing the underlying policy or source data. If you are applying the same override repeatedly, update the recognition rule or source workbook instead.
+
 ### Applying a Policy Change
 
-1. Switch into the client's tenant context.
+1. Switch into the client’s tenant context.
 2. Go to **Settings** → **ARR Policy**.
 3. Select the recognition rule for each product/service category.
 4. Click **Save Policy**.
+5. To apply the updated policy to existing data, trigger a re-import of the client’s workbook (see Section 4 re-import workflow).
 
-> ⚠️ **Warning:** Changing a recognition policy affects how ARR is calculated for **all future imports**. Existing import results are not retroactively recalculated unless you re-import. If in doubt, coordinate with the client before changing policy.
+> ⚠️ **Warning:** Saving a policy change does **not** retroactively recalculate existing imports. The new rules will apply on the next import. If the client needs historical ARR recalculated, a re-import is required.
 
 ### ARR Monthly Overrides
 
-Tenant Admins (and SUs) can override the calculated ARR for a specific contract line in a specific period. This is used when the system's automated calculation doesn't match the agreed-upon contract terms.
+Tenant Admins (and SUs) can override the calculated ARR for a specific contract line in a specific period. This is used when the system’s automated calculation doesn’t match the agreed-upon contract terms.
 
 **To apply a monthly override:**
 
-1. Navigate to the Review Queue or the ARR Dashboard for the client's tenant.
+1. Navigate to the Review Queue or the ARR Dashboard for the client’s tenant.
 2. Find the line item you want to override.
 3. Click **Override ARR** and enter the correct value.
-4. Provide a reason (required).
+4. Provide a reason (required — be specific; this entry is permanent in the audit log).
 5. Click **Apply Override**.
 
 **All overrides are logged with:**
@@ -346,6 +393,8 @@ Tenant Admins (and SUs) can override the calculated ARR for a specific contract 
 - The override value
 - The reason provided
 - Timestamp (UTC)
+
+> ⚠️ **Warning:** Override records are scoped to the import they were applied to. If the client re-imports a corrected workbook, overrides from the prior import are **not** carried forward. You must re-apply overrides after each re-import. (See Section 4: Re-Import Workflow.)
 
 > 💡 **Tip:** Use overrides sparingly. If you find yourself applying many overrides, it usually means the recognition rules or the source data need to be updated — not that overrides are the right long-term fix.
 
@@ -372,7 +421,7 @@ The system logs the following events automatically:
 
 ### Viewing Audit Logs
 
-<!-- TODO: audit log UI is post-MVP — document when built -->
+<!-- TODO: audit log UI is post-MVP - document when built -->
 
 1. From the SU dashboard, navigate to **Audit Logs**.
 2. Filter by:
@@ -382,17 +431,17 @@ The system logs the following events automatically:
    - Date range
 3. Export to CSV for compliance reporting.
 
-> 💡 **Tip:** Review audit logs periodically — especially for SU context switches and ARR overrides. These are the highest-risk actions in the system.
+> 💡 **Tip:** Review audit logs periodically - especially for SU context switches and ARR overrides. These are the highest-risk actions in the system.
 
 ### Log Retention
 
-<!-- TODO: log retention policy to be defined — placeholder below -->
+<!-- TODO: log retention policy to be defined - placeholder below -->
 
 Audit logs are retained for a minimum of 12 months. Older logs may be archived but are not deleted.
 
 > 💡 **Tip:** For compliance purposes, export audit logs to CSV at least quarterly and store them in a system outside ARR V2. This ensures you have an independent record even in the event of a server failure or data reset.
 
-> ⚠️ **Warning:** Audit logs are read-only. They cannot be edited or deleted, even by a Super User. This is by design — the audit trail must be tamper-proof.
+> ⚠️ **Warning:** Audit logs are read-only. They cannot be edited or deleted, even by a Super User. This is by design - the audit trail must be tamper-proof.
 
 ---
 
@@ -401,12 +450,12 @@ Audit logs are retained for a minimum of 12 months. Older logs may be archived b
 ### Data Residency and Storage
 
 - All client data (processed JSON imports, overrides) is stored on the server in tenant-scoped directories.
-- File paths are never constructed from user input without sanitization — path traversal attacks are rejected at the route layer.
+- File paths are never constructed from user input without sanitization - path traversal attacks are rejected at the route layer.
 - Tenant IDs are validated for safe characters before any file system operation.
 
 ### Encryption at Rest
 
-**Current (MVP):**  
+**Current (MVP):**
 Processed import data (JSON) is stored on the server's file system. Encryption at rest is provided by the host platform's volume/disk encryption. This is acceptable for MVP but should not be treated as long-term production hardening.
 
 **Planned (Post-MVP):**
@@ -422,20 +471,20 @@ All API communication should be over HTTPS. HTTP access to production instances 
 ### Access Controls
 
 - SU accounts should use credentials that are not shared with any other system or person.
-- Tenant Admin accounts should be scoped strictly to their tenant — they cannot elevate to SU.
+- Tenant Admin accounts should be scoped strictly to their tenant - they cannot elevate to SU.
 - Session tokens should have an appropriate expiry (recommended: 8 hours max for production).
 
-<!-- TODO: MFA enforcement and session timeout configuration — post-MVP -->
+<!-- TODO: MFA enforcement and session timeout configuration - post-MVP -->
 
 ### Handling a Security Incident
 
 If you suspect cross-tenant data exposure or unauthorized access:
 
-1. **Stop using the system immediately** — do not attempt to investigate while logged in as SU.
-2. **Notify your team lead** — escalate to whoever owns security response.
-3. **Preserve logs** — do not delete or modify any audit logs, files, or records.
-4. **Document the timeline** — note what you observed, when, and in what context.
-5. **Assess client impact** — determine if any client data was visible to another client.
+1. **Stop using the system immediately** - do not attempt to investigate while logged in as SU.
+2. **Notify your team lead** - escalate to whoever owns security response.
+3. **Preserve logs** - do not delete or modify any audit logs, files, or records.
+4. **Document the timeline** - note what you observed, when, and in what context.
+5. **Assess client impact** - determine if any client data was visible to another client.
 6. Initiate your organization's incident response process.
 
 > ⚠️ **Warning:** Cross-tenant data exposure is a high-severity incident regardless of intent. Treat it as a breach until proven otherwise.
@@ -446,5 +495,5 @@ You have access to client financial data that is confidential and sensitive. You
 
 - Never export, copy, or share client data outside the system unless explicitly authorized.
 - Never discuss one client's data with another client.
-- Never access client data out of curiosity — only for legitimate operational reasons.
+- Never access client data out of curiosity - only for legitimate operational reasons.
 - Log off or exit client contexts when your work is complete.
