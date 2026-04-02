@@ -92,14 +92,9 @@ Hold product, roadmap, architecture, and coordination notes for Todd's SaaS work
 - SU can reassign a user from one tenant to another (with audit log entry)
 - Users do not know other tenants exist
 
-### Merger / Acquisition Tenant Merge (Post-MVP+)
-- SU can merge two tenant datasets into one combined tenant
-- Combined tenant shows ARR from both source tenants
-- Source tenant .xlsx workbooks are merged/combined
-- Original source tenant records are preserved for audit purposes
-- Resulting merged tenant gets a new or existing tenant ID
-- SU can reassign users from both source tenants to the merged tenant
-- This is a complex operation — needs careful design to preserve ARR continuity and avoid double-counting
+### Merger / Acquisition Tenant Merge — SHELVED
+- Rare scenario. Practical workaround: start a new tenant with a combined upload containing merged revenue data going forward.
+- Not worth design complexity at this stage. Discuss with Brian if a customer ever needs it.
 
 ## Pre-MVP requirement (data import UX)
 - Build agent should ensure clear, human-readable error messages when:
