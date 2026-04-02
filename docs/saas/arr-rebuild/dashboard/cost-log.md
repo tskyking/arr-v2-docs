@@ -25,8 +25,15 @@
 - Reload to: $90
 - This prevents silent API outages going forward.
 
+| 2026-04-01 20:52 | $86.81 | Agents running overnight. Auto-reload confirmed active. |
+
+## Overnight Burn Estimate
+- 6:50 PM → 8:52 PM (2hrs): $99.58 → $86.81 = **$12.77 spent** (~$6.40/hr)
+- Projected overnight (8:52 PM → 11:00 AM = ~14hrs): **~$85-98**
+- 1-2 auto-reloads expected overnight at $60 trigger
+
 ## Current Balance (last known)
-$99.58 as of 2026-04-01 18:50 PDT
+$86.81 as of 2026-04-01 20:52 PDT
 
 ---
 _Update this file when you check the Anthropic dashboard. Coordinator reads this file each hour._
