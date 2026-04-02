@@ -31,7 +31,17 @@ Hold product, roadmap, architecture, and coordination notes for Todd's SaaS work
 - Document links / source references
 
 ## Open Questions
-- What the current SaaS product does.
-- What stage it is in.
-- What the top bottlenecks are.
-- How work is currently divided among people/agents.
+- Duplicate invoice dedup — needs product decision before QA can fully test
+- Permission levels — admin vs standard user flows need to be defined before doc phase
+
+## Documentation Plan (near MVP)
+- Produce a user manual covering:
+  - New user onboarding flow
+  - Frequent user workflows
+  - Step-by-step for each major function
+  - Screenshots and examples
+  - Permission levels (admin, standard user, etc.)
+  - Not overly technical — accessible language
+- Coordinator or dedicated Doc Agent can handle this
+- Spawn doc agent when MVP is 80-90% complete
+- Output format: Markdown → PDF or styled HTML
