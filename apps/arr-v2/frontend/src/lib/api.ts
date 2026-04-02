@@ -172,3 +172,43 @@ export async function overrideReviewItem(
 export async function getHealth(): Promise<{ status: string; ts: string }> {
   return request('/health');
 }
+
+// ─── ARR Movements ────────────────────────────────────────────────────────────
+
+export interface ArrMovement {
+  period: string;
+  openingArr: number;
+  newArr: number;
+  expansionArr: number;
+  contractionArr: number;
+  churnArr: number;
+  closingArr: number;
+  netMovement: number;
+  newCustomers: number;
+  churnedCustomers: number;
+  expandedCustomers: number;
+  contractedCustomers: number;
+}
+
+export interface ArrMovementsResult {
+  movements: ArrMovement[];
+  fromDate: string;
+  toDate: string;
+  totalNewArr: number;
+  totalExpansionArr: number;
+  totalContractionArr: number;
+  totalChurnArr: number;
+  totalNetMovement: number;
+}
+
+export async function getArrMovements(
+  importId: string,
+  from?: string,
+  to?: string,
+): Promise<ArrMovementsResult> {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const qs = params.size ? `?${params}` : '';
+  return request<ArrMovementsResult>(`/imports/${importId}/arr/movements${qs}`);
+}

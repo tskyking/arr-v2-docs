@@ -9,6 +9,8 @@ import { workbookToImportBundle } from '../../imports/src/workbookToBundle.js';
 import { normalizeImportBundle } from '../../imports/src/normalizers.js';
 import { recognizeAll } from '../../arr/src/recognition.js';
 import { buildMonthlySnapshots } from '../../arr/src/snapshots.js';
+import { buildArrMovements } from '../../arr/src/movements.js';
+import type { ArrMovementsResult } from '../../arr/src/movements.js';
 import type { NormalizedImportBundle } from '../../imports/src/types.js';
 import type { RevenueSegment, ArrSnapshot } from '../../arr/src/types.js';
 import type { ImportSummaryResponse, ArrTimeseriesResponse, ReviewQueueResponse, ReviewItem } from './types.js';
@@ -102,6 +104,19 @@ export function getImportSummary(importId: string): ImportSummaryResponse | null
     })).sort((a, b) => b.totalAmount - a.totalAmount),
     skippedRows: result.skippedRows.length,
   };
+}
+
+export function getArrMovements(
+  importId: string,
+  from?: string,
+  to?: string,
+): ArrMovementsResult | null {
+  const result = importStore.get(importId);
+  if (!result) return null;
+
+  const fromDate = from ?? result.fromDate;
+  const toDate = to ?? result.toDate;
+  return buildArrMovements(result.snapshots, fromDate, toDate);
 }
 
 export function getArrTimeseries(importId: string, from?: string, to?: string): ArrTimeseriesResponse | null {

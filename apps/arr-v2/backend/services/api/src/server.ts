@@ -6,6 +6,7 @@
  *   GET  /imports                     — list imports
  *   GET  /imports/:id/summary         — import summary
  *   GET  /imports/:id/arr             — ARR timeseries
+ *   GET  /imports/:id/arr/movements   — period-over-period ARR waterfall (new/expansion/contraction/churn)
  *   GET  /imports/:id/review          — review queue
  *   GET  /health                      — health check
  */
@@ -20,6 +21,7 @@ import {
   processImport,
   getImportSummary,
   getArrTimeseries,
+  getArrMovements,
   getReviewQueue,
   patchReviewItem,
   listImports,
@@ -128,6 +130,16 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         const ts = getArrTimeseries(importId, from, to);
         if (!ts) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, ts);
+        return;
+      }
+
+      // GET /imports/:id/arr/movements — period-over-period ARR waterfall
+      if (sub === '/arr/movements' && method === 'GET') {
+        const from = url.searchParams.get('from') ?? undefined;
+        const to = url.searchParams.get('to') ?? undefined;
+        const movements = getArrMovements(importId, from, to);
+        if (!movements) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, movements);
         return;
       }
 

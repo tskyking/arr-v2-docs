@@ -8,7 +8,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
 } from 'recharts';
-import { useImportSummary, useArrTimeseries } from '@/lib/hooks';
+import { useImportSummary, useArrTimeseries, useArrMovements } from '@/lib/hooks';
+import ArrWaterfallChart from '@/components/ArrWaterfallChart';
 import styles from './DashboardPage.module.css';
 
 function formatArr(n: number) {
@@ -69,6 +70,12 @@ export default function DashboardPage() {
   }, [preset, customFrom, customTo]);
 
   const { data: ts, loading: tsLoading, error: tsErr } = useArrTimeseries(
+    importId!,
+    fromParam,
+    toParam,
+  );
+
+  const { data: movements, loading: movLoading } = useArrMovements(
     importId!,
     fromParam,
     toParam,
@@ -213,6 +220,21 @@ export default function DashboardPage() {
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* ARR Movements waterfall */}
+      {!movLoading && movements && movements.movements.length > 1 && (
+        <div className={`card ${styles.chartCard}`}>
+          <h2 className={styles.chartTitle}>ARR Movements (New / Expansion / Contraction / Churn)</h2>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', gap: 16 }}>
+            <span>Net movement: <strong style={{ color: movements.totalNetMovement >= 0 ? 'var(--success)' : 'var(--danger)' }}>{movements.totalNetMovement >= 0 ? '+' : ''}{formatArr(movements.totalNetMovement)}</strong></span>
+            <span>New: <strong style={{ color: '#22c55e' }}>+{formatArr(movements.totalNewArr)}</strong></span>
+            <span>Expansion: <strong style={{ color: '#86efac' }}>+{formatArr(movements.totalExpansionArr)}</strong></span>
+            <span>Contraction: <strong style={{ color: '#f97316' }}>−{formatArr(movements.totalContractionArr)}</strong></span>
+            <span>Churn: <strong style={{ color: '#ef4444' }}>−{formatArr(movements.totalChurnArr)}</strong></span>
+          </div>
+          <ArrWaterfallChart movements={movements.movements} />
         </div>
       )}
 

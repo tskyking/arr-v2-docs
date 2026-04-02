@@ -49,3 +49,10 @@ export function useArrTimeseries(importId: string, from?: string | null, to?: st
 export function useReviewQueue(importId: string, status?: string) {
   return useAsync<ReviewQueue>(() => api.getReviewQueue(importId, status), [importId, status]);
 }
+
+export function useArrMovements(importId: string, from?: string | null, to?: string | null) {
+  return useAsync<import('./api').ArrMovementsResult>(
+    () => api.getArrMovements(importId, from ?? undefined, to ?? undefined),
+    [importId, from, to],
+  );
+}
