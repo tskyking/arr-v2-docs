@@ -34,6 +34,28 @@ Hold product, roadmap, architecture, and coordination notes for Todd's SaaS work
 - Duplicate invoice dedup — needs product decision before QA can fully test
 - Permission levels — admin vs standard user flows need to be defined before doc phase
 
+## Critical Architecture Requirements (Non-negotiable)
+
+### Multi-client / Tenant Isolation
+- This tool is used by multiple client companies ("clients" = companies using the tool to view their own ARR)
+- Each client's data must be **completely isolated** — one client's data must never be visible to another
+- This is a hard security/architecture requirement, not optional
+- Must be enforced at the data layer, not just the UI layer
+- Applies to: imported data, ARR calculations, review queue items, user accounts
+
+### Client Data Retention (Post-MVP)
+- SU/Admin should be able to store prior client data and reload it later without full re-import
+- Simplest acceptable approach: secure archive of client XLSX workbooks, SU-only accessible
+- Data volume may grow large over time — storage solution should scale
+- Archived client data must be stored securely (encrypted at rest preferred)
+- No cross-client data access under any circumstance — even for SU admin viewing historical data
+
+### Super User (SU) Role
+- A SU/Admin role exists above the standard Admin role
+- SU can: switch between client contexts, access archived data, manage all clients
+- SU context switching should be explicit and logged
+- SU should never accidentally expose one client's data in another client's view
+
 ## Documentation Plan (near MVP)
 - Produce a user manual covering:
   - **Data import section (first and most important)**
