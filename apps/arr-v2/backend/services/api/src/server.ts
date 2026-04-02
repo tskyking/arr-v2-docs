@@ -26,6 +26,7 @@ import {
   patchReviewItem,
   listImports,
 } from './importService.js';
+import { ImportError } from '../../imports/src/importErrors.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 
@@ -174,9 +175,19 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     }
 
     err(res, 404, 'NOT_FOUND', `No route: ${method} ${path}`);
-  } catch (e: any) {
-    console.error('API error:', e);
-    err(res, 500, 'INTERNAL_ERROR', e?.message ?? 'Unknown error');
+  } catch (e: unknown) {
+    if (e instanceof ImportError) {
+      // Return human-readable import errors as 422 Unprocessable Entity — never expose raw internals
+      console.warn('Import error:', e.code, e.detail ?? '');
+      json(res, 422, e.toJSON());
+    } else {
+      // Unexpected server errors — log internally, return safe generic message
+      console.error('Unexpected API error:', e);
+      json(res, 500, {
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred. Please try again or contact support.',
+      });
+    }
   }
 }
 

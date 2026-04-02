@@ -46,12 +46,21 @@ describe('recognizeRow', () => {
       expect(seg!.periodEnd).toBe('2025-01-01');
     });
 
-    it('computes correct ARR contribution (amount / 366 * 365 for leap year 2024)', () => {
-      // 2024-01-01 to 2025-01-01 spans 366 days (2024 is a leap year)
+    it('computes correct ARR contribution for leap year 2024 (annualized using daysInStartYear=366)', () => {
+      // 2024-01-01 to 2025-01-01 spans 366 days (2024 is a leap year).
+      // The engine uses daysInStartYear (366 for 2024) for both numerator and denominator,
+      // so: (12000 / 366) * 366 = 12000 exactly.
       const row = makeRow({ recognizedRuleType: 'fallback_one_year_from_invoice', invoiceDate: '2024-01-01', amount: 12000 });
       const seg = recognizeRow(row);
-      const expected = (12000 / 366) * 365;
-      expect(seg!.arrContribution).toBeCloseTo(expected, 2);
+      expect(seg!.arrContribution).toBeCloseTo(12000, 2);
+    });
+
+    it('computes correct ARR contribution for non-leap year 2023 (daysInStartYear=365)', () => {
+      // 2023-01-01 to 2024-01-01 spans 365 days (2023 is not a leap year).
+      // (12000 / 365) * 365 = 12000 exactly.
+      const row = makeRow({ recognizedRuleType: 'fallback_one_year_from_invoice', invoiceDate: '2023-01-01', amount: 12000 });
+      const seg = recognizeRow(row);
+      expect(seg!.arrContribution).toBeCloseTo(12000, 2);
     });
 
     it('handles negative amount (credit/refund)', () => {

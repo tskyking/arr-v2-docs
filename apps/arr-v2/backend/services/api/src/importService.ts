@@ -14,6 +14,7 @@ import type { ArrMovementsResult } from '../../arr/src/movements.js';
 import type { NormalizedImportBundle } from '../../imports/src/types.js';
 import type { RevenueSegment, ArrSnapshot } from '../../arr/src/types.js';
 import type { ImportSummaryResponse, ArrTimeseriesResponse, ReviewQueueResponse, ReviewItem } from './types.js';
+import { ImportError, wrapUnknownError } from '../../imports/src/importErrors.js';
 
 export interface ImportResult {
   importId: string;
@@ -47,9 +48,33 @@ export function processImport(filePath: string): ImportResult {
   const importId = randomUUID();
   const importedAt = new Date().toISOString();
 
-  const workbook = readXlsxWorkbook(filePath);
-  const bundle = workbookToImportBundle(workbook);
-  const normalized = normalizeImportBundle(bundle);
+  // All pipeline errors are wrapped into ImportError before leaving this function.
+  // No raw JS errors, stack traces, or internal messages should reach the API layer.
+  let workbook, bundle, normalized;
+  try {
+    workbook = readXlsxWorkbook(filePath);
+  } catch (e) {
+    throw e instanceof ImportError ? e : new ImportError('FILE_UNREADABLE', e instanceof Error ? e.message : String(e));
+  }
+  try {
+    bundle = workbookToImportBundle(workbook);
+  } catch (e) {
+    throw e instanceof ImportError ? e : wrapUnknownError(e, 'Parsing workbook');
+  }
+  try {
+    normalized = normalizeImportBundle(bundle);
+  } catch (e) {
+    throw wrapUnknownError(e, 'Normalizing rows');
+  }
+
+  // Post-parse data quality checks
+  if (normalized.normalizedRows.length === 0) {
+    throw new ImportError('NO_DATA_ROWS');
+  }
+  const mappedCount = normalized.normalizedRows.filter(r => r.recognizedCategory).length;
+  if (mappedCount === 0) {
+    throw new ImportError('ALL_ROWS_UNMAPPED');
+  }
   const { segments, skipped } = recognizeAll(normalized.normalizedRows);
 
   // Determine date range from segments

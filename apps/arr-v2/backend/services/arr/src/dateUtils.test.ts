@@ -85,12 +85,13 @@ describe('addMonths', () => {
     expect(toISODate(result)).toBe('2025-01-01');
   });
 
-  it('handles month overflow (Jan + 1 = Feb)', () => {
+  it('handles month overflow (Jan + 1 = Feb) — clamps to last day of February', () => {
     const d = parseDate('2024-01-31')!;
     const result = addMonths(d, 1);
-    // Feb doesn't have 31 days — JS rolls to March 2 (2024 is leap year)
-    // This is expected JS Date behavior
-    expect(result.getUTCMonth()).toBe(2); // March = 2
+    // addMonths clamps to last valid day of target month rather than rolling over.
+    // 2024 is a leap year so Feb has 29 days → Jan 31 + 1 month = Feb 29.
+    expect(result.getUTCMonth()).toBe(1); // February = 1
+    expect(result.getUTCDate()).toBe(29); // clamped to Feb 29
   });
 
   it('adds zero months returns same date', () => {

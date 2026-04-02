@@ -2,6 +2,7 @@ import type { WorkbookImportBundle, TransactionDetailRow, ProductServiceMappingR
 import type { RawSheetTable, RawWorkbook } from './readers/xlsxXmlReader';
 import { detectWorkbookSheets } from './sheetDetection';
 import { parseDateLike, parseNumber } from './utils';
+import { ImportError, wrapUnknownError } from './importErrors.js';
 
 function findHeaderRowIndex(rows: string[][], requiredHeaders: string[]): number {
   return rows.findIndex((row) => {
@@ -28,7 +29,7 @@ export function parseTransactionDetailSheet(sheet: RawSheetTable): TransactionDe
   // Transaction sheets may have title rows at top before the real column header
   // Find the header row by looking for a row containing 'customer' AND 'product/service'
   const headerIndex = findHeaderRowIndex(sheet.rows, ['customer', 'product/service']);
-  if (headerIndex < 0) throw new Error('Could not locate transaction detail header row');
+  if (headerIndex < 0) throw new ImportError('TRANSACTION_HEADER_NOT_FOUND');
   const headers = buildHeaderIndex(sheet.rows[headerIndex]);
   const dataRows = sheet.rows.slice(headerIndex + 1).filter((row) => {
     // Skip rows where the customer cell is empty — those are subtotal/blank spacer rows
@@ -144,9 +145,9 @@ export function parseAliasSheet(sheet: RawSheetTable): Record<string, string>[] 
 export function workbookToImportBundle(workbook: RawWorkbook): WorkbookImportBundle {
   const detected = detectWorkbookSheets(workbook);
 
-  if (!detected.transactionDetail) throw new Error('Could not detect transaction detail sheet.');
-  if (!detected.productServiceMappings) throw new Error('Could not detect product/service mapping sheet.');
-  if (!detected.recognitionAssumptions) throw new Error('Could not detect recognition assumptions sheet.');
+  if (!detected.transactionDetail) throw new ImportError('MISSING_TRANSACTION_SHEET');
+  if (!detected.productServiceMappings) throw new ImportError('MISSING_MAPPING_SHEET');
+  if (!detected.recognitionAssumptions) throw new ImportError('MISSING_ASSUMPTIONS_SHEET');
 
   return {
     transactionDetailRows: parseTransactionDetailSheet(detected.transactionDetail),

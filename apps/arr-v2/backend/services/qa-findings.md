@@ -60,6 +60,31 @@ export function addMonths(d: Date, months: number): Date {
 
 ---
 
+## Bug 6: External Workbook Cannot Be Processed End-to-End (sheetDetection Hard-Rejects)
+
+**File:** `services/imports/src/sheetDetection.ts` — `detectWorkbookSheets`
+
+**Issue:**  
+The external (anonymized) workbook's transaction detail sheet is named `'Sales by Cust Detail External'`. The detection logic in `sheetDetection.ts` explicitly rejects sheets whose names contain "external" (to prefer the internal variant when both are present). As a result, when only the external sheet exists (as in `Sample Data for TSOT import.xlsx`), `detectWorkbookSheets` returns `undefined` for `transactionDetail`, and `workbookToImportBundle` throws `"Could not detect transaction detail sheet."` — making the external workbook **completely unprocessable**.
+
+This was discovered via the new end-to-end integration test in `pipeline.integration.test.ts`. The `xlsxXmlReader.test.ts` tests for the external workbook passed all along because they only check that a sheet *exists* with a matching name fragment, not that `sheetDetection` accepts it.
+
+**Severity: HIGH** — The external workbook is the intended customer-facing workbook format. If users submit only this format, the import pipeline will throw.
+
+**Suggested Fix:**  
+Update `sheetDetection.ts` so the external variant is used as a fallback when no internal transaction detail sheet is found:
+```ts
+// After main detection loop:
+if (!result.transactionDetail) {
+  // Fall back to external variant
+  result.transactionDetail = wb.sheets.find(s =>
+    s.name.toLowerCase().includes('sales by cust detail')
+  );
+}
+```
+
+---
+
 ## Bug 5: `xlsxXmlReader` Does Not Handle Missing `xl/` Prefix on Sheet Paths
 
 **File:** `services/imports/src/readers/xlsxXmlReader.ts` — `readXlsxWorkbook`

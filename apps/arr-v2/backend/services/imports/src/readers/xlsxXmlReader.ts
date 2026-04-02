@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import AdmZip from 'adm-zip';
 import { XMLParser } from 'fast-xml-parser';
+import { ImportError, wrapUnknownError } from '../importErrors.js';
 
 export interface RawSheetTable {
   name: string;
@@ -105,20 +106,25 @@ function readSheetRows(zip: AdmZip, sheetPath: string, sharedStrings: string[]):
 
 export function readXlsxWorkbook(filePath: string): RawWorkbook {
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Workbook not found: ${filePath}`);
+    throw new ImportError('FILE_NOT_FOUND');
   }
 
   const ext = path.extname(filePath).toLowerCase();
   if (ext !== '.xlsx') {
-    throw new Error(`Unsupported workbook extension: ${ext}`);
+    throw new ImportError('UNSUPPORTED_FILE_TYPE', `Got: ${ext}`);
   }
 
-  const zip = new AdmZip(filePath);
+  let zip: AdmZip;
+  try {
+    zip = new AdmZip(filePath);
+  } catch (e) {
+    throw new ImportError('FILE_UNREADABLE', e instanceof Error ? e.message : String(e));
+  }
   const sharedStrings = readSharedStrings(zip);
   const relMap = readWorkbookRels(zip);
 
   const workbookEntry = zip.getEntry('xl/workbook.xml');
-  if (!workbookEntry) throw new Error('Missing workbook XML');
+  if (!workbookEntry) throw new ImportError('FILE_UNREADABLE', 'Missing xl/workbook.xml — not a valid XLSX file');
   const workbookXml = zip.readAsText(workbookEntry, 'utf8');
   const workbookParsed = parser.parse(workbookXml);
   const sheets = asArray(workbookParsed?.workbook?.sheets?.sheet);
