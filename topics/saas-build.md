@@ -75,6 +75,32 @@ Hold product, roadmap, architecture, and coordination notes for Todd's SaaS work
 - Spawn doc agent when MVP is 80-90% complete
 - Output format: Markdown → PDF or styled HTML
 
+## Post-MVP Product Requirements (design for now, build later)
+
+### Tenant Data Reset / Export ("Fresh Start" flow)
+- Admin/SU can trigger a "Clear all data" action for a tenant
+- Before clearing, system prompts: "Export current data as .xlsx before clearing?"
+- If yes: system exports the current tenant data as a clean, re-uploadable .xlsx workbook
+- Exported workbook can be modified by the user and re-imported later
+- This enables: data corrections, period resets, iterative refinement workflows
+- The exported .xlsx should contain all the same sheets as the original import format
+- This is the primary mechanism for multi-tenant handoff when only one tenant is stored at a time
+
+### Tenant User Assignment
+- Each non-SU user is assigned to exactly one tenant
+- Users can only see data for their assigned tenant
+- SU can reassign a user from one tenant to another (with audit log entry)
+- Users do not know other tenants exist
+
+### Merger / Acquisition Tenant Merge (Post-MVP+)
+- SU can merge two tenant datasets into one combined tenant
+- Combined tenant shows ARR from both source tenants
+- Source tenant .xlsx workbooks are merged/combined
+- Original source tenant records are preserved for audit purposes
+- Resulting merged tenant gets a new or existing tenant ID
+- SU can reassign users from both source tenants to the merged tenant
+- This is a complex operation — needs careful design to preserve ARR continuity and avoid double-counting
+
 ## Pre-MVP requirement (data import UX)
 - Build agent should ensure clear, human-readable error messages when:
   - File format is wrong
