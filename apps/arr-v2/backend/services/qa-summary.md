@@ -2,14 +2,14 @@
 
 ## Test Run Status
 
-**30 test files | 622 tests | 0 failures**  
-_(Updated: 2026-04-02 — Build Session 7)_
+**32 test files | 646 tests | 0 failures**  
+_(Updated: 2026-04-02 — Build Session 8)_
 
-Pre-session baseline: 30 files | 620 tests | 13 failing (regressions across 6 test files)  
-This session fixed: 13 failing tests (0 new tests added, 4 source + test files corrected)  
+Pre-session baseline: 30 files | 622 tests | 0 failing  
+This session added: 24 new tests across 2 new test files + 1 server source change  
 
 Test breakdown:
-- 542 passing
+- 646 passing
 - 0 failing
 
 ---
@@ -44,11 +44,17 @@ Test breakdown:
 | File | Tests | Notes |
 |------|-------|-------|
 | `services/api/src/__tests__/server.test.ts` | 30 | HTTP route handler tests: /health CORS, 404s for unknown ids, PATCH/POST validation (400/415), OPTIONS preflight, POST /imports error paths (422/400), unknown route handling. Bug #8/Bug #7 HTTP-layer impact documented with it.fails(). |
+| `services/api/src/__tests__/server-upload.test.ts` | 8 | **New (Session 8)** Upload path tests: multipart/form-data accepted + graceful 422, application/octet-stream accepted + graceful 422, 413 PAYLOAD_TOO_LARGE enforcement (Content-Length fast path + streaming drain path), minimal real ZIP via AdmZip returns 422 not 500. |
 
 ### ARR Movements Service Tests (new — session 5)
 | File | Tests | Notes |
 |------|-------|-------|
 | `services/api/src/__tests__/arrMovements.test.ts` | 12 | getArrMovements: null for unknown importId, structure/shape checks, default from/to, custom range override, chronological order, aggregate totals finite, period YYYY-MM format, net movement invariant per period |
+
+### Store Tests (new — session 8)
+| File | Tests | Notes |
+|------|-------|-------|
+| `services/api/src/__tests__/store-roundtrip.test.ts` | 16 | **New (Session 8)** saveImport/loadAllImports round-trip: field fidelity (importId, importedAt, tenantId, fromDate, toDate), snapshots Map serialization (empty/normal/120-month), bundle + segments + skippedRows preservation, deleteImport, multiple imports, overwrite semantics. Addresses 'Not Yet Covered' item from QA doc. |
 
 ### API Service Tests (new — session 4)
 | File | Tests | Notes |
@@ -150,9 +156,11 @@ See `pipeline.integration.test.ts` — Bug #6 tests lock in current behavior.
 
 3. **Duplicate invoice number detection** — No deduplication logic exists. Needs product clarification.
 
-4. **`store.ts` saveImport/loadAllImports round-trip** — Once Bug #7 is fixed, write isolated tests that verify a saved import (with Map serialization) round-trips correctly through save → load. Currently only covered implicitly via importService integration.
+4. ~~**`store.ts` saveImport/loadAllImports round-trip**~~ — **Done (Session 8)** — 16 tests in `store-roundtrip.test.ts`.
 
-5. **`server.ts` POST /imports multipart upload path** — The multipart/form-data branch of the POST /imports handler is untested. Would require constructing a real multipart body. Low priority vs. the JSON path which is covered.
+5. ~~**`server.ts` POST /imports multipart upload path**~~ — **Done (Session 8)** — 8 tests in `server-upload.test.ts`.
+
+6. **`server.ts` POST /imports real end-to-end upload** — Tests currently use garbage or minimal ZIP bytes. No test uploads a real valid XLSX and verifies a 200 response with correct shape. Medium priority.
 
 ---
 
