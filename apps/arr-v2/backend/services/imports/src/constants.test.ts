@@ -1,11 +1,11 @@
 /**
  * Tests for constants.ts
  * Covers: RECURRING_CATEGORY_HINTS set membership, normalizeCategoryName behavior,
- * and the known Bug #3 (trailing '?' in 'Website Hosting / Support Subscription?').
+ * and isRecurringCategory (Bug #3 fix — case-insensitive, punctuation-tolerant matching).
  */
 
 import { describe, it, expect } from 'vitest';
-import { RECURRING_CATEGORY_HINTS, normalizeCategoryName } from './constants.js';
+import { RECURRING_CATEGORY_HINTS, normalizeCategoryName, isRecurringCategory } from './constants.js';
 
 // ─── RECURRING_CATEGORY_HINTS ─────────────────────────────────────────────────
 
@@ -21,9 +21,8 @@ describe('RECURRING_CATEGORY_HINTS', () => {
   });
 
   it('does NOT contain "Website Hosting / Support Subscription" (without trailing ?)', () => {
-    // This confirms the potential mismatch: if the actual workbook category lacks '?',
-    // MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM will NOT be triggered.
-    // This is the behaviour documented in Bug #3 of qa-findings.md.
+    // The legacy set still uses the '?' variant (backward compat).
+    // Real matching logic should use isRecurringCategory(), not this Set.
     expect(RECURRING_CATEGORY_HINTS.has('Website Hosting / Support Subscription')).toBe(false);
   });
 
@@ -59,16 +58,51 @@ describe('normalizeCategoryName', () => {
     expect(normalizeCategoryName('')).toBe('');
   });
 
-  it('does NOT trim trailing whitespace after stripping ? (implementation detail)', () => {
-    // normalizeCategoryName uses .replace(/\?$/, '').trim()
-    // 'Category?  ' — the trailing ? is NOT at end (spaces follow), so no strip occurs
-    // Result: 'Category?  '.replace(/\?$/, '') = 'Category?  ', then .trim() = 'Category?'
-    // This is a bug: the trailing ? is only stripped if it is the last character.
-    // Documenting actual behavior so the test anchors it and any fix is visible.
-    expect(normalizeCategoryName('Category?  ')).toBe('Category?');
+  it('trims trailing whitespace BEFORE stripping ? (Bug #3 fix)', () => {
+    // Fixed: normalizeCategoryName now uses .trim().replace(/\?$/, '').trim()
+    // 'Category?  '.trim() = 'Category?', then .replace(/\?$/, '') = 'Category', then .trim() = 'Category'
+    expect(normalizeCategoryName('Category?  ')).toBe('Category');
   });
 
   it('handles string that is just "?"', () => {
     expect(normalizeCategoryName('?')).toBe('');
+  });
+});
+
+// ─── isRecurringCategory (Bug #3 fix) ────────────────────────────────────────────
+
+describe('isRecurringCategory (Bug #3 fix)', () => {
+  it('matches "Dashboard Subscription" exactly', () => {
+    expect(isRecurringCategory('Dashboard Subscription')).toBe(true);
+  });
+
+  it('matches "Website Hosting / Support Subscription" (without trailing ?)', () => {
+    // This is the external workbook form — was broken before Bug #3 fix
+    expect(isRecurringCategory('Website Hosting / Support Subscription')).toBe(true);
+  });
+
+  it('matches "Website Hosting / Support Subscription?" (with trailing ? — internal workbook form)', () => {
+    expect(isRecurringCategory('Website Hosting / Support Subscription?')).toBe(true);
+  });
+
+  it('matches with trailing whitespace after ?', () => {
+    expect(isRecurringCategory('Website Hosting / Support Subscription?   ')).toBe(true);
+  });
+
+  it('matches case-insensitively', () => {
+    expect(isRecurringCategory('dashboard subscription')).toBe(true);
+    expect(isRecurringCategory('DASHBOARD SUBSCRIPTION')).toBe(true);
+    expect(isRecurringCategory('website hosting / support subscription?')).toBe(true);
+  });
+
+  it('does not match unrelated categories', () => {
+    expect(isRecurringCategory('One-Time Setup Fee')).toBe(false);
+    expect(isRecurringCategory('')).toBe(false);
+    expect(isRecurringCategory('Implementation Services')).toBe(false);
+  });
+
+  it('does not match partial strings', () => {
+    expect(isRecurringCategory('Dashboard')).toBe(false);
+    expect(isRecurringCategory('Subscription')).toBe(false);
   });
 });

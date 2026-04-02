@@ -26,8 +26,8 @@
 - [x] ARR movement analysis engine (new/expansion/contraction/churn waterfall) + dashboard chart
 - [x] Define MVP ingestion flow
 - [x] Define MVP ARR outputs and review screens
-- [ ] Identify legacy logic safe to reuse
-- [ ] Draft implementation phases in more technical detail
+- [x] Identify legacy logic safe to reuse
+- [x] Draft implementation phases in more technical detail
 
 ## Later
 - [ ] CRM + accounting reconciliation design

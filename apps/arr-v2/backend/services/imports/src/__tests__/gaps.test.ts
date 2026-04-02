@@ -145,8 +145,9 @@ describe('normalizeImportBundle — Website Hosting / Support Subscription? (REC
     expect(result.normalizedRows[0].reviewReasons).toContain('MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM');
   });
 
-  it('does NOT fire MISSING_SUBSCRIPTION_DATES when category lacks the trailing ? (not in hint set)', () => {
-    // Documents Bug #3: 'Website Hosting / Support Subscription' (no ?) is NOT in RECURRING_CATEGORY_HINTS
+  it('DOES fire MISSING_SUBSCRIPTION_DATES when category lacks the trailing ? (Bug #3 fix)', () => {
+    // Before Bug #3 fix: 'Website Hosting / Support Subscription' (no ?) was NOT in RECURRING_CATEGORY_HINTS
+    // so the review flag was silently missing. Now fixed via isRecurringCategory() which normalizes.
     const bundle = makeBundle({
       transactionDetailRows: [
         makeTx({ subscriptionStartDate: null, subscriptionEndDate: null }),
@@ -159,9 +160,8 @@ describe('normalizeImportBundle — Website Hosting / Support Subscription? (REC
       ],
     });
     const result = normalizeImportBundle(bundle);
-    // BUG #3: without the '?', the category does not match RECURRING_CATEGORY_HINTS,
-    // so a missing-dates row silently passes through without a review flag.
-    expect(result.normalizedRows[0].reviewReasons).not.toContain('MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM');
+    // Bug #3 fixed: isRecurringCategory() normalizes trailing ? and whitespace before matching
+    expect(result.normalizedRows[0].reviewReasons).toContain('MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM');
   });
 });
 

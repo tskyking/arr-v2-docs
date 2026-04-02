@@ -8,7 +8,7 @@ import type {
   TransactionDetailRow,
   WorkbookImportBundle,
 } from './types';
-import { RECURRING_CATEGORY_HINTS } from './constants';
+import { isRecurringCategory } from './constants';
 
 function resolvePrimaryCategory(mapping?: ProductServiceMappingRow): string | undefined {
   return mapping?.resolvedPrimaryCategory;
@@ -68,7 +68,7 @@ export function normalizeImportBundle(bundle: WorkbookImportBundle): NormalizedI
     if (assumption && !ruleType) {
       reviewReasons.push('UNSUPPORTED_RECOGNITION_RULE');
     }
-    if (category && RECURRING_CATEGORY_HINTS.has(category) && !row.subscriptionStartDate && !row.subscriptionEndDate) {
+    if (category && isRecurringCategory(category) && !row.subscriptionStartDate && !row.subscriptionEndDate) {
       reviewReasons.push('MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM');
     }
     if (row.amount < 0) {

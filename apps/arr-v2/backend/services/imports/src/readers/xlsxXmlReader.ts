@@ -133,9 +133,17 @@ export function readXlsxWorkbook(filePath: string): RawWorkbook {
     const rid = sheet['@_r:id'];
     const target = relMap.get(rid);
     if (!target) throw new Error(`Missing relationship target for sheet ${sheet['@_name']}`);
-    // Normalize path: some XLSX generators use ../xl/ or bare worksheet names
+    // Normalize path: XLSX generators use varied conventions:
+    //   '../worksheets/sheet1.xml' (relative from xl/_rels/)
+    //   'worksheets/sheet1.xml'    (relative from xl/)
+    //   'xl/worksheets/sheet1.xml' (absolute from zip root)
+    // Strategy: strip all leading '../' segments, then ensure 'xl/' prefix.
     let sheetPath = target;
-    if (sheetPath.startsWith('../')) sheetPath = sheetPath.replace(/^\.\.\//, '');
+    // Strip one or more leading '../' (generators may write '../../...' on deeply-nested paths)
+    sheetPath = sheetPath.replace(/^(\.\.\/)+/, '');
+    // Strip any leading slash
+    sheetPath = sheetPath.replace(/^\//, '');
+    // Ensure the 'xl/' root prefix
     if (!sheetPath.startsWith('xl/')) sheetPath = `xl/${sheetPath}`;
     return {
       name: sheet['@_name'],

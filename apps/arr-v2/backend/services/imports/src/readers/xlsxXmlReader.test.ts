@@ -39,15 +39,17 @@ afterAll(() => {
 
 describe('readXlsxWorkbook — error paths', () => {
   it('throws when the file does not exist', () => {
-    expect(() => readXlsxWorkbook('/tmp/__nonexistent_file_no_really__.xlsx')).toThrow(/not found/i);
+    // Error message changed to user-friendly copy; match on key fragment
+    expect(() => readXlsxWorkbook('/tmp/__nonexistent_file_no_really__.xlsx')).toThrow(/could not be found/i);
   });
 
   it('throws for a .csv file (unsupported extension)', () => {
-    expect(() => readXlsxWorkbook(TMP_CSV)).toThrow(/unsupported workbook extension/i);
+    // Error message now user-friendly; match on "only .xlsx" and the code tag
+    expect(() => readXlsxWorkbook(TMP_CSV)).toThrow(/only .xlsx workbooks are supported/i);
   });
 
   it('throws for a .xls file (old binary format, unsupported)', () => {
-    expect(() => readXlsxWorkbook(TMP_XLS)).toThrow(/unsupported workbook extension/i);
+    expect(() => readXlsxWorkbook(TMP_XLS)).toThrow(/only .xlsx workbooks are supported/i);
   });
 });
 
@@ -186,6 +188,100 @@ describe('readXlsxWorkbook — internal sample workbook', () => {
       (row) => row[customerColIndex]?.trim().length > 0
     );
     expect(nonEmptyCustomerRows.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── Bug #5 unit: sheet path normalization ─────────────────────────────────
+//
+// Tests that readXlsxWorkbook normalizes varied XLSX generator path conventions.
+// We test via a synthetic XLSX built with AdmZip to exercise the real code path.
+
+import AdmZip from 'adm-zip';
+import os from 'node:os';
+import { randomUUID } from 'node:crypto';
+
+/**
+ * Build a minimal valid XLSX zip where the workbook.xml.rels file uses a
+ * customized Target path, to exercise sheet path normalization.
+ */
+function buildMinimalXlsx(sheetTargetPath: string): string {
+  const zip = new AdmZip();
+
+  // [Content_Types].xml
+  zip.addFile('[Content_Types].xml', Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`));
+
+  // _rels/.rels
+  zip.addFile('_rels/.rels', Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`));
+
+  // xl/workbook.xml
+  zip.addFile('xl/workbook.xml', Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Sheet1" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`));
+
+  // xl/_rels/workbook.xml.rels — uses the CUSTOM target path to test normalization
+  zip.addFile('xl/_rels/workbook.xml.rels', Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="${sheetTargetPath}"/>
+</Relationships>`));
+
+  // xl/worksheets/sheet1.xml — a minimal sheet with one cell
+  zip.addFile('xl/worksheets/sheet1.xml', Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    <row r="1"><c r="A1" t="inlineStr"><is><t>hello</t></is></c></row>
+  </sheetData>
+</worksheet>`));
+
+  const tmpPath = path.join(os.tmpdir(), `vitest-xlsx-pathtest-${randomUUID()}.xlsx`);
+  zip.writeZip(tmpPath);
+  return tmpPath;
+}
+
+describe('readXlsxWorkbook — Bug #5 sheet path normalization', () => {
+  const tmpFiles: string[] = [];
+  afterAll(() => { tmpFiles.forEach(f => { try { fs.unlinkSync(f); } catch {} }); });
+
+  it('handles standard relative path "worksheets/sheet1.xml"', () => {
+    const tmp = buildMinimalXlsx('worksheets/sheet1.xml');
+    tmpFiles.push(tmp);
+    const wb = readXlsxWorkbook(tmp);
+    expect(wb.sheets).toHaveLength(1);
+    expect(wb.sheets[0].name).toBe('Sheet1');
+    expect(wb.sheets[0].rows[0][0]).toBe('hello');
+  });
+
+  it('handles "../worksheets/sheet1.xml" (single ../ prefix)', () => {
+    const tmp = buildMinimalXlsx('../worksheets/sheet1.xml');
+    tmpFiles.push(tmp);
+    const wb = readXlsxWorkbook(tmp);
+    expect(wb.sheets[0].rows[0][0]).toBe('hello');
+  });
+
+  it('handles "../../worksheets/sheet1.xml" (double ../ prefix)', () => {
+    const tmp = buildMinimalXlsx('../../worksheets/sheet1.xml');
+    tmpFiles.push(tmp);
+    const wb = readXlsxWorkbook(tmp);
+    expect(wb.sheets[0].rows[0][0]).toBe('hello');
+  });
+
+  it('handles absolute path "xl/worksheets/sheet1.xml"', () => {
+    const tmp = buildMinimalXlsx('xl/worksheets/sheet1.xml');
+    tmpFiles.push(tmp);
+    const wb = readXlsxWorkbook(tmp);
+    expect(wb.sheets[0].rows[0][0]).toBe('hello');
   });
 });
 
