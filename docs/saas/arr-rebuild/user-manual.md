@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 12 — File size limit documented in import section; Glossary expanded with Contract, Contract Line, Contract Amendment, Billing Schedule, and recurrence type terms)_
+_Last updated: 2026-04-02 (Session 13 — Operational Notes forward-look added to Customer Explorer; Glossary expanded with Business Note, Renewal ARR Delta, and Operational Note terms)_
 
 ---
 
@@ -293,6 +293,12 @@ ARR history is shown in chronological order (oldest period first). You can use t
 - Compare Site-level ARR against Logo-level totals to find discrepancies
 
 > ⚠️ **Warning:** The customer list reflects the data in the **current import**. If you have multiple imports in the system, make sure you're viewing the import that corresponds to the period you're analyzing.
+
+### Operational Notes on Customer Records
+
+<!-- TODO: add when Business Note feature is built -->
+
+In a future version, ARR V2 will support leaving operational notes on customer records — for example, flagging a pending renewal conversation, logging an issue under investigation, or leaving context for a colleague. These notes are distinct from the audit log (which is system-generated) and are intended for operational team communication within the platform.
 
 ---
 
@@ -615,6 +621,12 @@ An Excel `.xlsx` file containing the three required sheets: transaction detail, 
 
 **Two-Step Override Approval**  
 An optional workflow where a submitted ARR override must be reviewed and approved by a second authorized user before it takes effect. Whether this is enabled depends on your organization's configuration.
+
+**Business Note** *(planned feature — not yet in-product)*  
+An operational comment or annotation that can be attached to a customer, contract, or review item. Business Notes are for team communication within the platform — for example, flagging a pending renewal, logging a known issue, or leaving context for a colleague. Unlike the audit log, notes can be marked resolved or informational. This feature is planned for a future release.
+
+**Renewal ARR Delta** *(planned feature — not yet in-product)*  
+The change in ARR at the point of contract renewal — a positive number means the customer expanded at renewal, a negative number means they contracted. This field will be visible in the Contract Line detail view in a future version. Tracking renewal ARR delta over time helps identify accounts where ARR is eroding at renewal, even when they don't fully churn.
 
 **Workbook (re-importable)**  
 When you export your data before a reset, the exported file is formatted as a re-importable workbook — meaning it has the same three-sheet structure (transaction detail, product/service mapping, recognition assumptions) as the original file you uploaded. You can open it in Excel, correct any errors, and re-upload it using the standard import flow.

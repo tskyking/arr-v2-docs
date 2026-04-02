@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 12 — Added Contract & Contract Line domain model documentation under Section 4; added Classification Adjustments section under Section 7; added file size limit note in import guidance; expanded Glossary with Contract, ContractLine, ClassificationAdjustment, and BillingSchedule)_
+_Last updated: 2026-04-02 (Session 13 — Added Business Notes model under Section 4 and Section 8; documented renewal_arr_delta field on ContractLine in Section 4; expanded Glossary with BusinessNote and Renewal ARR Delta)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -286,6 +286,18 @@ For enterprise clients with multiple subsidiaries, the contract scope determines
 
 The `arr_treatment_method` and `revenue_recognition_method` are separate fields on each contract line. A product can have a recognition method of `subscription_term` but an ARR treatment that differs (e.g., for hybrid lines where only part of the revenue is ARR-eligible). If ARR numbers look inflated or understated for a specific product, review the contract line's ARR treatment method.
 
+**Renewal ARR Delta:**
+
+Each contract line carries an optional `renewal_arr_delta` field — a signed numeric value representing the change in ARR at the most recent contract renewal:
+
+- **Positive value** = the customer expanded at renewal (e.g., added seats, upgraded tier)
+- **Negative value** = the customer contracted at renewal (e.g., reduced seats, downgraded)
+- **Zero or absent** = renewal at flat ARR, or no renewal data available yet
+
+This field is populated from import data when a renewal event is detected, or can be entered manually via a ContractAmendment with `renewal` type. Post-MVP, it will be visible in the Contract Line detail view and used to power renewal health reporting.
+
+> 💡 **Tip:** Accounts with a consistently negative `renewal_arr_delta` are contraction risks even if they never fully churn. Surfacing this in reporting helps account management teams prioritize renewal conversations before further erosion occurs.
+
 **Contract Amendments:**
 
 Material changes to a contract — expansions, contractions, repricing, renewals, terminations — are tracked as `ContractAmendment` records. Each amendment captures:
@@ -337,6 +349,38 @@ Tenant data deletion is a destructive, irreversible action. The workflow will re
 - A grace period before permanent deletion is applied
 
 > ⚠️ **Warning:** Deleted client data cannot be recovered unless a separate backup exists. Do not delete client data without explicit written confirmation from the client or your data retention policy.
+
+### Business Notes on Customer and Contract Records
+
+ARR V2 supports a `BusinessNote` model that allows admins and analysts to attach operational commentary to customers, contracts, contract lines, or review queue items. Business Notes are distinct from the immutable audit log — they are for team communication and workflow context, not system event tracking.
+
+**Supported note types:**
+
+| Type | Use Case |
+|---|---|
+| `comment` | General operational context or internal note |
+| `pending_renewal` | Flag that a renewal conversation is in progress |
+| `issue` | An identified problem under investigation |
+| `reminder` | A time-sensitive action item for the team |
+| `other` | Catch-all for anything not covered above |
+
+**Note status:**
+
+| Status | Meaning |
+|---|---|
+| `open` | Active — requires attention or is being tracked |
+| `resolved` | No longer needs action; kept for record |
+| `informational` | Context-only; no action expected |
+
+**Who can create notes:**  
+Any user with at least Analyst role can create notes within their tenant. Admins and SUs can create notes in any tenant context they have access to.
+
+**Who can see notes:**  
+All notes are visible to all users with access to the entity the note is attached to. Notes do not contain ARR data and are not included in compliance exports, but are visible in the UI alongside the entity they are attached to.
+
+> ⚠️ **Warning:** Notes are operational, not financial. Do not use Business Notes to document override decisions or recognition rule changes — those belong in the override reason field and audit log, where they are tamper-proof and discoverable under compliance review.
+
+<!-- TODO: Business Note UI — document when built -->
 
 ---
 
@@ -571,6 +615,21 @@ The `ARRMonthlyOverride` domain model includes an optional `approved_by` field, 
 
 ## 8. Audit Logs
 
+### Business Notes vs Audit Log
+
+These two systems serve different purposes and should not be confused:
+
+| | Business Notes | Audit Log |
+|---|---|---|
+| **Created by** | Any user (Analyst or above) | System automatically |
+| **Can be resolved/closed** | Yes | No |
+| **Included in compliance export** | No | Yes |
+| **Editable after creation** | Owner can edit `text` and `status` | Never editable |
+| **Linked to** | Any customer, contract, line, or review item | System events only |
+| **Visible to** | All users with access to the entity | Admins and SUs only |
+
+> ⚠️ **Warning:** The audit log is tamper-proof and always complete. Business Notes are mutable and should not be used as evidence of system activity. For compliance and security review, always reference the Audit Log — not notes.
+
 ### What Is Logged
 
 The system logs the following events automatically:
@@ -687,7 +746,10 @@ The tamper-proof, system-maintained record of all significant actions in ARR V2 
 The complete provenance trail for an uploaded workbook: who uploaded it, from what source system, what the filename was, and what the processing outcome was. Captured in the `SourceImport` record.
 
 **BillingSchedule**  
-A planned or actual sequence of billing events associated with a contract line. Billing types include `planned`, `actual`, `milestone`, and `invoice`. Post-MVP, billing schedules from a CRM can be pre-loaded and reconciled against actual QuickBooks invoice data.
+A planned or actual sequence of billing events associated with a contract line.
+
+**BusinessNote**  
+An operational note or annotation attached to a customer, contract, contract line, or review queue item. Note types: `comment`, `pending_renewal`, `issue`, `reminder`, `other`. Status: `open`, `resolved`, or `informational`. Notes are mutable; they are not part of the tamper-proof audit log. Intended for team communication and workflow context within the platform. Billing types include `planned`, `actual`, `milestone`, and `invoice`. Post-MVP, billing schedules from a CRM can be pre-loaded and reconciled against actual QuickBooks invoice data.
 
 **ClassificationAdjustment**  
 A tracked change to the reporting classification of a customer, site, or contract line — for example, moving from Self-Serve to Enterprise. Captured with submitter, approver (if applicable), reason, and full before/after classification. Permanent and audit-safe — cannot be deleted.
@@ -699,7 +761,10 @@ The commercial agreement between your firm and a client. Tracks scope (`site_spe
 A material change to an existing contract: expansion, contraction, repricing, renewal, or termination. Stored separately from the base contract to preserve the original terms. Linked to the import that surfaced the amendment.
 
 **ContractLine**  
-A single product/service SKU within a contract. Carries `recurrence_type` (`recurring | non_recurring | hybrid`), `arr_treatment_method`, `revenue_recognition_method`, dates, and pricing. The contract line is the atomic unit of ARR recognition.
+A single product/service SKU within a contract. Carries `recurrence_type` (`recurring | non_recurring | hybrid`), `arr_treatment_method`, `revenue_recognition_method`, dates, and pricing. Also carries `renewal_arr_delta` (signed numeric: positive = expansion at renewal, negative = contraction). The contract line is the atomic unit of ARR recognition.
+
+**Renewal ARR Delta**  
+A signed numeric field on a `ContractLine` record capturing the change in ARR at the most recent contract renewal. Positive indicates expansion; negative indicates contraction; zero or absent means flat renewal or no renewal data yet. Post-MVP, surfaced in the Contract Line detail view and renewal health reporting.
 
 **Logo**  
 The parent commercial customer entity. A Logo may have multiple Sites. ARR is reported at both the Logo level (aggregate) and Site level (individual).
