@@ -24,7 +24,7 @@
 - [x] Review queue resolve/override workflow (PATCH endpoint + live UI actions)
 - [x] ARR dashboard view wired to API
 - [x] ARR movement analysis engine (new/expansion/contraction/churn waterfall) + dashboard chart
-- [ ] Define MVP ingestion flow
+- [x] Define MVP ingestion flow
 - [ ] Define MVP ARR outputs and review screens
 - [ ] Identify legacy logic safe to reuse
 - [ ] Draft implementation phases in more technical detail

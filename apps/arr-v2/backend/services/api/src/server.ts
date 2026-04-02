@@ -2,13 +2,18 @@
  * ARR V2 API Server
  * Minimal HTTP server using Node's built-in http module — no framework dependency yet.
  * Routes:
- *   POST /imports                     — upload and process a workbook
- *   GET  /imports                     — list imports
- *   GET  /imports/:id/summary         — import summary
- *   GET  /imports/:id/arr             — ARR timeseries
- *   GET  /imports/:id/arr/movements   — period-over-period ARR waterfall (new/expansion/contraction/churn)
- *   GET  /imports/:id/review          — review queue
- *   GET  /health                      — health check
+ *   POST /imports                          — upload and process a workbook
+ *   GET  /imports                          — list imports
+ *   GET  /imports/:id/summary             — import summary
+ *   GET  /imports/:id/arr                 — ARR timeseries
+ *   GET  /imports/:id/arr/movements       — period-over-period ARR waterfall (new/expansion/contraction/churn)
+ *   GET  /imports/:id/review              — review queue
+ *   PATCH /imports/:id/review/:itemId      — resolve or override a review item
+ *   POST /imports/:id/review/bulk-resolve  — bulk-resolve open review items
+ *   GET  /imports/:id/customers            — customer list with current ARR
+ *   GET  /imports/:id/customers/:name      — customer detail: ARR history + review summary
+ *   DELETE /imports/:id                   — remove an import
+ *   GET  /health                          — health check
  */
 
 import http from 'node:http';
@@ -24,7 +29,11 @@ import {
   getArrMovements,
   getReviewQueue,
   patchReviewItem,
+  bulkResolveReview,
   listImports,
+  removeImport,
+  getCustomerList,
+  getCustomerDetail,
 } from './importService.js';
 import { ImportError } from '../../imports/src/importErrors.js';
 
@@ -56,7 +65,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
   // OPTIONS preflight
   if (method === 'OPTIONS') {
-    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
     res.end();
     return;
   }
@@ -149,6 +162,56 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         const queue = getReviewQueue(importId, status);
         if (!queue) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, queue);
+        return;
+      }
+
+      // DELETE /imports/:id — remove an import
+      if (sub === '' && method === 'DELETE') {
+        const removed = removeImport(importId);
+        if (!removed) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, { deleted: true, importId });
+        return;
+      }
+
+      // GET /imports/:id/customers — list all customers with ARR summary
+      if (sub === '/customers' && method === 'GET') {
+        const list = getCustomerList(importId);
+        if (!list) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, list);
+        return;
+      }
+
+      // GET /imports/:id/customers/:name — customer ARR detail
+      const customerDetailMatch = sub.match(/^\/customers\/(.+)$/);
+      if (customerDetailMatch && method === 'GET') {
+        const customerName = decodeURIComponent(customerDetailMatch[1]);
+        const detail = getCustomerDetail(importId, customerName);
+        if (!detail) { err(res, 404, 'NOT_FOUND', 'Customer not found in this import'); return; }
+        json(res, 200, detail);
+        return;
+      }
+
+      // POST /imports/:id/review/bulk-resolve — bulk-resolve open review items
+      if (sub === '/review/bulk-resolve' && method === 'POST') {
+        const body = await parseBody(req);
+        let payload: { action?: string; note?: string; itemIds?: string[] } = {};
+        try { payload = JSON.parse(body.toString()); } catch { /* ignore */ }
+
+        if (payload.action !== 'resolve' && payload.action !== 'override') {
+          err(res, 400, 'INVALID_ACTION', 'action must be "resolve" or "override"'); return;
+        }
+        if (payload.action === 'override' && !payload.note?.trim()) {
+          err(res, 400, 'NOTE_REQUIRED', 'override requires a note'); return;
+        }
+
+        const result = bulkResolveReview(
+          importId,
+          payload.action,
+          payload.itemIds,
+          payload.note,
+        );
+        if (!result) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, result);
         return;
       }
 
