@@ -70,14 +70,14 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
-      <div style="position:fixed;top:14px;right:24px;z-index:999">
-        <a href="https://tskyking.github.io/arr-v2-docs/saas/arr-rebuild/docs/" style="display:inline-block;padding:8px 18px;background:#2563eb;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;letter-spacing:0.01em;box-shadow:0 2px 8px rgba(37,99,235,0.25)">📄 User Manual →</a>
+    <div class="hero" style="position:relative">
+      <div style="position:absolute;top:14px;right:14px">
+        <a href="https://tskyking.github.io/arr-v2-docs/saas/arr-rebuild/docs/" style="display:inline-block;padding:8px 16px;background:#2563eb;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">📄 User Manual →</a>
       </div>
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Testing Complete — Docs Active | UI In Progress</span>
+        <span class="badge active">Current Phase: Docs Complete (Session 12) — Bug #6 Fix + MVP UI Next</span>
         <span class="badge todo">Target: MVP UI &amp; Review Workflow</span>
       </div>
     </div>
@@ -85,9 +85,9 @@
     <div class="grid">
       <div class="card col-4">
         <h3>Overall Progress</h3>
-        <div class="metric">75%</div>
-        <div class="sub">Full backend complete: importer, ARR engine, API layer, review queue, ARR movements, 646 passing tests (32 files). Doc agent active (session 11). Bug #6 (external workbook) status needs docs sync — marked fixed in integration tests. Next: MVP UI &amp; Review Workflow (build agent needed).</div>
-        <div style="margin-top:12px" class="progress"><div style="width:75%"></div></div>
+        <div class="metric">84%</div>
+        <div class="sub">Full backend complete: 737 passing tests (36 files, QA Session 9). Doc agent complete through Session 12 (Contract/ContractLine domain, admin guide). Bug #6 (HIGH — external workbook unprocessable) still open. Next: Bug #6 fix + MVP UI &amp; Review Workflow (build agent needed).</div>
+        <div style="margin-top:12px" class="progress"><div style="width:84%"></div></div>
       </div>
 
       <div class="card col-4">
@@ -154,7 +154,9 @@
           <li><strong>XLSX parser + importer skeleton:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Mapping/assumption accuracy:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Backend API layer:</strong> <span class="pill pill-done">done</span></li>
-          <li><strong>Review UI:</strong> <span class="pill pill-progress">in progress</span></li>
+          <li><strong>Review UI:</strong> <span class="pill pill-next">next</span></li>
+          <li><strong>User manual / admin guide:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Bug #6 (ext workbook fix):</strong> <span class="pill pill-progress">in progress</span></li>
         </ul>
       </div>
 
