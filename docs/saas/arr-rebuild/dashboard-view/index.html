@@ -77,30 +77,30 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Importer Implementation</span>
-        <span class="badge todo">Target: Core ARR pipeline + Review UI</span>
+        <span class="badge active">Current Phase: Backend API Complete — Testing &amp; QA</span>
+        <span class="badge todo">Target: MVP UI &amp; Review Workflow</span>
       </div>
     </div>
 
     <div class="grid">
       <div class="card col-4">
         <h3>Overall Progress</h3>
-        <div class="metric">38%</div>
-        <div class="sub">Foundation, domain model, and ingestion pipeline built. Real XLSX parsing working against Brian's sample. Refining correctness; moving toward backend API + review UI.</div>
-        <div style="margin-top:12px" class="progress"><div style="width:38%"></div></div>
+        <div class="metric">75%</div>
+        <div class="sub">Full backend complete: importer, ARR engine, API layer, review queue, ARR movements, and 622 passing tests. QA cycle 7 complete — 0 failures. Moving to MVP UI &amp; Review Workflow.</div>
+        <div style="margin-top:12px" class="progress"><div style="width:75%"></div></div>
       </div>
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>Lock the working plan, establish durable project memory, gather representative ingestion test material, and define MVP schema + outputs.</p>
+        <p>Begin MVP UI &amp; Review Workflow (Step 6). Frontend scaffold exists — wire review queue UI to live API, build ARR dashboard view for end users, and implement overrides/auditability.</p>
       </div>
 
       <div class="card col-4">
         <h3>Next 3 Actions</h3>
         <ul>
-          <li>Fix product/service mapping resolution accuracy</li>
-          <li>Fix exec approval blocker (enable Web UI or Discord approvals)</li>
-          <li>Wire up backend API layer for import pipeline</li>
+          <li>Wire review queue UI to live API (resolve/override actions)</li>
+          <li>Build ARR timeseries dashboard view for end users</li>
+          <li>Address remaining open QA bugs (#1, #2, #4) and confirm #6 closed</li>
         </ul>
       </div>
 
@@ -119,15 +119,15 @@
             <strong>3. MVP Planning & Canonical Schema</strong>
             <p>Define initial schema, required fields, first supported file patterns, and MVP outputs.</p>
           </div>
-          <div class="step active">
+          <div class="step done">
             <strong>4. Ingestion Prototype</strong>
             <p>Build mapping/normalization flow for first source formats and ambiguity handling.</p>
           </div>
-          <div class="step">
+          <div class="step done">
             <strong>5. ARR Engine Validation</strong>
             <p>Validate calculations against workbook/spec and identify reusable logic from legacy code.</p>
           </div>
-          <div class="step">
+          <div class="step active">
             <strong>6. MVP UI & Review Workflow</strong>
             <p>Implement finance-user review screens, overrides, auditability, and reporting views.</p>
           </div>
@@ -152,9 +152,9 @@
           <li><strong>Sample-source collection:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>MVP schema / ingestion spec:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>XLSX parser + importer skeleton:</strong> <span class="pill pill-done">done</span></li>
-          <li><strong>Mapping/assumption accuracy:</strong> <span class="pill pill-progress">in progress</span></li>
-          <li><strong>Backend API layer:</strong> <span class="pill pill-next">next</span></li>
-          <li><strong>Review UI:</strong> <span class="pill pill-upcoming">upcoming</span></li>
+          <li><strong>Mapping/assumption accuracy:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Backend API layer:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Review UI:</strong> <span class="pill pill-progress">in progress</span></li>
         </ul>
       </div>
 
