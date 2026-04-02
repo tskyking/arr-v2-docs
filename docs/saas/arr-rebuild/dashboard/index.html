@@ -70,9 +70,12 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
+    <div class="hero" style="position:relative">
+      <div style="position:absolute;top:14px;right:14px">
+        <a href="https://tskyking.github.io/arr-v2-docs/saas/arr-rebuild/docs/" style="display:inline-block;padding:8px 16px;background:#2563eb;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">📄 User Manual →</a>
+      </div>
       <h1>ARR Rebuild Dashboard</h1>
-      <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, next actions, and cost awareness.</p>
+      <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
         <span class="badge active">Current Phase: Importer Implementation</span>
         <span class="badge todo">Target: Core ARR pipeline + Review UI</span>
@@ -155,7 +158,7 @@
         </ul>
       </div>
 
-      <div class="card col-12">
+      <div class="card col-12" style="display:none">
         <h2>💰 Token &amp; Cost Tracker</h2>
         <p class="sub">Model: <strong>anthropic/claude-sonnet-4-6</strong> &nbsp;|&nbsp; Rates (approx): $3/MTok input · $15/MTok output · cache reads cheaper</p>
         <div class="grid" style="margin-top:12px">
