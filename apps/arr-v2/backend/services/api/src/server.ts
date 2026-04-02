@@ -17,6 +17,10 @@
  *   GET  /imports/:id/customers/:name         — customer detail: ARR history + review summary
  *   DELETE /imports/:id                       — remove an import
  *   GET  /health                              — health check
+ *
+ * Hardening:
+ *   - Request body size limit: MAX_BODY_BYTES (default 50 MB). Requests exceeding this
+ *     receive a 413 Payload Too Large before the body is fully buffered.
  */
 
 import http from 'node:http';
@@ -45,6 +49,21 @@ import { ImportError } from '../../imports/src/importErrors.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 
+/**
+ * Maximum allowed request body size in bytes (default 50 MB).
+ * Prevents unbounded memory allocation on large or malicious uploads.
+ * Override via MAX_BODY_BYTES env var for deployments with different limits.
+ * Read per-request so tests can override the value via process.env without reloading the module.
+ */
+function getMaxBodyBytes(): number {
+  const v = process.env['MAX_BODY_BYTES'];
+  if (v !== undefined) {
+    const n = Number(v);
+    if (!isNaN(n) && n > 0) return n;
+  }
+  return 50 * 1024 * 1024; // 50 MB default
+}
+
 function json(res: http.ServerResponse, status: number, data: unknown) {
   const body = JSON.stringify(data, null, 2);
   res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
@@ -64,12 +83,54 @@ function err(res: http.ServerResponse, status: number, code: string, message: st
   json(res, status, { code, message });
 }
 
+/**
+ * Buffer the full request body up to MAX_BODY_BYTES.
+ *
+ * Size enforcement strategy:
+ *   1. Fast path: if Content-Length header is present and exceeds the limit, reject immediately
+ *      without buffering any data (drain the socket to prevent connection hang).
+ *   2. Streaming path: accumulate chunks; reject as soon as the running total exceeds the limit
+ *      (drains remaining data so the connection is cleanly closed and the caller can still
+ *      write a 413 response on the same socket).
+ */
 async function parseBody(req: http.IncomingMessage): Promise<Buffer> {
+  const maxBytes = getMaxBodyBytes();
+
+  // Fast path: check Content-Length header before reading anything
+  const contentLength = Number(req.headers['content-length']);
+  if (!isNaN(contentLength) && contentLength > maxBytes) {
+    // Drain the socket so the connection can be cleanly reused / closed
+    req.resume();
+    const e = new Error('Request body exceeds size limit') as Error & { tooLarge: boolean };
+    e.tooLarge = true;
+    return Promise.reject(e);
+  }
+
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', chunk => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
+    let totalBytes = 0;
+    let limitExceeded = false;
+
+    req.on('data', (chunk: Buffer) => {
+      if (limitExceeded) return; // drain only — don't accumulate
+      totalBytes += chunk.length;
+      if (totalBytes > maxBytes) {
+        limitExceeded = true;
+        // Drain remaining data so the response can still be sent on the same socket
+        req.resume();
+        const e = new Error('Request body exceeds size limit') as Error & { tooLarge: boolean };
+        e.tooLarge = true;
+        reject(e);
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (!limitExceeded) resolve(Buffer.concat(chunks));
+    });
+    req.on('error', (err) => {
+      if (!limitExceeded) reject(err);
+    });
   });
 }
 
@@ -290,6 +351,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       // Return human-readable import errors as 422 Unprocessable Entity — never expose raw internals
       console.warn('Import error:', e.code, e.detail ?? '');
       json(res, 422, e.toJSON());
+    } else if (e instanceof Error && (e as Error & { tooLarge?: boolean }).tooLarge) {
+      // Body exceeded MAX_BODY_BYTES — return 413 before any processing
+      json(res, 413, { code: 'PAYLOAD_TOO_LARGE', message: `Request body exceeds the ${getMaxBodyBytes()}-byte limit.` });
     } else {
       // Unexpected server errors — log internally, return safe generic message
       console.error('Unexpected API error:', e);
