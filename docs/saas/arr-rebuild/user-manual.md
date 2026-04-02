@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 10 — Expanded Review Queue section: severity levels, override scoping, bulk resolve guidance; added "my override disappeared" troubleshooting item; clarified data export workflow)_
+_Last updated: 2026-04-02 (Session 11 — Expanded Customer Explorer: Logo/Site hierarchy, multi-site rollup, site-level drill-down; refined User Roles section with override approval notes; glossary additions)_
 
 ---
 
@@ -229,35 +229,66 @@ ARR represents the annualized value of your active recurring subscriptions. It i
 
 The **Customer Explorer** lets you browse ARR data at the individual customer level — useful when you want to understand a specific account's revenue history, peak ARR, or trend over time.
 
+### Understanding Logos and Sites
+
+ARR V2 organizes customers using a two-level hierarchy:
+
+| Level | What it is |
+|---|---|
+| **Logo** | The parent commercial customer — typically the enterprise or top-level company you have a relationship with |
+| **Site** | A local billing entity, subsidiary, or physical location under a Logo — the unit that actually appears on invoices |
+
+For example, a Logo called *Acme Corporation* might have two Sites: *Acme Corp – East* and *Acme Corp – West*, each with separate invoices and subscription terms.
+
+**ARR can be viewed at either level:**
+
+- **Logo level** — all Sites under a Logo are rolled up into a single ARR figure. Use this for account-level conversations and board reporting.
+- **Site level** — each Site's ARR is shown individually. Use this when you need to understand billing entities or regional breakdown.
+
+For simpler customers with only one billing entity, the Logo and Site will have the same name and the distinction doesn't matter day-to-day.
+
 ### Accessing the Customer List
 
 1. From the main navigation, go to **Customers** (or look for a **Customers** tab on the Dashboard).
-2. You will see a list of all customers with ARR in the current import, sorted by ARR (highest first by default).
+2. You will see a list of all **Logos** with ARR in the current import, sorted by ARR (highest first by default).
+3. To see Sites under a Logo, expand the Logo row or click the Logo name.
 
-Each row in the customer list shows:
+Each Logo row shows:
 
-- **Customer name**
-- **Current ARR** — their ARR in the most recent month in your data
-- **ARR trend** — whether their ARR is growing, stable, or declining
+- **Logo name**
+- **Current ARR** — total ARR across all Sites under this Logo in the most recent month
+- **ARR trend** — whether total ARR for this Logo is growing, stable, or declining
+- **Site count** — how many billing Sites are associated with this Logo
 
 ### Customer Detail View
 
-Click any customer name to open their detail view. Here you'll see:
+Click any Logo name to open their detail view. Here you'll see:
 
-- **ARR history** — a chart showing their ARR month by month
-- **Peak ARR** — the highest ARR this customer has ever reached in your data
+- **ARR history** — a chart showing total Logo ARR month by month (all Sites combined)
+- **Peak ARR** — the highest total ARR ever recorded for this Logo in your data
 - **Current ARR** — their ARR in the most recent period
-- **Active subscription lines** — the individual products or services driving their ARR
+- **Active subscription lines** — the individual products or services driving their ARR, broken down by Site
 
 > 💡 **Tip:** Peak ARR is a useful reference point during renewal conversations. If a customer's current ARR is significantly below their peak, it may indicate contraction worth investigating.
 
+### Drilling into a Site
+
+To view a specific Site's ARR independently:
+
+1. Open the Logo detail view.
+2. In the **Sites** section, click the Site name.
+3. You'll see an ARR history view scoped to that Site only — useful when a single billing entity is the focus of a renewal, dispute, or audit.
+
+> 💡 **Tip:** If you're troubleshooting why a Logo's ARR changed, check each Site individually. Often a contraction at the Logo level is driven by a single Site reducing or not renewing.
+
 ### Understanding a Customer's ARR History
 
-ARR history is shown in chronological order. You can use this view to:
+ARR history is shown in chronological order (oldest period first). You can use this view to:
 
 - Spot when a customer expanded, contracted, or churned and came back
 - See which subscription lines drove changes in their ARR over time
 - Verify that an override or recognition rule change had the expected effect
+- Compare Site-level ARR against Logo-level totals to find discrepancies
 
 > ⚠️ **Warning:** The customer list reflects the data in the **current import**. If you have multiple imports in the system, make sure you're viewing the import that corresponds to the period you're analyzing.
 
@@ -362,15 +393,15 @@ Below the chart, you'll see totals across your entire selected date range:
 
 ## 8. User Roles and Permissions
 
-<!-- TODO: finalize roles/permissions model with build team — draft below is based on domain model notes -->
-
-The following role structure is planned for ARR V2. Details are subject to change as the auth system is finalized.
+ARR V2 uses a three-tier role model for end users. Each user is assigned exactly one role, and roles are set by your organization's Administrator.
 
 | Role | What they can do |
 |---|---|
-| **Viewer** | View dashboard, ARR charts, and movement analysis. Cannot import or resolve review items. |
-| **Analyst** | All Viewer permissions, plus: upload imports, resolve/override review queue items |
-| **Admin** | All Analyst permissions, plus: manage users, configure ARR policies, apply monthly overrides |
+| **Viewer** | View dashboard, ARR charts, movement analysis, and Customer Explorer. Read-only — cannot import, resolve flags, or apply overrides. |
+| **Analyst** | All Viewer permissions, plus: upload imports, resolve and override items in the Review Queue. |
+| **Admin** | All Analyst permissions, plus: manage users within your organization, configure ARR recognition policies, and apply monthly ARR overrides to specific contract lines. |
+
+> 💡 **Tip:** Most finance and operations team members should be Analysts. Reserve Admin access for the primary finance lead or the person responsible for final ARR sign-off.
 
 ### ARR Policy Overrides (Admin only)
 
@@ -380,6 +411,10 @@ Administrators can override the calculated ARR for a specific contract line and 
 - The original calculated value
 - The override value
 - The reason provided
+
+Some organizations require a second person to approve an override before it takes effect. If your organization uses this two-step approval flow, you will see an **Awaiting Approval** status on overrides you submit, and the override will not be applied to ARR calculations until an authorized approver confirms it.
+
+> 💡 **Tip:** Check with your Administrator whether your organization requires override approval. If you're not sure, assume approvals are required and coordinate with your finance lead before submitting a large override.
 
 ### Resetting or Replacing Data (Admin only)
 
@@ -523,7 +558,7 @@ The process of uploading an Excel workbook containing your invoice and subscript
 The date an invoice was issued to a customer. Used as a fallback when subscription dates are not provided.
 
 **Logo**  
-A parent commercial customer or enterprise entity. A single logo may have multiple sites (subsidiaries, billing entities, locations).
+The parent commercial customer or enterprise entity. A Logo may have multiple Sites (subsidiaries, billing entities, locations). ARR is rolled up to the Logo level for account-level reporting.
 
 **Monthly Override**  
 An admin-level adjustment to the ARR calculated for a specific contract line in a specific month. All overrides are logged for audit purposes.
@@ -547,7 +582,7 @@ A row in your imported data that the system couldn't process with full confidenc
 An internal representation of a single recognized revenue contribution for a specific customer, category, and time period.
 
 **Site**  
-A local billing entity, subsidiary, or location under a parent Logo. ARR can be viewed at either the site level or rolled up to the logo level.
+A local billing entity, subsidiary, or physical location under a parent Logo. Sites are the unit that appears on invoices. ARR can be viewed at the Site level or rolled up to the Logo level for aggregate account totals.
 
 **Subscription Term**  
 The period of time covered by a subscription, defined by a start date and end date. Used to calculate how much ARR each subscription contributes in any given month.
@@ -557,3 +592,6 @@ A chart that shows how ARR moved from one period to the next, broken down by New
 
 **Workbook**  
 An Excel `.xlsx` file containing the three required sheets: transaction detail, product/service mapping, and recognition assumptions.
+
+**Two-Step Override Approval**  
+An optional workflow where a submitted ARR override must be reviewed and approved by a second authorized user before it takes effect. Whether this is enabled depends on your organization's configuration.

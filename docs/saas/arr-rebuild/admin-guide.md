@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 10 — Expanded ARR Policy Configuration: override workflow, policy vs override distinction; expanded Data Management with import lifecycle guidance; added override scoping note to Section 4)_
+_Last updated: 2026-04-02 (Session 11 — Expanded Customer Hierarchy section: Logo/Site model, rollup behavior, multi-site admin notes; added Import Lineage tracking detail; expanded Override section with two-step approval model from domain spec; Glossary added to admin guide)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -145,9 +145,9 @@ Client data is loaded via the **Import** function within a client's tenant conte
 
 ### Managing Multiple Imports per Client
 
-Each client can have multiple import records. Imports are not automatically replaced — each upload creates a new import record with a unique ID. This means:
+Each client can have multiple import records. Imports are not automatically replaced - each upload creates a new import record with a unique ID. This means:
 
-- A client can have several months’ worth of imports in the system simultaneously
+- A client can have several months' worth of imports in the system simultaneously
 - The dashboard defaults to the most recent import
 - Older imports remain accessible for comparison or audit purposes
 
@@ -158,46 +158,97 @@ Each client can have multiple import records. Imports are not automatically repl
 A well-managed import lifecycle looks like this:
 
 1. **Client exports** their QuickBooks workbook and sends it to you (or uploads it directly).
-2. **Upload the workbook** from within the client’s tenant context.
-3. **Review the import summary** — check row counts, flagged item counts, and date range.
-4. **Work the Review Queue** — resolve or override flagged items before finalizing ARR.
+2. **Upload the workbook** from within the client's tenant context.
+3. **Review the import summary** - check row counts, flagged item counts, and date range.
+4. **Work the Review Queue** - resolve or override flagged items before finalizing ARR.
 5. **Confirm ARR numbers** with the Tenant Admin before presenting to stakeholders.
 6. **Archive or retain** the source XLSX workbook externally as your authoritative record.
 
 For ongoing monthly use:
 
-- Each month’s import should cover a **continuous and complete** date range — gaps or overlaps between imports can distort ARR movement calculations.
+- Each month's import should cover a **continuous and complete** date range - gaps or overlaps between imports can distort ARR movement calculations.
 - If a prior workbook needs correction, the correct path is: **export → correct → re-import** (using the reset/export flow), then re-apply any critical overrides.
-- Use `removeImport` to clean up test or duplicate imports. Do not use it to “replace” a finalized import that has been seen by stakeholders.
+- Use `removeImport` to clean up test or duplicate imports. Do not use it to "replace" a finalized import that has been seen by stakeholders.
 
 ### Review Override Scope
 
-Review queue overrides are scoped to a specific import ID. When a client asks “why does my override seem missing,” this is almost always because:
+Review queue overrides are scoped to a specific import ID. When a client asks "why does my override seem missing," this is almost always because:
 
 1. A new import was uploaded after the override was applied (overrides do not carry over to new imports), or
 2. The active import context in the UI has changed.
 
 Remind Tenant Admins of this behavior when they apply overrides: **overrides must be re-applied after a re-import.**
 
-**Technical detail (for admin reference):** Override records are stored alongside the import ID at the store layer. The `getCustomerDetail` service resolves overrides within the scope of a specific import — overrides from import A are never visible when viewing import B. This is by design and matches the per-import scoping of all review data.
+**Technical detail (for admin reference):** Override records are stored alongside the import ID at the store layer. The `getCustomerDetail` service resolves overrides within the scope of a specific import - overrides from import A are never visible when viewing import B. This is by design and matches the per-import scoping of all review data.
 
 ### Re-Import Workflow (Corrected Workbook)
 
 Use this workflow when a client discovers errors in their source data after an import has already been reviewed:
 
-1. **Switch into the client’s tenant context.**
-2. **Export current data** (Settings → Reset Data → Export before clearing) — this gives the client a starting point for corrections.
-3. **Confirm the client has corrected their workbook** — ensure the source errors are actually fixed, not just masked by overrides.
+1. **Switch into the client's tenant context.**
+2. **Export current data** (Settings → Reset Data → Export before clearing) - this gives the client a starting point for corrections.
+3. **Confirm the client has corrected their workbook** - ensure the source errors are actually fixed, not just masked by overrides.
 4. **Clear current data** (confirm the export has been received first).
 5. **Import the corrected workbook.**
-6. **Re-apply any critical overrides** from the prior import — these do not carry forward automatically.
+6. **Re-apply any critical overrides** from the prior import - these do not carry forward automatically.
 7. **Log a note** in the audit trail (via override reason fields or external documentation) explaining the re-import and why it was necessary.
 
-> 💡 **Tip:** For minor data errors (a handful of rows), prefer applying overrides rather than triggering a full re-import. Reserve re-import for structural errors that affect many rows or the workbook’s sheet layout.
+> 💡 **Tip:** For minor data errors (a handful of rows), prefer applying overrides rather than triggering a full re-import. Reserve re-import for structural errors that affect many rows or the workbook's sheet layout.
 
 ### Customer ARR History Sort Order
 
-When using the Customer Explorer or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem - check the browser console or file a bug report.
+When using the Customer Explorer or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
+
+### Customer Hierarchy: Logos and Sites
+
+ARR V2 uses a two-level customer hierarchy:
+
+| Level | Description |
+|---|---|
+| **Logo** | The parent commercial customer (enterprise entity, parent company, or top-level account) |
+| **Site** | A local billing entity, subsidiary, or physical location under a Logo |
+
+**Admin responsibilities for the Logo/Site model:**
+
+- **Logo records** carry the top-level relationship metadata: CRM parent account ID, status, and notes.
+- **Site records** carry the accounting reference (`accounting_customer_id`), regional tags, and CRM account links at the billing-entity level.
+- When a new client is onboarded, confirm whether their QuickBooks export uses one billing entity per customer or multiple (e.g., regional or divisional billing). Configure Sites accordingly before the first import.
+- If a client renames a billing entity mid-year, the old name in historical imports and the new name in future imports will appear as separate Sites unless they are manually linked. Coordinate with the build team if a client rename needs to be reconciled.
+
+**Logo-level vs Site-level ARR reporting:**
+
+- **Logo-level:** All Sites under a Logo are rolled up. Use this for board packs, investor reporting, and customer-facing account reviews.
+- **Site-level:** Each Site's ARR is reported independently. Use this for billing audits, regional analysis, or when a specific Site has a dispute or override in flight.
+
+> 💡 **Tip:** For single-entity clients (one billing account), the Logo and Site will have the same name and the distinction is invisible to end users. For enterprise clients with multiple subsidiaries, ensuring the Logo/Site hierarchy is set up correctly before the first import will save significant rework later.
+
+### Import Lineage Tracking
+
+Every import creates a **SourceImport** record that captures full lineage metadata:
+
+| Field | What it captures |
+|---|---|
+| `source_system` | Where the data came from (e.g., QuickBooks) |
+| `source_type` | The type of export (e.g., XLSX workbook) |
+| `filename` | The original filename as uploaded |
+| `uploaded_by` | The user ID (SU or Tenant Admin) who uploaded |
+| `processing_status` | The outcome: success, partial, failed |
+| `warning_count` | Number of rows with Warning-level flags |
+| `error_count` | Number of rows with Error-level flags |
+| `created_at` | Timestamp of the upload (UTC) |
+
+Lineage records cannot be edited. They are a permanent record of what was uploaded, by whom, and with what outcome. If a client disputes an ARR figure, the lineage record is your first reference point.
+
+**MappingDecision records** (one per mapped field per import) track how each source field was interpreted:
+
+- `source_field` → `mapped_field`: which column became which domain field
+- `transformation_rule`: what normalization was applied (if any)
+- `confidence_score`: how certain the system was (used for AI-assisted mapping in future)
+- `requires_review`: whether the mapping was flagged for human confirmation
+
+For MVP, mapping decisions are deterministic (rule-based), so confidence scores and AI-assisted review are placeholders. The data structure is already in place for future enhancement.
+
+> 💡 **Tip:** When a client reports unexpected ARR figures after an import, check the SourceImport record: `warning_count` and `error_count` will tell you immediately whether the import was clean or had issues. If both are zero and ARR still looks wrong, the issue is likely in the recognition rules or source data, not the import pipeline.
 
 ### Archiving Client Data
 
@@ -355,44 +406,71 @@ ARR V2 has two distinct mechanisms for adjusting ARR: **policy configuration** a
 
 | Mechanism | What it changes | Scope | Retroactive? |
 |---|---|---|---|
-| **ARR Policy** | Recognition rules for a product/service category | All future imports for this tenant | No — re-import required |
-| **Monthly Override** | The ARR value for a specific contract line in a specific month | Single line + period only | Yes — takes effect immediately |
+| **ARR Policy** | Recognition rules for a product/service category | All future imports for this tenant | No - re-import required |
+| **Monthly Override** | The ARR value for a specific contract line in a specific month | Single line + period only | Yes - takes effect immediately |
 
 **Use ARR Policy changes when:** The recognition rule for a category is wrong or has changed (e.g., switching from `invoice_date_immediate` to `subscription_term` for a product that is now sold as a subscription). Policy changes affect future imports; to apply to historical data, re-import after updating the policy.
 
-**Use Monthly Overrides when:** A specific contract’s ARR doesn’t match the agreed-upon terms due to a one-off situation — for example, a contract amendment, partial period, or an unusual billing arrangement. The automated calculation is correct in general, but wrong for this specific case.
+**Use Monthly Overrides when:** A specific contract's ARR doesn't match the agreed-upon terms due to a one-off situation - for example, a contract amendment, partial period, or an unusual billing arrangement. The automated calculation is correct in general, but wrong for this specific case.
 
 > ⚠️ **Warning:** Do not use monthly overrides as a substitute for fixing the underlying policy or source data. If you are applying the same override repeatedly, update the recognition rule or source workbook instead.
 
 ### Applying a Policy Change
 
-1. Switch into the client’s tenant context.
+1. Switch into the client's tenant context.
 2. Go to **Settings** → **ARR Policy**.
 3. Select the recognition rule for each product/service category.
 4. Click **Save Policy**.
-5. To apply the updated policy to existing data, trigger a re-import of the client’s workbook (see Section 4 re-import workflow).
+5. To apply the updated policy to existing data, trigger a re-import of the client's workbook (see Section 4 re-import workflow).
 
 > ⚠️ **Warning:** Saving a policy change does **not** retroactively recalculate existing imports. The new rules will apply on the next import. If the client needs historical ARR recalculated, a re-import is required.
 
 ### ARR Monthly Overrides
 
-Tenant Admins (and SUs) can override the calculated ARR for a specific contract line in a specific period. This is used when the system’s automated calculation doesn’t match the agreed-upon contract terms.
+Tenant Admins (and SUs) can override the calculated ARR for a specific contract line in a specific period. This is used when the system's automated calculation doesn't match the agreed-upon contract terms.
 
 **To apply a monthly override:**
 
-1. Navigate to the Review Queue or the ARR Dashboard for the client’s tenant.
+1. Navigate to the Review Queue or the ARR Dashboard for the client's tenant.
 2. Find the line item you want to override.
 3. Click **Override ARR** and enter the correct value.
 4. Provide a reason (required — be specific; this entry is permanent in the audit log).
 5. Click **Apply Override**.
+6. If the tenant is configured for **two-step override approval**, the override will enter **Awaiting Approval** status. A second authorized approver (Tenant Admin or SU) must confirm the override before it takes effect.
 
 **All overrides are logged with:**
 
-- The SU or Admin user ID who applied the override
+- The SU or Admin user ID who submitted the override
 - The original calculated ARR value
 - The override value
 - The reason provided
-- Timestamp (UTC)
+- Timestamp of submission (UTC)
+- The approver user ID and approval timestamp (if two-step approval is in use)
+- `approved_by` field: populated by the system when the second approver confirms
+
+### Two-Step Override Approval
+
+The `ARRMonthlyOverride` domain model includes an optional `approved_by` field, which supports a two-step approval workflow for organizations that require a second set of eyes on large or sensitive ARR adjustments.
+
+**When enabled for a tenant:**
+
+1. The submitting user creates the override and provides a reason. Status: `pending_approval`.
+2. A second authorized user (a different Tenant Admin or any SU) reviews and either approves or rejects the override.
+3. If approved: status becomes `applied` and the override value is used in ARR calculations.
+4. If rejected: status becomes `rejected` and the original calculated ARR stands. The rejection reason is logged.
+
+**Who can approve:**
+- A Tenant Admin who is **not** the same person who submitted the override
+- Any SU acting within the client's tenant context
+
+> ⚠️ **Warning:** The approver must be a different user from the submitter. Self-approval is not permitted. If you are the only Admin in a tenant and need to apply an urgent override, escalate to a SU to act as approver.
+
+**When to enable two-step approval:**
+- For clients with board-level financial reporting or investor obligations
+- For clients where override history may be subject to audit or compliance review
+- Any time a single point of approval is considered a control risk
+
+<!-- TODO: two-step approval UI and tenant-level enable/disable configuration — document when built -->
 
 > ⚠️ **Warning:** Override records are scoped to the import they were applied to. If the client re-imports a corrected workbook, overrides from the prior import are **not** carried forward. You must re-apply overrides after each re-import. (See Section 4: Re-Import Workflow.)
 
@@ -497,3 +575,52 @@ You have access to client financial data that is confidential and sensitive. You
 - Never discuss one client's data with another client.
 - Never access client data out of curiosity - only for legitimate operational reasons.
 - Log off or exit client contexts when your work is complete.
+
+---
+
+## 10. Glossary
+
+**ARR Policy**  
+The named configuration governing how the system recognizes revenue for a specific tenant. Defined by recognition rules mapped to product/service categories.
+
+**ARRMonthlyOverride**  
+A system record representing an admin-submitted correction to the calculated ARR for a specific contract line in a specific period. Contains the original value, override value, submitter, approver (if two-step), and reason.
+
+**Approved_by**  
+The optional field on an ARRMonthlyOverride record that records who confirmed the override in a two-step approval workflow. Unpopulated until a second authorized user approves.
+
+**Audit Log**  
+The tamper-proof, system-maintained record of all significant actions in ARR V2 — context switches, imports, deletions, overrides, user changes. Read-only for all users, including Super Users.
+
+**Import Lineage**  
+The complete provenance trail for an uploaded workbook: who uploaded it, from what source system, what the filename was, and what the processing outcome was. Captured in the `SourceImport` record.
+
+**Logo**  
+The parent commercial customer entity. A Logo may have multiple Sites. ARR is reported at both the Logo level (aggregate) and Site level (individual).
+
+**MappingDecision**  
+A system record that tracks how a source column or value was interpreted during import: the source field, the mapped domain field, the transformation applied, and whether the mapping required human review.
+
+**Recognition Rule**  
+A rule that governs how revenue is spread over time for a product/service category. The four supported types are: `subscription_term`, `fallback_one_year_from_invoice`, `fixed_36_months_from_invoice`, and `invoice_date_immediate`.
+
+**Site**  
+A billing entity, subsidiary, or physical location under a Logo. Sites carry the accounting and CRM reference IDs. Multiple Sites can exist under one Logo.
+
+**SourceImport**  
+The system record for a completed workbook upload. Stores filename, uploader, source system, processing status, and row-level warning/error counts. Immutable after creation.
+
+**Super User (SU)**  
+The highest privilege level in ARR V2. SUs can switch between tenant contexts, manage all clients, and perform any admin action across the system. All SU actions are logged.
+
+**Tenant**  
+A client company onboarded into ARR V2. Each tenant has fully isolated data storage, user accounts, and ARR configuration.
+
+**Tenant Admin**  
+An elevated role within a single tenant. Tenant Admins can manage users and configure ARR policy for their organization, but cannot access other tenants or SU-level functions.
+
+**Tenant Context**  
+The active tenant scope during a SU session. A SU must explicitly switch into a tenant context before accessing or modifying that client's data. Context switches are logged.
+
+**Two-Step Override Approval**  
+An optional tenant-level configuration requiring a second authorized user to confirm any ARR monthly override before it takes effect. Supported by the `approved_by` field on the `ARRMonthlyOverride` record.
