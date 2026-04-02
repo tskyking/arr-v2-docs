@@ -2,11 +2,11 @@
 
 ## Test Run Status
 
-**26 test files | 542 tests | 0 failures**  
-_(Updated: 2026-04-02 — Build Session 6)_
+**30 test files | 622 tests | 0 failures**  
+_(Updated: 2026-04-02 — Build Session 7)_
 
-Pre-session baseline: 26 files | 531 tests | 0 failures  
-This session added: +11 tests (Bug #3 isRecurringCategory + Bug #5 path normalization)  
+Pre-session baseline: 30 files | 620 tests | 13 failing (regressions across 6 test files)  
+This session fixed: 13 failing tests (0 new tests added, 4 source + test files corrected)  
 
 Test breakdown:
 - 542 passing
