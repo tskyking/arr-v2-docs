@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 8 — Bug #6 resolved: "External" sheet name restriction lifted; error messages updated to human-readable text)_
+_Last updated: 2026-04-02 (Session 9 — Added Customer Explorer section; expanded troubleshooting with customer-level scenarios; extended glossary)_
 
 ---
 
@@ -10,11 +10,12 @@ _Last updated: 2026-04-02 (Session 8 — Bug #6 resolved: "External" sheet name 
 2. [Getting Started](#2-getting-started)
 3. [Data Import](#3-data-import)
 4. [ARR Dashboard](#4-arr-dashboard)
-5. [Review Queue](#5-review-queue)
-6. [ARR Movement Analysis](#6-arr-movement-analysis)
-7. [User Roles and Permissions](#7-user-roles-and-permissions)
-8. [Troubleshooting](#8-troubleshooting)
-9. [Glossary](#9-glossary)
+5. [Customer Explorer](#5-customer-explorer)
+6. [Review Queue](#6-review-queue)
+7. [ARR Movement Analysis](#7-arr-movement-analysis)
+8. [User Roles and Permissions](#8-user-roles-and-permissions)
+9. [Troubleshooting](#9-troubleshooting)
+10. [Glossary](#10-glossary)
 
 ---
 
@@ -222,7 +223,47 @@ ARR represents the annualized value of your active recurring subscriptions. It i
 
 ---
 
-## 5. Review Queue
+## 5. Customer Explorer
+
+<!-- TODO: add screenshots when UI is stable -->
+
+The **Customer Explorer** lets you browse ARR data at the individual customer level — useful when you want to understand a specific account's revenue history, peak ARR, or trend over time.
+
+### Accessing the Customer List
+
+1. From the main navigation, go to **Customers** (or look for a **Customers** tab on the Dashboard).
+2. You will see a list of all customers with ARR in the current import, sorted by ARR (highest first by default).
+
+Each row in the customer list shows:
+
+- **Customer name**
+- **Current ARR** — their ARR in the most recent month in your data
+- **ARR trend** — whether their ARR is growing, stable, or declining
+
+### Customer Detail View
+
+Click any customer name to open their detail view. Here you'll see:
+
+- **ARR history** — a chart showing their ARR month by month
+- **Peak ARR** — the highest ARR this customer has ever reached in your data
+- **Current ARR** — their ARR in the most recent period
+- **Active subscription lines** — the individual products or services driving their ARR
+
+> 💡 **Tip:** Peak ARR is a useful reference point during renewal conversations. If a customer's current ARR is significantly below their peak, it may indicate contraction worth investigating.
+
+### Understanding a Customer's ARR History
+
+ARR history is shown in chronological order. You can use this view to:
+
+- Spot when a customer expanded, contracted, or churned and came back
+- See which subscription lines drove changes in their ARR over time
+- Verify that an override or recognition rule change had the expected effect
+
+> ⚠️ **Warning:** The customer list reflects the data in the **current import**. If you have multiple imports in the system, make sure you're viewing the import that corresponds to the period you're analyzing.
+
+---
+
+## 6. Review Queue
 
 <!-- TODO: add screenshots when UI is stable -->
 
@@ -264,7 +305,7 @@ If you have many similar flags (e.g., all rows with a missing invoice number tha
 
 ---
 
-## 6. ARR Movement Analysis
+## 7. ARR Movement Analysis
 
 <!-- TODO: add screenshots when UI is stable -->
 
@@ -299,7 +340,7 @@ Below the chart, you'll see totals across your entire selected date range:
 
 ---
 
-## 7. User Roles and Permissions
+## 8. User Roles and Permissions
 
 <!-- TODO: finalize roles/permissions model with build team — draft below is based on domain model notes -->
 
@@ -336,7 +377,12 @@ If you choose **Yes**, the system generates a clean, re-uploadable Excel workboo
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
+
+### The dashboard shows no data after import
+
+**Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state.
+**Fix:** Refresh the page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
 
 ### The dashboard shows no data
 
@@ -366,6 +412,32 @@ If you choose **Yes**, the system generates a clean, re-uploadable Excel workboo
 **Cause:** The file may be corrupted, or there's a temporary issue with the server.  
 **Fix:** Try uploading again. If the problem continues, try re-exporting the file from QuickBooks and uploading the fresh export. If it still fails, contact support.
 
+### The customer list is empty
+
+**Cause:** No import has been completed, or the import contained no rows that could be matched to a product/service category.
+**Fix:** Check the Review Queue for `MISSING_PRODUCT_SERVICE_MAPPING` flags — if all rows are unmapped, the system has no recognized ARR to display. Review the mapping sheet in your workbook and re-import.
+
+### A customer's ARR history shows a sudden drop to zero
+
+**Cause:** This is typically churn — the customer's subscription ended or was not renewed. It can also happen if a re-import used a different subscription date range that excluded some months.
+**Fix:**
+1. Look at the customer detail view and find the month where ARR dropped.
+2. Check the Review Queue for rows flagged `MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM` for that customer.
+3. If the subscription dates in the source workbook are wrong, correct them and re-import.
+
+### Peak ARR for a customer seems too high
+
+**Cause:** A one-time spike may have been miscategorized as recurring, or a recognition rule spread a large one-time payment over a long term.
+**Fix:**
+1. Go to the customer detail view and find the month with the unusually high ARR.
+2. Check the Review Queue for rows flagged with `UNSUPPORTED_RECOGNITION_RULE` or `MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM` for that customer.
+3. Verify the recognition assumptions sheet has the correct rule for the product/service category.
+
+### The Movements page shows unexpectedly large "New" numbers
+
+**Cause:** If customers had ARR in a prior import but that import is not currently active, they will appear as "new" in the current import even if they are returning customers.
+**Fix:** This is expected when switching between separate imports. For period-over-period analysis to be meaningful, each import should cover a continuous time range. Consider importing a longer date range in a single workbook rather than multiple short imports.
+
 ### My Review Queue shows items that seem to belong to a different period
 
 **Cause:** Review queue items are scoped to the import they came from. If you have multiple imports in the system, make sure you're viewing the correct one.  
@@ -383,7 +455,7 @@ If you choose **Yes**, the system generates a clean, re-uploadable Excel workboo
 
 ---
 
-## 9. Glossary
+## 10. Glossary
 
 **ARR (Annual Recurring Revenue)**  
 The annualized value of your active recurring subscriptions. A subscription worth $500/month contributes $6,000 to ARR. One-time fees are not included.
@@ -393,6 +465,9 @@ When a customer cancels or does not renew, and their ARR drops to zero.
 
 **Contraction**  
 When an existing customer's subscription value decreases (but they don't fully cancel).
+
+**Customer Explorer**  
+The section of ARR V2 that lets you browse and drill into individual customer ARR data, including ARR history, peak ARR, and active subscription lines.
 
 **Expansion**  
 When an existing customer's subscription value increases (upgrade, add-on, seat increase, etc.).
@@ -411,6 +486,9 @@ An admin-level adjustment to the ARR calculated for a specific contract line in 
 
 **Net Revenue Retention (NRR)**  
 *(Not yet in-product — for reference)* A metric that shows how much ARR you retain from existing customers over time, including expansion and contraction. NRR > 100% means your existing customers are growing faster than they churn.
+
+**Peak ARR**  
+The highest ARR ever recorded for a given customer within the data loaded into the system. Visible in the Customer Detail view.
 
 **Normalization**  
 The process the system uses to clean, parse, and standardize the raw data in your workbook before calculating ARR.

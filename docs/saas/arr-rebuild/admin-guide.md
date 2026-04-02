@@ -1,6 +1,6 @@
 # ARR V2 — Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 8 — Bug #6 resolved: "External" sheet detection now works; admin guide updated to reflect fixed behavior)_
+_Last updated: 2026-04-02 (Session 9 — Added notes on getCustomerDetail override scope; ARR history sort order; dashboard UI progress)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -155,12 +155,18 @@ Each client can have multiple import records. Imports are not automatically repl
 
 ### Review Override Scope
 
-Review queue overrides are scoped to a specific import. When a client asks "why does my override seem missing," this is almost always because:
+Review queue overrides are scoped to a specific import ID. When a client asks "why does my override seem missing," this is almost always because:
 
 1. A new import was uploaded after the override was applied (overrides do not carry over to new imports), or
 2. The active import context in the UI has changed.
 
 Remind Tenant Admins of this behavior when they apply overrides: **overrides must be re-applied after a re-import.**
+
+**Technical detail (for admin reference):** Override records are stored alongside the import ID at the store layer. The `getCustomerDetail` service resolves overrides within the scope of a specific import — overrides from import A are never visible when viewing import B. This is by design and matches the per-import scoping of all review data.
+
+### Customer ARR History Sort Order
+
+When using the Customer Explorer or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
 
 ### Archiving Client Data
 
@@ -297,7 +303,11 @@ Each tenant has an **ARR Policy** — a named configuration that governs how the
 
 The policy is defined in the tenant's **Recognition Assumptions sheet** (in the XLSX workbook) but Admins can also configure overrides at the policy level in the UI.
 
-> ⚠️ **Previously known issue — now resolved:** The import system previously rejected transaction sheets named with the word "External" (e.g., "Sales by Cust Detail External"). This was fixed in Session 7. The system now correctly detects such sheets as a valid fallback when no internal-named sheet is present. If a client reported this issue previously, ask them to re-attempt the upload without renaming.
+> ⚠️ **Previously known issue — now resolved (Session 7/8):** The import system previously rejected transaction sheets named with the word "External" (e.g., "Sales by Cust Detail External"). This was fixed in Session 7/8. The system now correctly detects such sheets as a valid fallback when no internal-named sheet is present. If a client reported this issue previously, ask them to re-attempt the upload without renaming.
+
+### Current UI Status
+
+As of Session 9, the Dev Dashboard UI has been updated with improved navigation toggle buttons and a dashboard-view sync. The user-facing import, review queue, and movement analysis views are in active development. Screenshots and final UI notes will be added to this guide when the UI is stable enough for end-user delivery.
 
 ### Supported Recognition Rule Types
 
@@ -379,6 +389,8 @@ The system logs the following events automatically:
 <!-- TODO: log retention policy to be defined — placeholder below -->
 
 Audit logs are retained for a minimum of 12 months. Older logs may be archived but are not deleted.
+
+> 💡 **Tip:** For compliance purposes, export audit logs to CSV at least quarterly and store them in a system outside ARR V2. This ensures you have an independent record even in the event of a server failure or data reset.
 
 > ⚠️ **Warning:** Audit logs are read-only. They cannot be edited or deleted, even by a Super User. This is by design — the audit trail must be tamper-proof.
 
