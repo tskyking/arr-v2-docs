@@ -35,6 +35,8 @@ import http from 'node:http';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { listImports, exportArrCsv, exportMovementsCsv, getReviewStats } from '../importService.js';
 
+const TEST_TENANT = 'default';
+
 const FAKE_ID = '00000000-0000-0000-0000-000000000099';
 let port: number;
 let serverModule: { default: http.Server };
@@ -100,7 +102,7 @@ afterAll(() => {
 // ─── Get a real importId from the store ──────────────────────────────────────
 
 function getRealImportId(): string | undefined {
-  const imports = listImports();
+  const imports = listImports(TEST_TENANT);
   return imports[0]?.importId;
 }
 
@@ -282,18 +284,18 @@ describe('GET /imports/:id/review/stats', () => {
 
 describe('exportArrCsv — null for unknown importId', () => {
   it('18. returns null for unknown importId', () => {
-    expect(exportArrCsv(FAKE_ID)).toBeNull();
+    expect(exportArrCsv(TEST_TENANT, FAKE_ID)).toBeNull();
   });
 });
 
 describe('exportMovementsCsv — null for unknown importId', () => {
   it('19. returns null for unknown importId', () => {
-    expect(exportMovementsCsv(FAKE_ID)).toBeNull();
+    expect(exportMovementsCsv(TEST_TENANT, FAKE_ID)).toBeNull();
   });
 });
 
 describe('getReviewStats — null for unknown importId', () => {
   it('20. returns null for unknown importId', () => {
-    expect(getReviewStats(FAKE_ID)).toBeNull();
+    expect(getReviewStats(TEST_TENANT, FAKE_ID)).toBeNull();
   });
 });

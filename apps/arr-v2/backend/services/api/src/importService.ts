@@ -700,13 +700,14 @@ export function getCustomerDetail(
   const lastActivePeriod = arrHistory[arrHistory.length - 1]?.period ?? '';
 
   // Count open review items for this customer
+  const overridesForImport = loadOverrides(tenantId, importId);
   const allReviewItems = result.bundle.reviewItems.map((item, idx) => {
     const id = `${importId}-${item.sourceRowNumber}-${idx}`;
     const row = result.bundle.normalizedRows[item.sourceRowNumber - 1];
     return { id, siteName: row?.siteName ?? '' };
   });
   const openReviewCount = allReviewItems.filter(item => {
-    const override = reviewOverrides.get(item.id);
+    const override = overridesForImport.get(item.id);
     return item.siteName === customerName && !override;
   }).length;
 

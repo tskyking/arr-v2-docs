@@ -28,6 +28,8 @@ import { describe, it, expect } from 'vitest';
 import { loadAllImports, loadOverrides, saveOverrides, deleteOverrides } from '../store.js';
 import { listImports } from '../importService.js';
 
+const TEST_TENANT = 'default';
+
 // ─── 1–3. loadAllImports regression ──────────────────────────────────────────
 // NOTE: These tests currently FAIL because BUG #7 is not yet fixed.
 // They are intentionally marked it.fails() to document the known bug.
@@ -37,7 +39,7 @@ import { listImports } from '../importService.js';
 //   files = readdirSync(DATA_DIR).filter(f => f.endsWith('.json') && !f.endsWith('.overrides.json'));
 
 describe('loadAllImports — BUG #7 regression: .overrides.json files skipped', () => {
-  const store = loadAllImports();
+  const store = loadAllImports(TEST_TENANT);
 
   it('every entry has a defined importId (string)', () => {
     for (const [id] of store) {
@@ -62,16 +64,16 @@ describe('loadAllImports — BUG #7 regression: .overrides.json files skipped', 
 
 describe('listImports — BUG #7 regression: should not crash with TypeError', () => {
   it('listImports() does not throw TypeError', () => {
-    expect(() => listImports()).not.toThrow();
+    expect(() => listImports(TEST_TENANT)).not.toThrow();
   });
 
   it('listImports() returns an array', () => {
-    const result = listImports();
+    const result = listImports(TEST_TENANT);
     expect(Array.isArray(result)).toBe(true);
   });
 
   it('every entry from listImports() has importId, importedAt, totalRows', () => {
-    const result = listImports();
+    const result = listImports(TEST_TENANT);
     for (const entry of result) {
       expect(typeof entry.importId).toBe('string');
       expect(typeof entry.importedAt).toBe('string');
@@ -87,7 +89,7 @@ describe('loadOverrides + saveOverrides round-trip', () => {
   const tempId = randomUUID();
 
   it('loadOverrides returns empty Map for non-existent importId', () => {
-    const result = loadOverrides(tempId);
+    const result = loadOverrides(TEST_TENANT, tempId);
     expect(result.size).toBe(0);
   });
 
@@ -100,14 +102,14 @@ describe('loadOverrides + saveOverrides round-trip', () => {
       resolvedBy: 'qa-agent',
     });
 
-    saveOverrides(tempId, overrides);
-    const loaded = loadOverrides(tempId);
+    saveOverrides(TEST_TENANT, tempId, overrides);
+    const loaded = loadOverrides(TEST_TENANT, tempId);
     expect(loaded.has(itemId)).toBe(true);
     expect(loaded.get(itemId)!.status).toBe('resolved');
     expect(loaded.get(itemId)!.resolvedBy).toBe('qa-agent');
 
     // Clean up
-    deleteOverrides(tempId);
+    deleteOverrides(TEST_TENANT, tempId);
   });
 
   it('saves multiple overrides and loads them all back', () => {
@@ -121,30 +123,30 @@ describe('loadOverrides + saveOverrides round-trip', () => {
       });
     }
 
-    saveOverrides(tempId, overrides);
-    const loaded = loadOverrides(tempId);
+    saveOverrides(TEST_TENANT, tempId, overrides);
+    const loaded = loadOverrides(TEST_TENANT, tempId);
     expect(loaded.size).toBe(3);
 
-    deleteOverrides(tempId);
+    deleteOverrides(TEST_TENANT, tempId);
   });
 
   it('overwrite: second saveOverrides replaces all previous entries', () => {
     const first = new Map<string, any>();
     first.set(`${tempId}-1-0`, { status: 'resolved', resolvedAt: new Date().toISOString(), resolvedBy: 'qa' });
     first.set(`${tempId}-2-0`, { status: 'resolved', resolvedAt: new Date().toISOString(), resolvedBy: 'qa' });
-    saveOverrides(tempId, first);
+    saveOverrides(TEST_TENANT, tempId, first);
 
     const second = new Map<string, any>();
     second.set(`${tempId}-3-0`, { status: 'overridden', resolvedAt: new Date().toISOString(), resolvedBy: 'qa', overrideNote: 'x' });
-    saveOverrides(tempId, second);
+    saveOverrides(TEST_TENANT, tempId, second);
 
-    const loaded = loadOverrides(tempId);
+    const loaded = loadOverrides(TEST_TENANT, tempId);
     // First two entries should be gone — full overwrite
     expect(loaded.has(`${tempId}-1-0`)).toBe(false);
     expect(loaded.has(`${tempId}-3-0`)).toBe(true);
     expect(loaded.size).toBe(1);
 
-    deleteOverrides(tempId);
+    deleteOverrides(TEST_TENANT, tempId);
   });
 });
 
@@ -153,17 +155,17 @@ describe('loadOverrides + saveOverrides round-trip', () => {
 describe('deleteOverrides', () => {
   it('does not throw when the overrides file does not exist', () => {
     const ghostId = randomUUID();
-    expect(() => deleteOverrides(ghostId)).not.toThrow();
+    expect(() => deleteOverrides(TEST_TENANT, ghostId)).not.toThrow();
   });
 
   it('after deleteOverrides, loadOverrides returns empty Map', () => {
     const id = randomUUID();
     const overrides = new Map<string, any>();
     overrides.set(`${id}-1-0`, { status: 'resolved', resolvedAt: new Date().toISOString(), resolvedBy: 'qa' });
-    saveOverrides(id, overrides);
+    saveOverrides(TEST_TENANT, id, overrides);
 
-    deleteOverrides(id);
-    const loaded = loadOverrides(id);
+    deleteOverrides(TEST_TENANT, id);
+    const loaded = loadOverrides(TEST_TENANT, id);
     expect(loaded.size).toBe(0);
   });
 });
