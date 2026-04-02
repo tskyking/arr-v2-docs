@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 11 — Expanded Customer Explorer: Logo/Site hierarchy, multi-site rollup, site-level drill-down; refined User Roles section with override approval notes; glossary additions)_
+_Last updated: 2026-04-02 (Session 12 — File size limit documented in import section; Glossary expanded with Contract, Contract Line, Contract Amendment, Billing Schedule, and recurrence type terms)_
 
 ---
 
@@ -70,6 +70,8 @@ ARR V2 currently accepts **Excel workbooks only** (`.xlsx` format).
 > ⚠️ **Warning:** `.xls`, `.csv`, `.numbers`, and other formats are **not supported**. If your accounting system exports in a different format, convert it to `.xlsx` first.
 
 > ⚠️ **Warning:** Password-protected workbooks cannot be read. Remove the password before uploading.
+
+> ⚠️ **Warning:** There is a maximum file size limit for uploads. Very large workbooks (typically over several megabytes) will be rejected with a "File too large" error. If your workbook exceeds the limit, try reducing the date range of your export or removing unnecessary sheets before uploading. Contact your administrator if you consistently hit this limit.
 
 ### 3.2 Required Workbook Structure
 
@@ -539,6 +541,18 @@ The exported workbook is formatted to be re-imported directly into ARR V2. You c
 **ARR (Annual Recurring Revenue)**  
 The annualized value of your active recurring subscriptions. A subscription worth $500/month contributes $6,000 to ARR. One-time fees are not included.
 
+**Billing Schedule**  
+A planned or actual sequence of billing events for a customer's contract — for example, an annual invoice billed in January. In future versions of ARR V2, the system will reconcile planned billing against actual invoices. For now, billing data flows in through your QuickBooks export.
+
+**Contract**  
+The commercial agreement between your organization and a customer. A contract defines the term (start/end dates), scope (which Sites it covers), renewal terms, and billing method. In ARR V2, contracts are the structure that ties together individual product/service subscription lines and drives ARR recognition.
+
+**Contract Amendment**  
+A tracked change to an existing contract — such as an expansion, contraction, repricing, or early termination. Contract amendments are important because they explain *why* ARR moved in a given period. ARR V2 will surface contract amendment history in future versions.
+
+**Contract Line**  
+A single product or service item within a contract — also called a SKU or subscription line. Each contract line has its own start and end date, quantity, price, and revenue recognition method. A customer with multiple product subscriptions will have one contract line per product.
+
 **Churn**  
 When a customer cancels or does not renew, and their ARR drops to zero.
 
@@ -547,6 +561,9 @@ When an existing customer's subscription value decreases (but they don't fully c
 
 **Customer Explorer**  
 The section of ARR V2 that lets you browse and drill into individual customer ARR data, including ARR history, peak ARR, and active subscription lines.
+
+**Customer Type**  
+A classification applied to a customer or contract that affects how their ARR is categorized in reporting — for example, Enterprise vs. Self-Serve. Customer type affects segmentation in movement analysis and board-level reporting. Administrators can adjust customer type classifications with an audit trail.
 
 **Expansion**  
 When an existing customer's subscription value increases (upgrade, add-on, seat increase, etc.).
@@ -565,6 +582,9 @@ An admin-level adjustment to the ARR calculated for a specific contract line in 
 
 **Net Revenue Retention (NRR)**  
 *(Not yet in-product — for reference)* A metric that shows how much ARR you retain from existing customers over time, including expansion and contraction. NRR > 100% means your existing customers are growing faster than they churn.
+
+**Recurrence Type**  
+A classification on each contract line that determines how it contributes to ARR: `recurring` (counted in ARR), `non_recurring` (excluded from ARR, recognized immediately), or `hybrid` (partially recurring). The product/service mapping and recognition assumptions in your workbook determine how the system assigns recurrence type to each row.
 
 **Peak ARR**  
 The highest ARR ever recorded for a given customer within the data loaded into the system. Visible in the Customer Detail view.
@@ -595,3 +615,6 @@ An Excel `.xlsx` file containing the three required sheets: transaction detail, 
 
 **Two-Step Override Approval**  
 An optional workflow where a submitted ARR override must be reviewed and approved by a second authorized user before it takes effect. Whether this is enabled depends on your organization's configuration.
+
+**Workbook (re-importable)**  
+When you export your data before a reset, the exported file is formatted as a re-importable workbook — meaning it has the same three-sheet structure (transaction detail, product/service mapping, recognition assumptions) as the original file you uploaded. You can open it in Excel, correct any errors, and re-upload it using the standard import flow.

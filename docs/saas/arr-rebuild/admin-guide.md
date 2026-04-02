@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 11 — Expanded Customer Hierarchy section: Logo/Site model, rollup behavior, multi-site admin notes; added Import Lineage tracking detail; expanded Override section with two-step approval model from domain spec; Glossary added to admin guide)_
+_Last updated: 2026-04-02 (Session 12 — Added Contract & Contract Line domain model documentation under Section 4; added Classification Adjustments section under Section 7; added file size limit note in import guidance; expanded Glossary with Contract, ContractLine, ClassificationAdjustment, and BillingSchedule)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -195,6 +195,18 @@ Use this workflow when a client discovers errors in their source data after an i
 
 > 💡 **Tip:** For minor data errors (a handful of rows), prefer applying overrides rather than triggering a full re-import. Reserve re-import for structural errors that affect many rows or the workbook's sheet layout.
 
+### File Size Limits
+
+The import server enforces a maximum file size on uploaded workbooks. Uploads that exceed this limit are rejected with a `413 Payload Too Large` response before any parsing occurs. This check applies regardless of file format.
+
+**What to do if an upload is rejected for file size:**
+1. Open the workbook in Excel and check how many years of transaction data it contains.
+2. If the date range spans more than needed, export a shorter range from QuickBooks (e.g., one fiscal year at a time).
+3. Remove any large non-essential tabs or formatting from the workbook before re-exporting.
+4. If the client's data genuinely requires a large file, contact the build team — the limit is configurable.
+
+> ⚠️ **Warning:** The file size check happens at the transport layer. The client will see an error before they reach the import summary screen. Make sure clients understand this is a file-too-large error, not a format error.
+
 ### Customer ARR History Sort Order
 
 When using the Customer Explorer or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
@@ -249,6 +261,55 @@ Lineage records cannot be edited. They are a permanent record of what was upload
 For MVP, mapping decisions are deterministic (rule-based), so confidence scores and AI-assisted review are placeholders. The data structure is already in place for future enhancement.
 
 > 💡 **Tip:** When a client reports unexpected ARR figures after an import, check the SourceImport record: `warning_count` and `error_count` will tell you immediately whether the import was clean or had issues. If both are zero and ARR still looks wrong, the issue is likely in the recognition rules or source data, not the import pipeline.
+
+### Contract and Contract Line Data
+
+ARR V2's domain model includes full contract-level tracking. At MVP, contract data is derived from the import workbook. Post-MVP, contracts may be entered directly or synced from a CRM. Understanding the model helps admins interpret ARR correctly.
+
+**Contract scope types:**
+
+| Scope | What it means |
+|---|---|
+| `site_specific` | The contract covers one Site (one billing entity) |
+| `multi_site` | The contract covers multiple Sites under a single Logo |
+| `enterprise_wide` | The contract covers the entire Logo — all Sites |
+
+For enterprise clients with multiple subsidiaries, the contract scope determines whether ARR is reported at the Site level or rolled up to the Logo. Admins should verify contract scope when onboarding enterprise clients — incorrect scope can cause ARR to appear duplicated or missing across Sites.
+
+**Contract line recurrence types:**
+
+| Recurrence Type | ARR Contribution |
+|---|---|
+| `recurring` | Counts toward ARR (subscription, retainer, SaaS fee, etc.) |
+| `non_recurring` | Does not count toward ARR (setup fees, one-time services) |
+| `hybrid` | Contains both recurring and non-recurring elements — requires manual review |
+
+The `arr_treatment_method` and `revenue_recognition_method` are separate fields on each contract line. A product can have a recognition method of `subscription_term` but an ARR treatment that differs (e.g., for hybrid lines where only part of the revenue is ARR-eligible). If ARR numbers look inflated or understated for a specific product, review the contract line's ARR treatment method.
+
+**Contract Amendments:**
+
+Material changes to a contract — expansions, contractions, repricing, renewals, terminations — are tracked as `ContractAmendment` records. Each amendment captures:
+- `amendment_type`: one of `expansion | contraction | renewal | termination | repricing | other`
+- `effective_date`: when the change takes effect (not necessarily the invoice date)
+- `description`: human-readable summary
+- `source_import_id`: which import detected or triggered this amendment (if applicable)
+
+For MVP, amendments are derived from the import data rather than entered manually. Post-MVP, admins will be able to enter and edit amendments directly in the UI.
+
+> 💡 **Tip:** If a client's ARR movement waterfall shows a large Contraction in a specific month but the client says no accounts were lost, check for a ContractAmendment with `termination` or `contraction` type in that period. The amendment may reflect a partial cancellation or a repricing event, not a full churn.
+
+**BillingSchedule:**
+
+Each contract line may have one or more BillingSchedule records representing planned or actual billing events. Billing events can be:
+
+| Type | What it is |
+|---|---|
+| `planned` | Expected future invoice (from contract terms) |
+| `actual` | Invoice already issued and reflected in accounting export |
+| `milestone` | Billing tied to a project milestone, not a time period |
+| `invoice` | A directly linked invoice record |
+
+At MVP, billing data comes in through the QuickBooks export (Transaction Detail sheet). Post-MVP, planned billing from a CRM may be pre-loaded and reconciled against actual invoices.
 
 ### Archiving Client Data
 
@@ -378,6 +439,36 @@ Super User accounts are provisioned separately from tenant accounts. SU credenti
 ---
 
 ## 7. ARR Policy Configuration
+
+### Classification Adjustments
+
+ARR V2 supports tracking reclassification events when a customer or contract line moves between reporting categories — for example, from **Self-Serve** to **Enterprise**, or between industry classifications. These reclassifications materially affect ARR and retention metrics.
+
+A `ClassificationAdjustment` record captures:
+
+| Field | What it records |
+|---|---|
+| `related_entity_type` | What was reclassified (e.g., `logo`, `site`, `contract_line`) |
+| `related_entity_id` | The ID of the reclassified entity |
+| `previous_classification` | The old category (e.g., `self_serve`) |
+| `new_classification` | The new category (e.g., `enterprise`) |
+| `reason` | Why the reclassification was made |
+| `created_by` | The admin who submitted the change |
+| `approved_by` | The approver, if two-step approval is enabled |
+
+**When to apply a classification adjustment:**
+- A customer outgrows their Self-Serve status and moves to an Enterprise contract
+- A contract is re-scoped from site-specific to enterprise-wide
+- A product line changes its revenue category in your reporting framework
+
+**Two-step approval for classification adjustments:**
+Like ARR monthly overrides, classification adjustments support an optional approval step. If enabled for a tenant, the `approved_by` field must be populated before the reclassification takes effect in reporting.
+
+> ⚠️ **Warning:** Classification changes are retroactive in reporting — a customer reclassified as Enterprise will appear in Enterprise cohorts for historical periods, which can shift board-level metrics. Always confirm with the finance lead before applying a reclassification to avoid surprising stakeholders.
+
+> 💡 **Tip:** All classification adjustments are fully auditable. The `ClassificationAdjustment` record is permanent and read-only after creation — you cannot delete a classification change, only add a correcting one.
+
+<!-- TODO: classification adjustment UI — document when built -->
 
 ### What ARR Policy Controls
 
@@ -594,6 +685,21 @@ The tamper-proof, system-maintained record of all significant actions in ARR V2 
 
 **Import Lineage**  
 The complete provenance trail for an uploaded workbook: who uploaded it, from what source system, what the filename was, and what the processing outcome was. Captured in the `SourceImport` record.
+
+**BillingSchedule**  
+A planned or actual sequence of billing events associated with a contract line. Billing types include `planned`, `actual`, `milestone`, and `invoice`. Post-MVP, billing schedules from a CRM can be pre-loaded and reconciled against actual QuickBooks invoice data.
+
+**ClassificationAdjustment**  
+A tracked change to the reporting classification of a customer, site, or contract line — for example, moving from Self-Serve to Enterprise. Captured with submitter, approver (if applicable), reason, and full before/after classification. Permanent and audit-safe — cannot be deleted.
+
+**Contract**  
+The commercial agreement between your firm and a client. Tracks scope (`site_specific | multi_site | enterprise_wide`), term dates, renewal, billing method, and industry. Drives how ARR is organized and reported across Sites and Logos.
+
+**ContractAmendment**  
+A material change to an existing contract: expansion, contraction, repricing, renewal, or termination. Stored separately from the base contract to preserve the original terms. Linked to the import that surfaced the amendment.
+
+**ContractLine**  
+A single product/service SKU within a contract. Carries `recurrence_type` (`recurring | non_recurring | hybrid`), `arr_treatment_method`, `revenue_recognition_method`, dates, and pricing. The contract line is the atomic unit of ARR recognition.
 
 **Logo**  
 The parent commercial customer entity. A Logo may have multiple Sites. ARR is reported at both the Logo level (aggregate) and Site level (individual).
