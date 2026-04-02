@@ -54,7 +54,7 @@ export function loadAllImports(): Map<string, ImportResult> {
 
   let files: string[];
   try {
-    files = readdirSync(DATA_DIR).filter(f => f.endsWith('.json'));
+    files = readdirSync(DATA_DIR).filter(f => f.endsWith('.json') && !f.endsWith('.overrides.json'));
   } catch {
     return store;
   }

@@ -2,18 +2,21 @@
  * ARR V2 API Server
  * Minimal HTTP server using Node's built-in http module — no framework dependency yet.
  * Routes:
- *   POST /imports                          — upload and process a workbook
- *   GET  /imports                          — list imports
- *   GET  /imports/:id/summary             — import summary
- *   GET  /imports/:id/arr                 — ARR timeseries
- *   GET  /imports/:id/arr/movements       — period-over-period ARR waterfall (new/expansion/contraction/churn)
- *   GET  /imports/:id/review              — review queue
- *   PATCH /imports/:id/review/:itemId      — resolve or override a review item
- *   POST /imports/:id/review/bulk-resolve  — bulk-resolve open review items
- *   GET  /imports/:id/customers            — customer list with current ARR
- *   GET  /imports/:id/customers/:name      — customer detail: ARR history + review summary
- *   DELETE /imports/:id                   — remove an import
- *   GET  /health                          — health check
+ *   POST /imports                              — upload and process a workbook
+ *   GET  /imports                              — list imports
+ *   GET  /imports/:id/summary                 — import summary
+ *   GET  /imports/:id/arr                     — ARR timeseries (JSON)
+ *   GET  /imports/:id/arr/export.csv          — ARR timeseries CSV export
+ *   GET  /imports/:id/arr/movements           — period-over-period ARR waterfall (new/expansion/contraction/churn)
+ *   GET  /imports/:id/arr/movements/export.csv — ARR movements CSV export
+ *   GET  /imports/:id/review                  — review queue
+ *   GET  /imports/:id/review/stats            — review queue statistics (open/resolved/by-reason)
+ *   PATCH /imports/:id/review/:itemId          — resolve or override a review item
+ *   POST /imports/:id/review/bulk-resolve      — bulk-resolve open review items
+ *   GET  /imports/:id/customers               — customer list with current ARR
+ *   GET  /imports/:id/customers/:name         — customer detail: ARR history + review summary
+ *   DELETE /imports/:id                       — remove an import
+ *   GET  /health                              — health check
  */
 
 import http from 'node:http';
@@ -28,12 +31,15 @@ import {
   getArrTimeseries,
   getArrMovements,
   getReviewQueue,
+  getReviewStats,
   patchReviewItem,
   bulkResolveReview,
   listImports,
   removeImport,
   getCustomerList,
   getCustomerDetail,
+  exportArrCsv,
+  exportMovementsCsv,
 } from './importService.js';
 import { ImportError } from '../../imports/src/importErrors.js';
 
@@ -43,6 +49,15 @@ function json(res: http.ServerResponse, status: number, data: unknown) {
   const body = JSON.stringify(data, null, 2);
   res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
   res.end(body);
+}
+
+function csvResponse(res: http.ServerResponse, filename: string, csvBody: string) {
+  res.writeHead(200, {
+    'Content-Type': 'text/csv; charset=utf-8',
+    'Content-Disposition': `attachment; filename="${filename}"`,
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.end(csvBody);
 }
 
 function err(res: http.ServerResponse, status: number, code: string, message: string) {
@@ -157,6 +172,26 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         return;
       }
 
+      // GET /imports/:id/arr/export.csv — ARR timeseries as CSV download
+      if (sub === '/arr/export.csv' && method === 'GET') {
+        const from = url.searchParams.get('from') ?? undefined;
+        const to = url.searchParams.get('to') ?? undefined;
+        const csv = exportArrCsv(importId, from, to);
+        if (!csv) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        csvResponse(res, `arr-${importId.slice(0, 8)}.csv`, csv);
+        return;
+      }
+
+      // GET /imports/:id/arr/movements/export.csv — ARR movements waterfall as CSV
+      if (sub === '/arr/movements/export.csv' && method === 'GET') {
+        const from = url.searchParams.get('from') ?? undefined;
+        const to = url.searchParams.get('to') ?? undefined;
+        const csv = exportMovementsCsv(importId, from, to);
+        if (!csv) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        csvResponse(res, `arr-movements-${importId.slice(0, 8)}.csv`, csv);
+        return;
+      }
+
       if (sub === '/review' && method === 'GET') {
         const status = url.searchParams.get('status') ?? undefined;
         const queue = getReviewQueue(importId, status);
@@ -188,6 +223,14 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         const detail = getCustomerDetail(importId, customerName);
         if (!detail) { err(res, 404, 'NOT_FOUND', 'Customer not found in this import'); return; }
         json(res, 200, detail);
+        return;
+      }
+
+      // GET /imports/:id/review/stats — review queue statistics summary
+      if (sub === '/review/stats' && method === 'GET') {
+        const stats = getReviewStats(importId);
+        if (!stats) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, stats);
         return;
       }
 

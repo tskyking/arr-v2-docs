@@ -385,6 +385,217 @@ export function removeImport(importId: string): boolean {
   return true;
 }
 
+// ─── CSV export helpers ─────────────────────────────────────────────────────
+
+/** Escape a CSV cell value — wraps in quotes if it contains comma, quote, or newline. */
+function csvCell(value: string | number | undefined | null): string {
+  const s = String(value ?? '');
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+/** Build a CSV row from an array of values. */
+function csvRow(cells: Array<string | number | undefined | null>): string {
+  return cells.map(csvCell).join(',');
+}
+
+/**
+ * Export ARR timeseries as CSV.
+ * Columns: period, total_arr, active_customers, [category columns...], [customer columns...]
+ *
+ * Returns null if the import does not exist.
+ */
+export function exportArrCsv(importId: string, from?: string, to?: string): string | null {
+  const ts = getArrTimeseries(importId, from, to);
+  if (!ts) return null;
+
+  if (ts.periods.length === 0) {
+    return 'period,total_arr,active_customers\n';
+  }
+
+  // Collect all category and customer names across all periods for stable column headers
+  const categoryNames = new Set<string>();
+  const customerNames = new Set<string>();
+  for (const p of ts.periods) {
+    for (const c of p.byCategory) categoryNames.add(c.category);
+    for (const c of p.byCustomer) customerNames.add(c.customer);
+  }
+
+  const sortedCategories = [...categoryNames].sort();
+  const sortedCustomers = [...customerNames].sort();
+
+  const headerCells = [
+    'period',
+    'total_arr',
+    'active_customers',
+    ...sortedCategories.map(c => `cat_${c}`),
+    ...sortedCustomers.map(c => `cust_${c}`),
+  ];
+
+  const lines: string[] = [csvRow(headerCells)];
+
+  for (const p of ts.periods) {
+    const catMap = Object.fromEntries(p.byCategory.map(c => [c.category, c.arr]));
+    const custMap = Object.fromEntries(p.byCustomer.map(c => [c.customer, c.arr]));
+    lines.push(csvRow([
+      p.period,
+      p.totalArr,
+      p.activeCustomers,
+      ...sortedCategories.map(c => catMap[c] ?? 0),
+      ...sortedCustomers.map(c => custMap[c] ?? 0),
+    ]));
+  }
+
+  return lines.join('\n') + '\n';
+}
+
+/**
+ * Export ARR movements waterfall as CSV.
+ * Columns: period, opening_arr, new_arr, expansion_arr, contraction_arr, churn_arr, net_movement, closing_arr,
+ *          new_customers, expanded_customers, contracted_customers, churned_customers
+ *
+ * Returns null if the import does not exist.
+ */
+export function exportMovementsCsv(importId: string, from?: string, to?: string): string | null {
+  const movements = getArrMovements(importId, from, to);
+  if (!movements) return null;
+
+  const headers = [
+    'period',
+    'opening_arr',
+    'new_arr',
+    'expansion_arr',
+    'contraction_arr',
+    'churn_arr',
+    'net_movement',
+    'closing_arr',
+    'new_customers',
+    'expanded_customers',
+    'contracted_customers',
+    'churned_customers',
+  ];
+
+  const lines: string[] = [csvRow(headers)];
+
+  for (const m of movements.movements) {
+    lines.push(csvRow([
+      m.period,
+      m.openingArr,
+      m.newArr,
+      m.expansionArr,
+      m.contractionArr,
+      m.churnArr,
+      m.netMovement,
+      m.closingArr,
+      m.newCustomers,
+      m.expandedCustomers,
+      m.contractedCustomers,
+      m.churnedCustomers,
+    ]));
+  }
+
+  // Append totals row
+  lines.push(csvRow([
+    'TOTAL',
+    '',
+    movements.totalNewArr,
+    movements.totalExpansionArr,
+    movements.totalContractionArr,
+    movements.totalChurnArr,
+    movements.totalNetMovement,
+    '',
+    '',
+    '',
+    '',
+    '',
+  ]));
+
+  return lines.join('\n') + '\n';
+}
+
+// ─── Review stats ────────────────────────────────────────────────────────────
+
+export interface ReviewStatsResponse {
+  importId: string;
+  total: number;
+  openCount: number;
+  resolvedCount: number;
+  overriddenCount: number;
+  errorCount: number;
+  warningCount: number;
+  /** Count of open items grouped by reasonCode */
+  openByReasonCode: Array<{ reasonCode: string; count: number }>;
+  /** Count of open items grouped by severity */
+  openBySeverity: Array<{ severity: string; count: number }>;
+  /** Top 10 customers with the most open review items */
+  topCustomersWithIssues: Array<{ customerName: string; openCount: number }>;
+  /** Whether all open items have been resolved/overridden */
+  allResolved: boolean;
+}
+
+/**
+ * Build review queue statistics for the review screen header/summary panel.
+ * Provides all the aggregates a review screen needs to render its status bar
+ * without re-fetching the full item list.
+ */
+export function getReviewStats(importId: string): ReviewStatsResponse | null {
+  const queue = getReviewQueue(importId);
+  if (!queue) return null;
+
+  const { items } = queue;
+
+  const resolvedCount = items.filter(i => i.status === 'resolved').length;
+  const overriddenCount = items.filter(i => i.status === 'overridden').length;
+  const openItems = items.filter(i => i.status === 'open');
+  const openCount = openItems.length;
+
+  // Reason code breakdown (open items only)
+  const reasonMap = new Map<string, number>();
+  for (const item of openItems) {
+    reasonMap.set(item.reasonCode, (reasonMap.get(item.reasonCode) ?? 0) + 1);
+  }
+  const openByReasonCode = [...reasonMap.entries()]
+    .map(([reasonCode, count]) => ({ reasonCode, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Severity breakdown (open items only)
+  const severityMap = new Map<string, number>();
+  for (const item of openItems) {
+    severityMap.set(item.severity, (severityMap.get(item.severity) ?? 0) + 1);
+  }
+  const openBySeverity = [...severityMap.entries()]
+    .map(([severity, count]) => ({ severity, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Top customers by open item count
+  const customerMap = new Map<string, number>();
+  for (const item of openItems) {
+    if (item.customerName) {
+      customerMap.set(item.customerName, (customerMap.get(item.customerName) ?? 0) + 1);
+    }
+  }
+  const topCustomersWithIssues = [...customerMap.entries()]
+    .map(([customerName, count]) => ({ customerName, openCount: count }))
+    .sort((a, b) => b.openCount - a.openCount)
+    .slice(0, 10);
+
+  return {
+    importId,
+    total: items.length,
+    openCount,
+    resolvedCount,
+    overriddenCount,
+    errorCount: items.filter(i => i.severity === 'error').length,
+    warningCount: items.filter(i => i.severity === 'warning').length,
+    openByReasonCode,
+    openBySeverity,
+    topCustomersWithIssues,
+    allResolved: openCount === 0,
+  };
+}
+
 export function listImports(): Array<{ importId: string; importedAt: string; totalRows: number }> {
   return [...importStore.values()].map(r => ({
     importId: r.importId,

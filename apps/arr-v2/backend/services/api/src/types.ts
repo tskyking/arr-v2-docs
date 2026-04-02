@@ -95,6 +95,39 @@ export interface CustomerListResponse {
   total: number;
 }
 
+export interface CustomerArrPeriod {
+  period: string;
+  arr: number;
+}
+
+export interface CustomerDetailResponse {
+  name: string;
+  currentArr: number;
+  peakArr: number;
+  firstSeenPeriod: string;
+  lastActivePeriod: string;
+  arrHistory: CustomerArrPeriod[];
+  requiresReview: boolean;
+  openReviewCount: number;
+}
+
+// ─── Review Stats ────────────────────────────────────────────────
+
+/** Summary statistics for the review queue screen header. */
+export interface ReviewStatsResponse {
+  importId: string;
+  total: number;
+  openCount: number;
+  resolvedCount: number;
+  overriddenCount: number;
+  errorCount: number;
+  warningCount: number;
+  openByReasonCode: Array<{ reasonCode: string; count: number }>;
+  openBySeverity: Array<{ severity: string; count: number }>;
+  topCustomersWithIssues: Array<{ customerName: string; openCount: number }>;
+  allResolved: boolean;
+}
+
 // ─── Common ───────────────────────────────────────────────────────────────────
 
 export interface ApiError {
