@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 14 — CSV export documented for ARR Dashboard and Movement Analysis; export glossary entry added; troubleshooting expanded for export scenarios)_
+_Last updated: 2026-04-02 (Session 15 — structure aligned to end-user outline; Customer Explorer content folded back into core sections; troubleshooting and glossary cleaned up)_
 
 ---
 
@@ -10,12 +10,11 @@ _Last updated: 2026-04-02 (Session 14 — CSV export documented for ARR Dashboar
 2. [Getting Started](#2-getting-started)
 3. [Data Import](#3-data-import)
 4. [ARR Dashboard](#4-arr-dashboard)
-5. [Customer Explorer](#5-customer-explorer)
-6. [Review Queue](#6-review-queue)
-7. [ARR Movement Analysis](#7-arr-movement-analysis)
-8. [User Roles and Permissions](#8-user-roles-and-permissions)
-9. [Troubleshooting](#9-troubleshooting)
-10. [Glossary](#10-glossary)
+5. [Review Queue](#5-review-queue)
+6. [ARR Movement Analysis](#6-arr-movement-analysis)
+7. [User Roles and Permissions](#7-user-roles-and-permissions)
+8. [Troubleshooting](#8-troubleshooting)
+9. [Glossary](#9-glossary)
 
 ---
 
@@ -198,7 +197,7 @@ If you see "An unexpected error occurred while reading the workbook," please try
 
 <!-- TODO: add screenshots when UI is stable -->
 
-The **Dashboard** shows your ARR at a glance. It is the starting point for understanding your recurring revenue health.
+The **Dashboard** shows your ARR at a glance. It is the starting point for understanding your recurring revenue health and trend over time.
 
 ### What You'll See
 
@@ -243,84 +242,7 @@ ARR represents the annualized value of your active recurring subscriptions. It i
 
 ---
 
-## 5. Customer Explorer
-
-<!-- TODO: add screenshots when UI is stable -->
-
-The **Customer Explorer** lets you browse ARR data at the individual customer level — useful when you want to understand a specific account's revenue history, peak ARR, or trend over time.
-
-### Understanding Logos and Sites
-
-ARR V2 organizes customers using a two-level hierarchy:
-
-| Level | What it is |
-|---|---|
-| **Logo** | The parent commercial customer — typically the enterprise or top-level company you have a relationship with |
-| **Site** | A local billing entity, subsidiary, or physical location under a Logo — the unit that actually appears on invoices |
-
-For example, a Logo called *Acme Corporation* might have two Sites: *Acme Corp – East* and *Acme Corp – West*, each with separate invoices and subscription terms.
-
-**ARR can be viewed at either level:**
-
-- **Logo level** — all Sites under a Logo are rolled up into a single ARR figure. Use this for account-level conversations and board reporting.
-- **Site level** — each Site's ARR is shown individually. Use this when you need to understand billing entities or regional breakdown.
-
-For simpler customers with only one billing entity, the Logo and Site will have the same name and the distinction doesn't matter day-to-day.
-
-### Accessing the Customer List
-
-1. From the main navigation, go to **Customers** (or look for a **Customers** tab on the Dashboard).
-2. You will see a list of all **Logos** with ARR in the current import, sorted by ARR (highest first by default).
-3. To see Sites under a Logo, expand the Logo row or click the Logo name.
-
-Each Logo row shows:
-
-- **Logo name**
-- **Current ARR** — total ARR across all Sites under this Logo in the most recent month
-- **ARR trend** — whether total ARR for this Logo is growing, stable, or declining
-- **Site count** — how many billing Sites are associated with this Logo
-
-### Customer Detail View
-
-Click any Logo name to open their detail view. Here you'll see:
-
-- **ARR history** — a chart showing total Logo ARR month by month (all Sites combined)
-- **Peak ARR** — the highest total ARR ever recorded for this Logo in your data
-- **Current ARR** — their ARR in the most recent period
-- **Active subscription lines** — the individual products or services driving their ARR, broken down by Site
-
-> 💡 **Tip:** Peak ARR is a useful reference point during renewal conversations. If a customer's current ARR is significantly below their peak, it may indicate contraction worth investigating.
-
-### Drilling into a Site
-
-To view a specific Site's ARR independently:
-
-1. Open the Logo detail view.
-2. In the **Sites** section, click the Site name.
-3. You'll see an ARR history view scoped to that Site only — useful when a single billing entity is the focus of a renewal, dispute, or audit.
-
-> 💡 **Tip:** If you're troubleshooting why a Logo's ARR changed, check each Site individually. Often a contraction at the Logo level is driven by a single Site reducing or not renewing.
-
-### Understanding a Customer's ARR History
-
-ARR history is shown in chronological order (oldest period first). You can use this view to:
-
-- Spot when a customer expanded, contracted, or churned and came back
-- See which subscription lines drove changes in their ARR over time
-- Verify that an override or recognition rule change had the expected effect
-- Compare Site-level ARR against Logo-level totals to find discrepancies
-
-> ⚠️ **Warning:** The customer list reflects the data in the **current import**. If you have multiple imports in the system, make sure you're viewing the import that corresponds to the period you're analyzing.
-
-### Operational Notes on Customer Records
-
-<!-- TODO: add when Business Note feature is built -->
-
-In a future version, ARR V2 will support leaving operational notes on customer records — for example, flagging a pending renewal conversation, logging an issue under investigation, or leaving context for a colleague. These notes are distinct from the audit log (which is system-generated) and are intended for operational team communication within the platform.
-
----
-
-## 6. Review Queue
+## 5. Review Queue
 
 <!-- TODO: add screenshots when UI is stable -->
 
@@ -382,7 +304,7 @@ If you have many similar flags (e.g., all rows with a missing invoice number tha
 
 ---
 
-## 7. ARR Movement Analysis
+## 6. ARR Movement Analysis
 
 <!-- TODO: add screenshots when UI is stable -->
 
@@ -438,13 +360,13 @@ If this equation doesn't balance in your downstream analysis, check for rounding
 
 ---
 
-## 8. User Roles and Permissions
+## 7. User Roles and Permissions
 
 ARR V2 uses a three-tier role model for end users. Each user is assigned exactly one role, and roles are set by your organization's Administrator.
 
 | Role | What they can do |
 |---|---|
-| **Viewer** | View dashboard, ARR charts, movement analysis, and Customer Explorer. Read-only — cannot import, resolve flags, or apply overrides. |
+| **Viewer** | View dashboard, ARR charts, and movement analysis. Read-only — cannot import, resolve flags, or apply overrides. |
 | **Analyst** | All Viewer permissions, plus: upload imports, resolve and override items in the Review Queue. |
 | **Admin** | All Analyst permissions, plus: manage users within your organization, configure ARR recognition policies, and apply monthly ARR overrides to specific contract lines. |
 
@@ -493,7 +415,7 @@ The exported workbook is formatted to be re-imported directly into ARR V2. You c
 
 ---
 
-## 9. Troubleshooting
+## 8. Troubleshooting
 
 ### The dashboard shows no data after import
 
@@ -527,27 +449,6 @@ The exported workbook is formatted to be re-imported directly into ARR V2. You c
 
 **Cause:** The file may be corrupted, or there's a temporary issue with the server.  
 **Fix:** Try uploading again. If the problem continues, try re-exporting the file from QuickBooks and uploading the fresh export. If it still fails, contact support.
-
-### The customer list is empty
-
-**Cause:** No import has been completed, or the import contained no rows that could be matched to a product/service category.
-**Fix:** Check the Review Queue for `MISSING_PRODUCT_SERVICE_MAPPING` flags — if all rows are unmapped, the system has no recognized ARR to display. Review the mapping sheet in your workbook and re-import.
-
-### A customer's ARR history shows a sudden drop to zero
-
-**Cause:** This is typically churn — the customer's subscription ended or was not renewed. It can also happen if a re-import used a different subscription date range that excluded some months.
-**Fix:**
-1. Look at the customer detail view and find the month where ARR dropped.
-2. Check the Review Queue for rows flagged `MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM` for that customer.
-3. If the subscription dates in the source workbook are wrong, correct them and re-import.
-
-### Peak ARR for a customer seems too high
-
-**Cause:** A one-time spike may have been miscategorized as recurring, or a recognition rule spread a large one-time payment over a long term.
-**Fix:**
-1. Go to the customer detail view and find the month with the unusually high ARR.
-2. Check the Review Queue for rows flagged with `UNSUPPORTED_RECOGNITION_RULE` or `MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM` for that customer.
-3. Verify the recognition assumptions sheet has the correct rule for the product/service category.
 
 ### The Movements page shows unexpectedly large "New" numbers
 
@@ -591,7 +492,7 @@ The exported workbook is formatted to be re-imported directly into ARR V2. You c
 
 ---
 
-## 10. Glossary
+## 9. Glossary
 
 **ARR (Annual Recurring Revenue)**  
 The annualized value of your active recurring subscriptions. A subscription worth $500/month contributes $6,000 to ARR. One-time fees are not included.
@@ -613,9 +514,6 @@ When a customer cancels or does not renew, and their ARR drops to zero.
 
 **Contraction**  
 When an existing customer's subscription value decreases (but they don't fully cancel).
-
-**Customer Explorer**  
-The section of ARR V2 that lets you browse and drill into individual customer ARR data, including ARR history, peak ARR, and active subscription lines.
 
 **Customer Type**  
 A classification applied to a customer or contract that affects how their ARR is categorized in reporting — for example, Enterprise vs. Self-Serve. Customer type affects segmentation in movement analysis and board-level reporting. Administrators can adjust customer type classifications with an audit trail.
@@ -643,9 +541,6 @@ A downloadable file containing your calculated ARR or movement data in comma-sep
 
 **Recurrence Type**  
 A classification on each contract line that determines how it contributes to ARR: `recurring` (counted in ARR), `non_recurring` (excluded from ARR, recognized immediately), or `hybrid` (partially recurring). The product/service mapping and recognition assumptions in your workbook determine how the system assigns recurrence type to each row.
-
-**Peak ARR**  
-The highest ARR ever recorded for a given customer within the data loaded into the system. Visible in the Customer Detail view.
 
 **Normalization**  
 The process the system uses to clean, parse, and standardize the raw data in your workbook before calculating ARR.

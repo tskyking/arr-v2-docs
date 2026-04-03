@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 14 — Added CSV export technical details; documented tenantId validation rules; added test coverage summary for admin reference; clarified export column sort and TOTAL row behavior)_
+_Last updated: 2026-04-02 (Session 15 — corrected open External workbook limitation; noted current dashboard-view sync polish; refreshed admin notes)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -586,11 +586,11 @@ Each tenant has an **ARR Policy** - a named configuration that governs how the s
 
 The policy is defined in the tenant's **Recognition Assumptions sheet** (in the XLSX workbook) but Admins can also configure overrides at the policy level in the UI.
 
-> ⚠️ **Previously known issue - now resolved (Session 7/8):** The import system previously rejected transaction sheets named with the word "External" (e.g., "Sales by Cust Detail External"). This was fixed in Session 7/8. The system now correctly detects such sheets as a valid fallback when no internal-named sheet is present. If a client reported this issue previously, ask them to re-attempt the upload without renaming.
+> ⚠️ **Known limitation (still open as of 2026-04-02 / QA Session 9):** Workbooks whose transaction detail sheet is only available as an `External` variant (for example, `Sales by Cust Detail External`) may still fail detection in the end-to-end pipeline. QA has this tracked as a high-severity issue. Until it is fixed, verify that the workbook includes a standard internal transaction detail sheet before asking a client to import it.
 
 ### Current UI Status
 
-As of Session 9, the Dev Dashboard UI has been updated with improved navigation toggle buttons and a dashboard-view sync. The user-facing import, review queue, and movement analysis views are in active development. Screenshots and final UI notes will be added to this guide when the UI is stable enough for end-user delivery.
+As of 2026-04-02, the dashboard and dashboard-view docs/UI have received another round of navigation polish and sync cleanup. The user-facing import, review queue, and movement analysis views are still in active development. Screenshots and final UI notes will be added when the UI is stable enough for end-user delivery.
 
 ### Supported Recognition Rule Types
 
