@@ -8,7 +8,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
 } from 'recharts';
-import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats } from '@/lib/hooks';
+import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, useCustomerList } from '@/lib/hooks';
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
 import { useArrSettings } from '@/lib/settings';
 import styles from './DashboardPage.module.css';
@@ -83,6 +83,7 @@ export default function DashboardPage() {
     toParam,
   );
   const { data: reviewStats, loading: reviewStatsLoading, error: reviewStatsErr } = useReviewStats(importId!);
+  const { data: customerList, loading: customerListLoading, error: customerListErr } = useCustomerList(importId!);
 
   if (sumLoading) return <div className="loading">Loading summary…</div>;
   if (sumErr) return <div className="error-banner">Summary error: {sumErr}</div>;
@@ -115,6 +116,12 @@ export default function DashboardPage() {
   const reviewCompletion = reviewStats && reviewStats.total > 0
     ? Math.round(((reviewStats.resolvedCount + reviewStats.overriddenCount) / reviewStats.total) * 100)
     : null;
+
+  const customers = customerList?.customers ?? [];
+  const customersWithReview = customers.filter(customer => customer.requiresReview);
+  const customersWithCurrentArr = customers.filter(customer => customer.currentArr > 0);
+  const reviewCustomersPreview = customersWithReview.slice(0, 6);
+  const customerRosterPreview = customers.slice(0, 10);
 
   return (
     <div>
@@ -384,6 +391,117 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Live customer roster */}
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.sectionTitle}>Customer Roster</h2>
+        <span className={styles.rangeInfo}>
+          {customerList ? `${customerList.total} customers · ${customersWithCurrentArr.length} with current ARR` : 'Live API-backed roster'}
+        </span>
+      </div>
+
+      {customerListLoading && <div className={styles.tsLoading}>Loading customer roster…</div>}
+      {customerListErr && <div className="error-banner">Customer roster error: {customerListErr}</div>}
+      {customerList && (
+        <>
+          <div className={styles.statGrid}>
+            <StatCard
+              label="Customers in Import"
+              value={customerList.total.toLocaleString()}
+              sub={`${customersWithCurrentArr.length} currently contributing ARR`}
+            />
+            <StatCard
+              label="Customers Needing Review"
+              value={customersWithReview.length.toLocaleString()}
+              sub={customersWithReview.length > 0 ? 'Data quality follow-up recommended' : 'No customer-level review flags'}
+            />
+            <StatCard
+              label="Top Customer ARR"
+              value={customers[0] ? formatArr(customers[0].currentArr) : '—'}
+              sub={customers[0]?.name ?? 'No customer data'}
+            />
+            <StatCard
+              label="Most Recent Invoice"
+              value={customers[0]?.lastInvoiceDate ? customers.reduce((latest, customer) => customer.lastInvoiceDate > latest ? customer.lastInvoiceDate : latest, '') : '—'}
+              sub="Across all customers"
+            />
+          </div>
+
+          {reviewCustomersPreview.length > 0 && (
+            <div className={`card ${styles.tableCard}`}>
+              <h2 className={styles.chartTitle}>Customers With Open Review Risk</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th style={{ textAlign: 'right' }}>Current ARR</th>
+                    <th style={{ textAlign: 'right' }}>Contracts</th>
+                    <th style={{ textAlign: 'right' }}>Last Invoice</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reviewCustomersPreview.map(customer => (
+                    <tr key={customer.name}>
+                      <td>
+                        <Link to={`/customers/${importId}/${encodeURIComponent(customer.name)}`} className={styles.inlineLink}>
+                          {customer.name}
+                        </Link>
+                      </td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(customer.currentArr)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{customer.activeContracts.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{customer.lastInvoiceDate || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {customersWithReview.length > reviewCustomersPreview.length && (
+                <div style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: 12 }}>
+                  + {customersWithReview.length - reviewCustomersPreview.length} more customers with review flags
+                </div>
+              )}
+            </div>
+          )}
+
+          {customerRosterPreview.length > 0 && (
+            <div className={`card ${styles.tableCard}`}>
+              <h2 className={styles.chartTitle}>Customer ARR Snapshot</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th style={{ textAlign: 'right' }}>Current ARR</th>
+                    <th style={{ textAlign: 'right' }}>Contracts</th>
+                    <th style={{ textAlign: 'right' }}>Last Invoice</th>
+                    <th style={{ textAlign: 'right' }}>Review</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customerRosterPreview.map(customer => (
+                    <tr key={customer.name}>
+                      <td>
+                        <Link to={`/customers/${importId}/${encodeURIComponent(customer.name)}`} className={styles.inlineLink}>
+                          {customer.name}
+                        </Link>
+                      </td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(customer.currentArr)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{customer.activeContracts.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{customer.lastInvoiceDate || '—'}</td>
+                      <td style={{ textAlign: 'right', color: customer.requiresReview ? 'var(--danger)' : 'var(--text-muted)' }}>
+                        {customer.requiresReview ? 'Needs review' : 'Clear'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {customers.length > customerRosterPreview.length && (
+                <div style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: 12 }}>
+                  + {customers.length - customerRosterPreview.length} more customers available in the API roster
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Category table */}
