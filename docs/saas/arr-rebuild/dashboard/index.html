@@ -86,9 +86,9 @@
     <div class="grid">
       <div class="card col-4">
         <h3>Overall Progress</h3>
-        <div class="metric">96%</div>
-        <div class="sub">Backlog completion is 23/24 items (96%) based on the checked items in <code>memory/backlog.md</code>. Backend is healthy at 740 passing tests across 36 files (verified 2026-04-03 at 12:00 AM PT via fresh <code>npx vitest run</code>). The last 10 commits show steady forward motion — frontend/dashboard wiring, doc-agent manual updates, GUI demo polish, and coordinator maintenance — without obvious retry churn or repeated failed-edit loops. No unresolved HIGH or CRITICAL QA bugs are currently open; the prior HIGH external-workbook issue is documented as fixed and covered by passing tests. Remaining release-prep gaps are: real valid-XLSX upload success-path coverage, backend <code>package.json</code> metadata drift (<code>test</code> script / Vitest declaration), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, and staging/hosting planning.</div>
-        <div style="margin-top:12px" class="progress"><div style="width:96%"></div></div>
+        <div class="metric">83%</div>
+        <div class="sub">Backlog completion is 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. Backend is healthy at 740 passing tests across 36 files (re-verified during the 2026-04-03 2:00 AM PT coordinator pass via fresh <code>npx vitest run</code>), and the frontend production build still passes via <code>npm run build</code>. The repo is no longer in planning-only mode: import, dashboard, review workflow, tenant-aware routing, customer detail, and CSV export paths are present in code. No unresolved HIGH or CRITICAL QA bugs are currently documented as open; the prior HIGH external-workbook issue remains documented as fixed and covered by passing tests. The main release-prep gaps still visible in repo/docs are: real valid-XLSX upload success-path coverage at the HTTP layer, backend <code>package.json</code> metadata drift (<code>test</code> script / explicit Vitest tooling), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, concurrency/isolation hardening beyond current tests, and staging/hosting planning.</div>
+        <div style="margin-top:12px" class="progress"><div style="width:83%"></div></div>
       </div>
 
       <div class="card col-4">
@@ -160,7 +160,7 @@
           <li><strong>Tenant-aware API + CSV exports:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Backend QA regression suite:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Real upload 200-path coverage:</strong> <span class="pill pill-next">next</span></li>
-          <li><strong>Repo/package hygiene:</strong> <span class="pill pill-progress">in progress</span></li>
+          <li><strong>Repo/package hygiene:</strong> <span class="pill pill-next">next</span></li>
           <li><strong>Review Todd/Brian final plan:</strong> <span class="pill pill-next">next</span></li>
           <li><strong>Staging / hosting plan:</strong> <span class="pill pill-next">next</span></li>
         </ul>
