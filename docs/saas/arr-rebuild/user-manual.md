@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 28 — refreshed review-queue/dashboard notes for the latest beta polish, including long-label handling and export/live-refresh guidance)_
+_Last updated: 2026-04-03 (Session 29 — tightened import/context guidance and expanded customer roster/detail notes based on current tenant-scoped customer route coverage)_
 
 ---
 
@@ -167,18 +167,19 @@ Before uploading, check your file against these criteria:
 1. From the main navigation, click **Import**.
 2. Confirm you are in the correct company workspace shown in the page header.
 3. Confirm the **Tenant** shown in the app header is correct before uploading.
-4. Click inside the upload area to browse for a file, drag and drop your `.xlsx` workbook onto the page, or enter a local file path if your deployment supports server-side path import.
-5. Wait while the system processes the file. This usually takes a few seconds.
-6. If the import succeeds, the app opens the new import in **Dashboard** automatically.
-7. Review the dashboard summary cards for:
+4. Confirm the **User** shown in the header is your identity before uploading or resolving review items.
+5. Click inside the upload area to browse for a file, drag and drop your `.xlsx` workbook onto the page, or enter a local file path if your deployment supports server-side path import.
+6. Wait while the system processes the file. This usually takes a few seconds.
+7. If the import succeeds, the app opens the new import in **Dashboard** automatically.
+8. Review the dashboard summary cards for:
    - Latest ARR
    - Active customers
    - Rows imported
    - Review items needing attention
-8. Check the **Review Progress** section on the dashboard to see how many items are still open, the completion percentage, and which issue types are most common.
-9. Open **Review Queue** to resolve any flagged rows.
-10. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
-11. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
+9. Check the **Review Progress** section on the dashboard to see how many items are still open, the completion percentage, and which issue types are most common.
+10. Open **Review Queue** to resolve any flagged rows.
+11. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
+12. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -229,6 +230,7 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 - **Sorted customer list** — customer lists are shown in descending current-ARR order so the biggest accounts appear first
 - **Category breakdown** — imported row totals grouped by category
 - **Customer detail drill-down** — open a customer from the dashboard to inspect ARR history, peak ARR, and review attention for the active import
+- **Tenant-scoped customer detail** — customer detail only reflects the active tenant and active import, even if another tenant has a similarly named customer
 - **Live refresh / auto-refresh controls** — in current beta builds, dashboard cards and charts can refresh automatically so you can see import and review changes without manually reloading the page
 
 ### Using the Date Range Filter
@@ -281,6 +283,7 @@ If your deployment has live refresh enabled, the dashboard can update summary ca
 4. Use the history view to spot step changes, drops, or unusual movement for that account.
 5. Check whether the customer has open review attention attached to the current import.
 6. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
+7. If the same customer name exists in another company workspace, remember that this detail view still only shows the active tenant's import data.
 
 > 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
 > 💡 **Tip:** The customer roster is especially useful when a customer is not in the top-ARR list but still needs operational review because of open flags or recent invoice activity.

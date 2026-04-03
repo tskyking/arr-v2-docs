@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 28 — refreshed admin notes for latest beta polish, including long-label UI behavior, live refresh expectations, and current export workflow)_
+_Last updated: 2026-04-03 (Session 29 — expanded tenant/import attribution guidance and sharpened customer-route isolation notes for admins and SUs)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -144,15 +144,17 @@ Client data is loaded via the **Import** function within a client's tenant conte
 1. Switch into the client's tenant context (see Section 3).
 2. Navigate to **Import**.
 3. Verify the tenant and user identity shown in the header.
-4. Upload the client's `.xlsx` workbook using file selection, drag-and-drop, or a trusted server-local file path if that deployment flow is enabled.
-5. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, and visible date range.
-6. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
-7. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
-8. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
-9. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
-10. Expect tenant-scoped customer lists to be sorted by current ARR descending so the largest accounts appear first.
-11. Expect customer ARR history to be returned in chronological order for the active import.
-12. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
+4. Confirm the user identity is the correct attributable operator before uploading, resolving review items, or applying overrides.
+5. Upload the client's `.xlsx` workbook using file selection, drag-and-drop, or a trusted server-local file path if that deployment flow is enabled.
+6. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, and visible date range.
+7. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
+8. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
+9. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
+10. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
+11. Expect tenant-scoped customer lists to be sorted by current ARR descending so the largest accounts appear first.
+12. Expect customer ARR history to be returned in chronological order for the active import.
+13. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
+14. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -766,6 +768,7 @@ The system logs the following events automatically:
 | Review item resolve | Actor, item ID, previous status, new status |
 | Bulk review resolve | Actor, import ID, number of items affected, timestamp |
 | Review item override | Actor, item ID, override note/reason, resulting status |
+| Header-context attribution changes | Tenant/user values in effect for the action, where captured by the current beta workflow |
 | ARR policy change | Actor, tenant, changed fields |
 | ARR monthly override | Actor, contract line ID, original ARR, override ARR, reason |
 | User account change | Actor, affected user ID, change type |
