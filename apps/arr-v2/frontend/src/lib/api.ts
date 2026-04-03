@@ -109,16 +109,19 @@ export interface ArrTimeseries {
   toDate: string;
 }
 
+function buildQueryString(from?: string, to?: string): string {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  return params.size ? `?${params}` : '';
+}
+
 export async function getArrTimeseries(
   importId: string,
   from?: string,
   to?: string,
 ): Promise<ArrTimeseries> {
-  const params = new URLSearchParams();
-  if (from) params.set('from', from);
-  if (to) params.set('to', to);
-  const qs = params.size ? `?${params}` : '';
-  return request<ArrTimeseries>(`/imports/${importId}/arr${qs}`);
+  return request<ArrTimeseries>(`/imports/${importId}/arr${buildQueryString(from, to)}`);
 }
 
 // ─── Review Queue ─────────────────────────────────────────────────────────────
@@ -243,11 +246,39 @@ export async function getArrMovements(
   from?: string,
   to?: string,
 ): Promise<ArrMovementsResult> {
-  const params = new URLSearchParams();
-  if (from) params.set('from', from);
-  if (to) params.set('to', to);
-  const qs = params.size ? `?${params}` : '';
-  return request<ArrMovementsResult>(`/imports/${importId}/arr/movements${qs}`);
+  return request<ArrMovementsResult>(`/imports/${importId}/arr/movements${buildQueryString(from, to)}`);
+}
+
+async function downloadBlob(path: string, filename: string): Promise<void> {
+  const { userEmail } = getArrSettings();
+  const res = await fetch(buildApiPath(path), {
+    headers: {
+      'X-User-Email': userEmail,
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new ApiError(res.status, err.code ?? 'ERROR', err.message ?? res.statusText);
+  }
+
+  const blob = await res.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(blobUrl);
+}
+
+export async function downloadArrCsv(importId: string, from?: string, to?: string): Promise<void> {
+  await downloadBlob(`/imports/${importId}/arr/export.csv${buildQueryString(from, to)}`, `arr-${importId.slice(0, 8)}.csv`);
+}
+
+export async function downloadArrMovementsCsv(importId: string, from?: string, to?: string): Promise<void> {
+  await downloadBlob(`/imports/${importId}/arr/movements/export.csv${buildQueryString(from, to)}`, `arr-movements-${importId.slice(0, 8)}.csv`);
 }
 
 // ─── Customers ───────────────────────────────────────────────────────────────

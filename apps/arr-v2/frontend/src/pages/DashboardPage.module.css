@@ -14,6 +14,20 @@
 .sub { color: var(--text-muted); font-size: 13px; }
 .mono { font-family: monospace; }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.refreshMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
 .statGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

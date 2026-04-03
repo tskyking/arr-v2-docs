@@ -63,11 +63,12 @@ export function useImportSummary(importId: string, options?: UseAsyncOptions) {
   return useAsync<ImportSummary>(() => api.getImportSummary(importId), [tenantId, importId], options);
 }
 
-export function useArrTimeseries(importId: string, from?: string | null, to?: string | null) {
+export function useArrTimeseries(importId: string, from?: string | null, to?: string | null, options?: UseAsyncOptions) {
   const { tenantId } = useArrSettings();
   return useAsync<ArrTimeseries>(
     () => api.getArrTimeseries(importId, from ?? undefined, to ?? undefined),
     [tenantId, importId, from, to],
+    options,
   );
 }
 
@@ -81,11 +82,12 @@ export function useReviewStats(importId: string, options?: UseAsyncOptions) {
   return useAsync<ReviewStats>(() => api.getReviewStats(importId), [tenantId, importId], options);
 }
 
-export function useArrMovements(importId: string, from?: string | null, to?: string | null) {
+export function useArrMovements(importId: string, from?: string | null, to?: string | null, options?: UseAsyncOptions) {
   const { tenantId } = useArrSettings();
   return useAsync<import('./api').ArrMovementsResult>(
     () => api.getArrMovements(importId, from ?? undefined, to ?? undefined),
     [tenantId, importId, from, to],
+    options,
   );
 }
 
@@ -94,10 +96,11 @@ export function useCustomerList(importId: string, options?: UseAsyncOptions) {
   return useAsync<CustomerListResult>(() => api.getCustomerList(importId), [tenantId, importId], options);
 }
 
-export function useCustomerDetail(importId: string, customerName: string) {
+export function useCustomerDetail(importId: string, customerName: string, options?: UseAsyncOptions) {
   const { tenantId } = useArrSettings();
   return useAsync<CustomerDetail>(
     () => api.getCustomerDetail(importId, customerName),
     [tenantId, importId, customerName],
+    options,
   );
 }

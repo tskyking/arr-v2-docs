@@ -8,6 +8,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
 } from 'recharts';
+import { downloadArrCsv, downloadArrMovementsCsv } from '@/lib/api';
 import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, useCustomerList } from '@/lib/hooks';
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
 import { useArrSettings } from '@/lib/settings';
@@ -49,6 +50,8 @@ export default function DashboardPage() {
   const { importId } = useParams<{ importId: string }>();
   const { tenantId } = useArrSettings();
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadingKind, setDownloadingKind] = useState<'arr' | 'movements' | null>(null);
 
   // ─── Date range state ──────────────────────────────────────────────────
   const [preset, setPreset] = useState<Preset>('all');
@@ -79,16 +82,28 @@ export default function DashboardPage() {
     };
   }, [preset, customFrom, customTo]);
 
-  const { data: ts, loading: tsLoading, error: tsErr } = useArrTimeseries(
+  const {
+    data: ts,
+    loading: tsLoading,
+    error: tsErr,
+    refetch: refetchTimeseries,
+  } = useArrTimeseries(
     importId!,
     fromParam,
     toParam,
+    { pollMs: LIVE_POLL_MS },
   );
 
-  const { data: movements, loading: movLoading } = useArrMovements(
+  const {
+    data: movements,
+    loading: movLoading,
+    error: movErr,
+    refetch: refetchMovements,
+  } = useArrMovements(
     importId!,
     fromParam,
     toParam,
+    { pollMs: LIVE_POLL_MS },
   );
   const {
     data: reviewStats,
@@ -104,16 +119,35 @@ export default function DashboardPage() {
   } = useCustomerList(importId!, { pollMs: LIVE_POLL_MS });
 
   useEffect(() => {
-    if (summary || reviewStats || customerList) {
+    if (summary || reviewStats || customerList || ts || movements) {
       setLastRefreshedAt(new Date());
     }
-  }, [summary, reviewStats, customerList]);
+  }, [summary, reviewStats, customerList, ts, movements]);
 
   function handleRefreshNow() {
     refetchSummary();
+    refetchTimeseries();
+    refetchMovements();
     refetchReviewStats();
     refetchCustomerList();
     setLastRefreshedAt(new Date());
+  }
+
+  async function handleDownload(kind: 'arr' | 'movements') {
+    if (!importId) return;
+    setDownloadError(null);
+    setDownloadingKind(kind);
+    try {
+      if (kind === 'arr') {
+        await downloadArrCsv(importId, fromParam ?? undefined, toParam ?? undefined);
+      } else {
+        await downloadArrMovementsCsv(importId, fromParam ?? undefined, toParam ?? undefined);
+      }
+    } catch (err: any) {
+      setDownloadError(err.message ?? 'Export failed');
+    } finally {
+      setDownloadingKind(null);
+    }
   }
 
   if (sumLoading) return <div className="loading">Loading summary…</div>;
@@ -165,11 +199,17 @@ export default function DashboardPage() {
             · {new Date(summary.importedAt).toLocaleString()}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
+        <div className={styles.headerActions}>
+          <div className={styles.refreshMeta}>
             <div>Live refresh every 30s</div>
             <div>{lastRefreshedAt ? `Last refresh ${lastRefreshedAt.toLocaleTimeString()}` : 'Waiting for first refresh…'}</div>
           </div>
+          <button className="ghost" onClick={() => handleDownload('arr')} disabled={downloadingKind !== null}>
+            {downloadingKind === 'arr' ? 'Exporting ARR…' : 'Export ARR CSV'}
+          </button>
+          <button className="ghost" onClick={() => handleDownload('movements')} disabled={downloadingKind !== null}>
+            {downloadingKind === 'movements' ? 'Exporting movements…' : 'Export Movements CSV'}
+          </button>
           <button className="ghost" onClick={handleRefreshNow}>Refresh now</button>
           <Link to={`/review/${importId}`}>
             <button className="ghost">
@@ -219,8 +259,10 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {downloadError && <div className="error-banner">Export error: {downloadError}</div>}
       {tsLoading && <div className={styles.tsLoading}>Updating…</div>}
       {tsErr && <div className="error-banner">Timeseries error: {tsErr}</div>}
+      {movErr && <div className="error-banner">ARR movement error: {movErr}</div>}
 
       {/* Stat row */}
       <div className={styles.statGrid}>
