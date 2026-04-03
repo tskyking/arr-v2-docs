@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 27 — clarified customer-list/detail behavior, active-import troubleshooting, and admin expectations around tenant-scoped customer routes and UI polish in the latest beta build)_
+_Last updated: 2026-04-03 (Session 28 — refreshed admin notes for latest beta polish, including long-label UI behavior, live refresh expectations, and current export workflow)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -277,7 +277,8 @@ Operational guidance:
 1. Confirm the active tenant and import shown in the header.
 2. Wait briefly for the dashboard to refresh before assuming data is missing.
 3. If counts still look stale, manually refresh the browser.
-4. If exported CSV does not match what you expected, re-check the date range and active import, then export again.
+4. If teammates are actively resolving review items, expect counts and charts to shift during that cleanup window.
+5. If exported CSV does not match what you expected, re-check the date range and active import, then export again.
 
 > ⚠️ **Warning:** Auto-refresh improves feedback, but it is not a security or attribution boundary. Header tenant/user context still determines which tenant-scoped data and actions you are seeing.
 
@@ -829,7 +830,7 @@ The current QA summary still lists several post-MVP or hardening items that admi
 3. `GET /imports/:id` without a sub-route still has no confirmed product behavior and currently returns `404`.
 4. Production authentication, MFA, and session enforcement are not finalized.
 5. Browser-side Tenant/User context controls still need to be replaced by hardened server-backed auth and role enforcement for production use.
-6. UI polish work is still ongoing; for example, long labels in beta dashboard/review views may wrap differently as frontend fixes land.
+6. UI polish work is still ongoing; for example, very long labels in beta dashboard/review views may still wrap differently across screen sizes even after recent frontend fixes.
 
 > ⚠️ **Warning:** The current build has clean automated coverage for real workbook upload success paths, tenant-scoped routes, and CSV exports, but it is still suitable for guided beta use rather than a fully hardened production rollout until auth, MFA, and concurrency validation are completed.
 

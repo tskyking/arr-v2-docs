@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 27 — clarified customer-roster behavior, customer detail expectations, and review-queue/dashboard guidance to match the latest beta build and recent route coverage)_
+_Last updated: 2026-04-03 (Session 28 — refreshed review-queue/dashboard notes for the latest beta polish, including long-label handling and export/live-refresh guidance)_
 
 ---
 
@@ -326,7 +326,7 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 | `INVALID_DATE` | Error | A date value couldn't be parsed |
 | `INVALID_NUMBER` | Error | A quantity or amount couldn't be parsed as a number |
 | `UNKNOWN_TRANSACTION_TYPE` | Warning | The transaction type isn't recognized |
-| `LONG_REASON_LABEL` | Info | A long issue label may wrap onto multiple lines in the current beta UI without affecting the underlying review item |
+| `LONG_REASON_LABEL` | Info | A long issue label may wrap in some beta views; recent UI polish reduced wrapping issues, but the underlying review item is unaffected |
 | `MISSING_INVOICE_NUMBER` | Info | The invoice number is blank |
 | `AMOUNT_PRICE_QUANTITY_MISMATCH` | Warning | The amount doesn't match price × quantity |
 | `MULTIPLE_PRODUCT_SERVICE_CATEGORIES` | Error | The product maps to more than one revenue category |
@@ -528,7 +528,8 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 1. Check the active import in the header.
 2. Reconfirm the current date range.
 3. Review the Review Progress card for updated open/resolved counts.
-4. Re-export CSV if you need a file that matches the newest visible totals exactly.
+4. If the page was open during active review work, give the dashboard a moment to finish refreshing before comparing totals.
+5. Re-export CSV if you need a file that matches the newest visible totals exactly.
 
 ### The CSV export file opens with garbled text
 
