@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 20 — tightened end-user/admin separation, aligned import/dashboard/review docs to the current beta workflow, and clarified CSV/export and re-import behavior)_
+_Last updated: 2026-04-03 (Session 21 — added current customer-detail workflow notes, refreshed dashboard/review guidance, and kept end-user/admin separation tight)_
 
 ---
 
@@ -223,6 +223,7 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 - **ARR Movements** — a waterfall view of New, Expansion, Contraction, and Churn
 - **Top customers** — highest-ARR customers for the latest visible period
 - **Category breakdown** — imported row totals grouped by category
+- **Customer detail drill-down** — open a customer from the dashboard to inspect its ARR history and review attention
 
 ### Using the Date Range Filter
 
@@ -253,6 +254,15 @@ You can download the ARR timeseries data shown on the dashboard as a CSV file fo
 > 💡 **Tip:** The CSV export reflects the same data range and filters as what's currently shown on the dashboard. Adjust your date range before exporting if you need a specific window.
 
 > ⚠️ **Warning:** The export contains calculated ARR data, not raw invoice rows.
+
+### Opening Customer Detail
+
+1. In the **Top customers** section, click a customer name.
+2. Review the customer's current ARR, peak ARR, and period-by-period history.
+3. Use the history view to spot step changes, drops, or unusual movement for that account.
+4. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
+
+> 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
 
 ### Understanding the ARR Number
 
@@ -460,6 +470,15 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 **Cause:** If customers had ARR in a prior import but that import is not currently active, they will appear as "new" in the current import even if they are returning customers.
 **Fix:** This is expected when switching between separate imports. For period-over-period analysis to be meaningful, each import should cover a continuous time range. Consider importing a longer date range in a single workbook rather than multiple short imports.
+
+### A customer detail page looks incomplete or missing history
+
+**Cause:** Customer detail reflects the active import and its date range only. If you switched imports, filtered the dashboard to a shorter window, or uploaded a partial workbook, the customer's visible history may look incomplete.
+**Fix:**
+1. Confirm the active import in the header.
+2. Reopen the expected import from **Import** if needed.
+3. Check whether the workbook covered the full date range you expect.
+4. Review the customer's rows in **Review Queue** if the account shows review attention.
 
 ### My CSV export has the wrong date range
 

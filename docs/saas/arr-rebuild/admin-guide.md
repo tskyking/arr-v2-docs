@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 20 — aligned SU/admin guidance to the current tenant-aware beta, clarified import/export details, and tightened separation from the end-user manual)_
+_Last updated: 2026-04-03 (Session 21 — refreshed current beta workflow notes, captured customer-detail support in the live UI, and kept SU/admin guidance separate from end-user docs)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -149,6 +149,7 @@ Client data is loaded via the **Import** function within a client's tenant conte
 6. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
 7. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
 8. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
+9. Use dashboard customer links to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, or review attention within that import.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
