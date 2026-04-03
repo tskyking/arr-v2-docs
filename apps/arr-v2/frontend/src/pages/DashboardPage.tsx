@@ -363,7 +363,11 @@ export default function DashboardPage() {
               {topCustomers.map((c, i) => (
                 <tr key={c.customer}>
                   <td style={{ color: 'var(--text-muted)', width: 32 }}>{i + 1}</td>
-                  <td>{c.customer}</td>
+                  <td>
+                    <Link to={`/customers/${importId}/${encodeURIComponent(c.customer)}`} className={styles.inlineLink}>
+                      {c.customer}
+                    </Link>
+                  </td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(c.arr)}</td>
                   <td style={{ textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
                     {latestPeriod && latestPeriod.totalArr > 0

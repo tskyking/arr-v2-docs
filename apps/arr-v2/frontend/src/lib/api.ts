@@ -249,3 +249,42 @@ export async function getArrMovements(
   const qs = params.size ? `?${params}` : '';
   return request<ArrMovementsResult>(`/imports/${importId}/arr/movements${qs}`);
 }
+
+// ─── Customers ───────────────────────────────────────────────────────────────
+
+export interface CustomerSummary {
+  name: string;
+  currentArr: number;
+  activeContracts: number;
+  lastInvoiceDate: string;
+  requiresReview: boolean;
+}
+
+export interface CustomerListResult {
+  customers: CustomerSummary[];
+  total: number;
+}
+
+export interface CustomerArrPeriod {
+  period: string;
+  arr: number;
+}
+
+export interface CustomerDetail {
+  name: string;
+  currentArr: number;
+  peakArr: number;
+  firstSeenPeriod: string;
+  lastActivePeriod: string;
+  arrHistory: CustomerArrPeriod[];
+  requiresReview: boolean;
+  openReviewCount: number;
+}
+
+export async function getCustomerList(importId: string): Promise<CustomerListResult> {
+  return request<CustomerListResult>(`/imports/${importId}/customers`);
+}
+
+export async function getCustomerDetail(importId: string, customerName: string): Promise<CustomerDetail> {
+  return request<CustomerDetail>(`/imports/${importId}/customers/${encodeURIComponent(customerName)}`);
+}
