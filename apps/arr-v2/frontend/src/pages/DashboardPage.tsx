@@ -2,7 +2,7 @@
  * DashboardPage — ARR timeseries chart + summary stats for a given import.
  * Includes date range filter and top-customers breakdown.
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -43,16 +43,24 @@ function toMonthStr(s: string): string {
   return s.slice(0, 7);
 }
 
+const LIVE_POLL_MS = 30_000;
+
 export default function DashboardPage() {
   const { importId } = useParams<{ importId: string }>();
   const { tenantId } = useArrSettings();
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
 
   // ─── Date range state ──────────────────────────────────────────────────
   const [preset, setPreset] = useState<Preset>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
-  const { data: summary, loading: sumLoading, error: sumErr } = useImportSummary(importId!);
+  const {
+    data: summary,
+    loading: sumLoading,
+    error: sumErr,
+    refetch: refetchSummary,
+  } = useImportSummary(importId!, { pollMs: LIVE_POLL_MS });
 
   // Derive from/to for API based on preset
   const { fromParam, toParam } = useMemo(() => {
@@ -82,8 +90,31 @@ export default function DashboardPage() {
     fromParam,
     toParam,
   );
-  const { data: reviewStats, loading: reviewStatsLoading, error: reviewStatsErr } = useReviewStats(importId!);
-  const { data: customerList, loading: customerListLoading, error: customerListErr } = useCustomerList(importId!);
+  const {
+    data: reviewStats,
+    loading: reviewStatsLoading,
+    error: reviewStatsErr,
+    refetch: refetchReviewStats,
+  } = useReviewStats(importId!, { pollMs: LIVE_POLL_MS });
+  const {
+    data: customerList,
+    loading: customerListLoading,
+    error: customerListErr,
+    refetch: refetchCustomerList,
+  } = useCustomerList(importId!, { pollMs: LIVE_POLL_MS });
+
+  useEffect(() => {
+    if (summary || reviewStats || customerList) {
+      setLastRefreshedAt(new Date());
+    }
+  }, [summary, reviewStats, customerList]);
+
+  function handleRefreshNow() {
+    refetchSummary();
+    refetchReviewStats();
+    refetchCustomerList();
+    setLastRefreshedAt(new Date());
+  }
 
   if (sumLoading) return <div className="loading">Loading summary…</div>;
   if (sumErr) return <div className="error-banner">Summary error: {sumErr}</div>;
@@ -134,11 +165,18 @@ export default function DashboardPage() {
             · {new Date(summary.importedAt).toLocaleString()}
           </p>
         </div>
-        <Link to={`/review/${importId}`}>
-          <button className="ghost">
-            Review Queue ({summary.reviewItems})
-          </button>
-        </Link>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
+            <div>Live refresh every 30s</div>
+            <div>{lastRefreshedAt ? `Last refresh ${lastRefreshedAt.toLocaleTimeString()}` : 'Waiting for first refresh…'}</div>
+          </div>
+          <button className="ghost" onClick={handleRefreshNow}>Refresh now</button>
+          <Link to={`/review/${importId}`}>
+            <button className="ghost">
+              Review Queue ({summary.reviewItems})
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Date range filter */}

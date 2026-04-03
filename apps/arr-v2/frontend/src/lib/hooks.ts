@@ -14,10 +14,15 @@ import type {
 import * as api from './api';
 import { useArrSettings } from './settings';
 
+interface UseAsyncOptions {
+  pollMs?: number;
+}
+
 // Generic async-state hook
 function useAsync<T>(
   fn: () => Promise<T>,
   deps: unknown[],
+  options?: UseAsyncOptions,
 ): { data: T | null; loading: boolean; error: string | null; refetch: () => void } {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +42,14 @@ function useAsync<T>(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, ...deps]);
 
+  useEffect(() => {
+    if (!options?.pollMs || options.pollMs <= 0) return undefined;
+    const id = window.setInterval(() => {
+      setTick(t => t + 1);
+    }, options.pollMs);
+    return () => window.clearInterval(id);
+  }, [options?.pollMs]);
+
   return { data, loading, error, refetch };
 }
 
@@ -45,9 +58,9 @@ export function useImportList() {
   return useAsync<ImportListItem[]>(() => api.listImports(), [tenantId]);
 }
 
-export function useImportSummary(importId: string) {
+export function useImportSummary(importId: string, options?: UseAsyncOptions) {
   const { tenantId } = useArrSettings();
-  return useAsync<ImportSummary>(() => api.getImportSummary(importId), [tenantId, importId]);
+  return useAsync<ImportSummary>(() => api.getImportSummary(importId), [tenantId, importId], options);
 }
 
 export function useArrTimeseries(importId: string, from?: string | null, to?: string | null) {
@@ -63,9 +76,9 @@ export function useReviewQueue(importId: string, status?: string) {
   return useAsync<ReviewQueue>(() => api.getReviewQueue(importId, status), [tenantId, importId, status]);
 }
 
-export function useReviewStats(importId: string) {
+export function useReviewStats(importId: string, options?: UseAsyncOptions) {
   const { tenantId } = useArrSettings();
-  return useAsync<ReviewStats>(() => api.getReviewStats(importId), [tenantId, importId]);
+  return useAsync<ReviewStats>(() => api.getReviewStats(importId), [tenantId, importId], options);
 }
 
 export function useArrMovements(importId: string, from?: string | null, to?: string | null) {
@@ -76,9 +89,9 @@ export function useArrMovements(importId: string, from?: string | null, to?: str
   );
 }
 
-export function useCustomerList(importId: string) {
+export function useCustomerList(importId: string, options?: UseAsyncOptions) {
   const { tenantId } = useArrSettings();
-  return useAsync<CustomerListResult>(() => api.getCustomerList(importId), [tenantId, importId]);
+  return useAsync<CustomerListResult>(() => api.getCustomerList(importId), [tenantId, importId], options);
 }
 
 export function useCustomerDetail(importId: string, customerName: string) {
