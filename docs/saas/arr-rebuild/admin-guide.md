@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 23 — clarified current dashboard customer-inspection workflow, strengthened import context checks, and refreshed admin caveats around active-import analysis)_
+_Last updated: 2026-04-03 (Session 24 — corrected stale QA coverage notes, clarified active-import analysis workflow, and tightened admin guidance around dashboard context and customer inspection)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -620,7 +620,7 @@ The policy is defined in the tenant's **Recognition Assumptions sheet** (in the 
 
 ### Current UI Status
 
-As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards and issue summaries so admins can assess cleanup status before entering the Review Queue.
+As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards, issue summaries, and live customer roster links so admins can assess cleanup status and jump into account-level investigation before entering the Review Queue.
 
 > ⚠️ **Warning:** The current Tenant and User fields in the header are browser-side beta controls, not a hardened authentication boundary. They are useful for workflow testing and attribution in the current build, but production auth and role enforcement still need hardening.
 
@@ -803,13 +803,13 @@ All API communication should be over HTTPS. HTTP access to production instances 
 
 The current QA summary still lists several post-MVP or hardening items that admins should treat as open:
 
-1. Real HTTP-level success-path upload testing for a valid workbook is still not covered end-to-end.
-2. Duplicate invoice detection is still a product/open-design question.
-3. Multi-tenant concurrent-write isolation is not yet explicitly tested.
-4. `GET /imports/:id` without a sub-route still has no confirmed product behavior and currently returns `404`.
-5. Production authentication, MFA, and session enforcement are not finalized.
+1. Duplicate invoice detection is still a product/open-design question.
+2. Multi-tenant concurrent-write isolation is not yet explicitly tested.
+3. `GET /imports/:id` without a sub-route still has no confirmed product behavior and currently returns `404`.
+4. Production authentication, MFA, and session enforcement are not finalized.
+5. Browser-side Tenant/User context controls still need to be replaced by hardened server-backed auth and role enforcement for production use.
 
-> ⚠️ **Warning:** This means the current build is suitable for guided beta use and documentation prep, but not yet for a fully hardened production rollout without additional auth, audit, and concurrency validation work.
+> ⚠️ **Warning:** The current build has clean automated coverage for real workbook upload success paths, tenant-scoped routes, and CSV exports, but it is still suitable for guided beta use rather than a fully hardened production rollout until auth, MFA, and concurrency validation are completed.
 
 ### Access Controls
 

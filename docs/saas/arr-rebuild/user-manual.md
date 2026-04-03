@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 23 — expanded import success-state guidance, clarified live customer roster behavior on the dashboard, and tightened end-user troubleshooting notes)_
+_Last updated: 2026-04-03 (Session 24 — refined dashboard workflow language, clarified date-range and customer-drilldown behavior, and refreshed import/review guidance for the current beta UI)_
 
 ---
 
@@ -216,7 +216,7 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 ### What You'll See
 
 - **Latest ARR** — your current annualized recurring revenue for the active import
-- **Active Customers** — the customer count in the latest period
+- **Active Customers** — the customer count in the latest visible period
 - **ARR Growth** — change between the first and latest visible periods
 - **Rows Imported** — total imported rows, plus skipped rows and review-item counts
 - **Review Progress** — completion percentage, open issue count, and the most common open issue type
@@ -224,7 +224,7 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 - **ARR Movements** — a waterfall view of New, Expansion, Contraction, and Churn
 - **Top customers / live customer roster** — highest-ARR customers for the latest visible period, with quick access into account-level detail
 - **Category breakdown** — imported row totals grouped by category
-- **Customer detail drill-down** — open a customer from the dashboard to inspect its ARR history, peak ARR, and review attention
+- **Customer detail drill-down** — open a customer from the dashboard to inspect ARR history, peak ARR, and review attention for the active import
 
 ### Using the Date Range Filter
 
@@ -234,6 +234,7 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 4. Check the period label shown beside the filter to confirm the exact visible range.
 
 > 💡 **Tip:** ARR is calculated as of the **end of each month**. The "Latest ARR" figure reflects the most recent month visible in your current dashboard filter, not necessarily the full import range.
+> 💡 **Tip:** If the dashboard looks different from a teammate's view, first compare the active import and the selected date range. Those two settings explain most reporting differences in the current beta.
 
 ### Exporting ARR Data to CSV
 
@@ -323,7 +324,7 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 5. Choose one of two actions:
    - **Resolve** — mark the flag as reviewed and accepted as-is.
    - **Override** — enter a required explanation note and submit the override.
-6. Confirm the tenant and signed-in user shown at the top of the page before you submit the action.
+6. Confirm the tenant, signed-in user, and active import shown at the top of the page before you submit the action.
 
 > 💡 **Tip:** The Review Queue header shows live counts for Total, Open, Errors, and Resolved / Overridden items. Use those counts to confirm progress after each review pass.
 > 💡 **Tip:** Use **Resolve** when the system's assumption is close enough and you don't have better source data. Use **Override** when you know the correct value and want the ARR calculation to reflect it precisely.
