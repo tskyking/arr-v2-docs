@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 17 — clarified tenant/user header context, previous import navigation, review attribution, and bulk review workflow)_
+_Last updated: 2026-04-03 (Session 18 — clarified active import switching, drag/drop import flow, review filters, and tenant/user context troubleshooting)_
 
 ---
 
@@ -54,7 +54,11 @@ The main navigation bar contains:
 - **Review Queue** — rows that need your attention before ARR is finalized
 - **Movements** — waterfall breakdown of ARR changes over time
 
-The application header may also show your signed-in identity and the company workspace you are currently working in.
+The application header may also show:
+
+- Your signed-in identity
+- The company workspace or tenant you are currently working in
+- An import selector for reopening a previous import without uploading again
 
 > 💡 **Tip:** If you're using the tool for the first time, go to **Import** first. The dashboard and review queue won't show any data until you've uploaded a file.
 
@@ -163,14 +167,15 @@ Before uploading, check your file against these criteria:
 1. From the main navigation, click **Import**.
 2. Confirm you are in the correct company workspace shown in the page header.
 3. Confirm the **Tenant** shown in the app header is correct before uploading.
-4. Click **Choose File** (or drag and drop your `.xlsx` file into the upload area).
+4. Click **Choose File** or drag and drop your `.xlsx` file into the upload area.
 5. Wait while the system processes the file. This usually takes a few seconds.
 6. If the import succeeds, you will see a summary:
    - Number of rows processed
    - Number of rows flagged for review
    - Date range covered by the data
-7. Open the new import in **Dashboard** to review results.
+7. The app will open the new import in **Dashboard** automatically.
 8. Open **Review Queue** to resolve any flagged rows.
+9. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
 
 > 💡 **Tip:** The Import page may also show recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -287,11 +292,12 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 ### Resolving a Flag
 
 1. In the Review Queue, find the row you want to review.
-2. Click the row to expand its details — you'll see the raw data, the reason it was flagged, and the current item status.
-3. Choose one of two actions:
+2. Use the **Severity** and **Status** filters if you want to narrow the list to open errors, warnings, resolved items, or overrides.
+3. Click the row to expand its details — you'll see the raw data, the reason it was flagged, and the current item status.
+4. Choose one of two actions:
    - **Resolve** — mark the flag as reviewed and accepted as-is. The system's assumption stands and the row is counted in ARR at the estimated value.
    - **Override** — enter the correct note or correction reason. The system records the override against that review item and recalculates ARR for that row using your correction workflow.
-4. Confirm the tenant and signed-in user shown at the top of the page before you submit the action.
+5. Confirm the tenant and signed-in user shown at the top of the page before you submit the action.
 
 > 💡 **Tip:** Use **Resolve** when the system's assumption is close enough and you don't have better source data. Use **Override** when you know the correct value and want the ARR calculation to reflect it precisely.
 
@@ -306,9 +312,10 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 If you have many similar open flags, you can use **Mark All Open Resolved** to clear them in one action.
 
 1. Review the current filter and import so you understand what you're looking at.
-2. Click **Mark All Open Resolved**.
-3. Wait for the page counts to refresh.
-4. Spot-check several rows to confirm the expected items moved from **Open** to **Resolved**.
+2. Check the **Open** count at the top of the page so you know how many items will be affected.
+3. Click **Mark All Open Resolved**.
+4. Wait for the page counts to refresh.
+5. Spot-check several rows to confirm the expected items moved from **Open** to **Resolved**.
 
 > 💡 **Tip:** Bulk resolve is most useful for lower-risk flags such as `MISSING_INVOICE_NUMBER` and some `SUSPICIOUS_NEGATIVE_AMOUNT` rows where the data is understood and no field correction is needed.
 
@@ -394,6 +401,15 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 **Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state.
 **Fix:** Refresh the page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
+
+### I think I'm in the wrong company workspace or import
+
+**Cause:** The header context may be set to a different tenant or a different import than the one you intended to review.
+**Fix:**
+1. Check the tenant/workspace shown in the header.
+2. Check the active import selector in the header, if present.
+3. Return to **Import** and open the correct prior import if needed.
+4. Do not resolve or override review items until the correct tenant and import are visible.
 
 ### The dashboard shows no data
 
