@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 15 — structure aligned to end-user outline; Customer Explorer content folded back into core sections; troubleshooting and glossary cleaned up)_
+_Last updated: 2026-04-02 (Session 16 — import workflow refreshed for tenant-aware UI, previous imports, bulk review actions, and end-user role cleanup)_
 
 ---
 
@@ -53,6 +53,8 @@ The main navigation bar contains:
 - **Import** — upload a new data file
 - **Review Queue** — rows that need your attention before ARR is finalized
 - **Movements** — waterfall breakdown of ARR changes over time
+
+The application header may also show your signed-in identity and the company workspace you are currently working in.
 
 > 💡 **Tip:** If you're using the tool for the first time, go to **Import** first. The dashboard and review queue won't show any data until you've uploaded a file.
 
@@ -159,14 +161,17 @@ Before uploading, check your file against these criteria:
 ### 3.4 Step-by-Step Import Walkthrough
 
 1. From the main navigation, click **Import**.
-2. Click **Choose File** (or drag and drop your `.xlsx` file into the upload area).
-3. Click **Upload**.
-4. The system will process the file. This usually takes a few seconds.
+2. Confirm you are in the correct company workspace shown in the page header.
+3. Click **Choose File** (or drag and drop your `.xlsx` file into the upload area).
+4. Wait while the system processes the file. This usually takes a few seconds.
 5. If the import succeeds, you will see a summary:
    - Number of rows processed
    - Number of rows flagged for review
    - Date range covered by the data
-6. Click **Go to Dashboard** to see your ARR charts, or **Go to Review Queue** to resolve any flagged rows.
+6. Open the new import in **Dashboard** to review results.
+7. Open **Review Queue** to resolve any flagged rows.
+
+> 💡 **Tip:** The Import page may also show recent prior imports so you can reopen an earlier dashboard view if you need to compare runs.
 
 > 💡 **Tip:** After a successful import, check the Review Queue even if there are only a few flagged rows. Unresolved flags can affect the accuracy of your ARR numbers.
 
@@ -296,11 +301,11 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 
 ### Bulk Resolve
 
-If you have many similar flags (e.g., all rows with a missing invoice number that you don't need for ARR purposes), you can select multiple rows and **Resolve All** at once.
+If you have many similar open flags, you can use **Mark All Open Resolved** to clear them in one action.
 
-> 💡 **Tip:** Bulk resolve is most useful for `MISSING_INVOICE_NUMBER` and `SUSPICIOUS_NEGATIVE_AMOUNT` flags where the rows are correctly categorized and you just want to acknowledge them.
+> 💡 **Tip:** Bulk resolve is most useful for lower-risk flags such as `MISSING_INVOICE_NUMBER` and some `SUSPICIOUS_NEGATIVE_AMOUNT` rows where the data is understood and no field correction is needed.
 
-> ⚠️ **Warning:** Resolving a flag does not change the underlying data in your workbook. If the source data has an error, fix it in QuickBooks and re-import the file.
+> ⚠️ **Warning:** Bulk resolve marks items as reviewed; it does not correct the source workbook. If the source data is wrong, fix it in QuickBooks or Excel and re-import the file.
 
 ---
 
@@ -366,52 +371,13 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 | Role | What they can do |
 |---|---|
-| **Viewer** | View dashboard, ARR charts, and movement analysis. Read-only — cannot import, resolve flags, or apply overrides. |
-| **Analyst** | All Viewer permissions, plus: upload imports, resolve and override items in the Review Queue. |
-| **Admin** | All Analyst permissions, plus: manage users within your organization, configure ARR recognition policies, and apply monthly ARR overrides to specific contract lines. |
+| **Viewer** | View dashboard, ARR charts, and movement analysis. Read-only — cannot import or work review items. |
+| **Analyst** | All Viewer permissions, plus: upload imports, resolve flags, and submit review overrides. |
+| **Admin** | All Analyst permissions, plus: manage users and organization-level configuration for your company. |
 
 > 💡 **Tip:** Most finance and operations team members should be Analysts. Reserve Admin access for the primary finance lead or the person responsible for final ARR sign-off.
 
-### ARR Policy Overrides (Admin only)
-
-Administrators can override the calculated ARR for a specific contract line and period. This is useful when the automated calculation doesn't match the agreed-upon contract terms. All overrides are logged with:
-
-- Who made the override
-- The original calculated value
-- The override value
-- The reason provided
-
-Some organizations require a second person to approve an override before it takes effect. If your organization uses this two-step approval flow, you will see an **Awaiting Approval** status on overrides you submit, and the override will not be applied to ARR calculations until an authorized approver confirms it.
-
-> 💡 **Tip:** Check with your Administrator whether your organization requires override approval. If you're not sure, assume approvals are required and coordinate with your finance lead before submitting a large override.
-
-### Resetting or Replacing Data (Admin only)
-
-Administrators can clear all imported data for your organization and start fresh. This is useful when you want to re-import a corrected workbook from scratch.
-
-> ⚠️ **Warning:** Clearing data removes all current imports, ARR calculations, and review queue items. This action cannot be undone.
-
-Before clearing, you will be prompted:
-
-> *"Export current data as .xlsx before clearing?"*
-
-If you choose **Yes**, the system generates a clean, re-uploadable Excel workbook containing all your current data. You can modify this export (for example, fix date errors or update product mappings) and re-import it. If you choose **No**, the data is cleared without a backup.
-
-> 💡 **Tip:** Always export before clearing if there is any chance you will want to refer back to the current data set.
-
-### What the Export Contains
-
-When you export before clearing, the exported workbook contains:
-
-- All rows from your imported transaction data, in the same sheet structure as the original
-- The product/service mapping sheet
-- The revenue recognition assumptions sheet
-
-The exported workbook is formatted to be re-imported directly into ARR V2. You can open it in Excel, correct any errors, and re-upload it using the standard import flow.
-
-> 💡 **Tip:** Exporting before clearing is also a useful way to create a "backup snapshot" of your data at a specific point in time, even if you're not planning to clear immediately.
-
-> ⚠️ **Warning:** Overrides and resolved flags from the Review Queue are **not** included in the export. They are stored at the system level and cannot be re-imported. If you have important overrides, note them down before clearing.
+> ⚠️ **Warning:** Exact permissions may continue to tighten as authentication and tenant controls are finalized. If an action you expect is unavailable, contact your administrator.
 
 ---
 

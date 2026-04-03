@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 15 — corrected open External workbook limitation; noted current dashboard-view sync polish; refreshed admin notes)_
+_Last updated: 2026-04-02 (Session 16 — refreshed tenant-aware frontend/admin notes, import attribution details, and removed stale external-workbook warning)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -93,7 +93,8 @@ The multi-tenant architecture of ARR V2 stores each client's data in an isolated
 Each client (company using ARR V2) has a **tenant ID** - a stable unique identifier assigned when they are onboarded. All data, imports, review queue items, and user accounts are scoped to this tenant ID.
 
 - **Default tenant context:** The system has a default tenant for single-tenant deployments. In production multi-tenant mode, there is no default - you must always select a tenant explicitly.
-- **URL structure:** All data API routes are scoped under `/tenants/:tenantId/`. The server rejects requests where the tenantId in the URL does not match the authenticated session context.
+- **URL structure:** All data API routes are scoped under `/tenants/:tenantId/`. The server rejects requests where the tenantId in the URL does not match the active session context.
+- **Frontend context fields:** Current frontend builds display the active tenant and signed-in user identity in the application header. Changes to those values affect which tenant-scoped API paths are called and which user identity is attached to review actions.
 
 ### Switching to a Client Context
 
@@ -109,7 +110,9 @@ Each client (company using ARR V2) has a **tenant ID** - a stable unique identif
 
 <!-- TODO: add UI indicator details when implemented -->
 
-The header bar should display the current client name when you are in a tenant context. If you see "Super User - No Tenant Selected," you are in the tenant-neutral state and no client data is accessible.
+The header bar should display the current tenant and user identity when you are in a tenant context. If you see a tenant-neutral state, no client data should be accessible.
+
+> ⚠️ **Warning:** Before importing, resolving review items, or applying overrides, verify both the tenant and user shown in the header. These values drive audit attribution.
 
 ### Exiting a Client Context
 
@@ -138,10 +141,13 @@ Client data is loaded via the **Import** function within a client's tenant conte
 
 1. Switch into the client's tenant context (see Section 3).
 2. Navigate to **Import**.
-3. Upload the client's `.xlsx` workbook.
-4. Verify the import summary - row count, flagged items, date range.
+3. Verify the tenant and user identity shown in the header.
+4. Upload the client's `.xlsx` workbook.
+5. Verify the import summary - row count, flagged items, date range.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
+
+> 💡 **Tip:** The Import page now exposes recent prior imports, which is useful when you need to reopen an earlier dashboard for comparison without re-uploading the workbook.
 
 ### Managing Multiple Imports per Client
 
@@ -586,11 +592,11 @@ Each tenant has an **ARR Policy** - a named configuration that governs how the s
 
 The policy is defined in the tenant's **Recognition Assumptions sheet** (in the XLSX workbook) but Admins can also configure overrides at the policy level in the UI.
 
-> ⚠️ **Known limitation (still open as of 2026-04-02 / QA Session 9):** Workbooks whose transaction detail sheet is only available as an `External` variant (for example, `Sales by Cust Detail External`) may still fail detection in the end-to-end pipeline. QA has this tracked as a high-severity issue. Until it is fixed, verify that the workbook includes a standard internal transaction detail sheet before asking a client to import it.
+> 💡 **Current behavior:** Sheet detection supports transaction detail sheets identified by content and accepted column structure, including workbook variants whose sheet names contain terms like `External`. Admins should still validate required columns before import, but the sheet name itself does not need to match an exact hard-coded label.
 
 ### Current UI Status
 
-As of 2026-04-02, the dashboard and dashboard-view docs/UI have received another round of navigation polish and sync cleanup. The user-facing import, review queue, and movement analysis views are still in active development. Screenshots and final UI notes will be added when the UI is stable enough for end-user delivery.
+As of 2026-04-02, the frontend is wired to tenant-aware API paths and now surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including prior-import navigation and bulk review resolution. Screenshots and final UI notes will be added when the UI is stable enough for formal delivery.
 
 ### Supported Recognition Rule Types
 
@@ -794,70 +800,3 @@ You have access to client financial data that is confidential and sensitive. You
 
 ---
 
-## 10. Glossary
-
-**ARR Policy**  
-The named configuration governing how the system recognizes revenue for a specific tenant. Defined by recognition rules mapped to product/service categories.
-
-**ARRMonthlyOverride**  
-A system record representing an admin-submitted correction to the calculated ARR for a specific contract line in a specific period. Contains the original value, override value, submitter, approver (if two-step), and reason.
-
-**Approved_by**  
-The optional field on an ARRMonthlyOverride record that records who confirmed the override in a two-step approval workflow. Unpopulated until a second authorized user approves.
-
-**Audit Log**  
-The tamper-proof, system-maintained record of all significant actions in ARR V2 — context switches, imports, deletions, overrides, user changes. Read-only for all users, including Super Users.
-
-**Import Lineage**  
-The complete provenance trail for an uploaded workbook: who uploaded it, from what source system, what the filename was, and what the processing outcome was. Captured in the `SourceImport` record.
-
-**BillingSchedule**  
-A planned or actual sequence of billing events associated with a contract line.
-
-**BusinessNote**  
-An operational note or annotation attached to a customer, contract, contract line, or review queue item. Note types: `comment`, `pending_renewal`, `issue`, `reminder`, `other`. Status: `open`, `resolved`, or `informational`. Notes are mutable; they are not part of the tamper-proof audit log. Intended for team communication and workflow context within the platform. Billing types include `planned`, `actual`, `milestone`, and `invoice`. Post-MVP, billing schedules from a CRM can be pre-loaded and reconciled against actual QuickBooks invoice data.
-
-**ClassificationAdjustment**  
-A tracked change to the reporting classification of a customer, site, or contract line — for example, moving from Self-Serve to Enterprise. Captured with submitter, approver (if applicable), reason, and full before/after classification. Permanent and audit-safe — cannot be deleted.
-
-**Contract**  
-The commercial agreement between your firm and a client. Tracks scope (`site_specific | multi_site | enterprise_wide`), term dates, renewal, billing method, and industry. Drives how ARR is organized and reported across Sites and Logos.
-
-**ContractAmendment**  
-A material change to an existing contract: expansion, contraction, repricing, renewal, or termination. Stored separately from the base contract to preserve the original terms. Linked to the import that surfaced the amendment.
-
-**ContractLine**  
-A single product/service SKU within a contract. Carries `recurrence_type` (`recurring | non_recurring | hybrid`), `arr_treatment_method`, `revenue_recognition_method`, dates, and pricing. Also carries `renewal_arr_delta` (signed numeric: positive = expansion at renewal, negative = contraction). The contract line is the atomic unit of ARR recognition.
-
-**Renewal ARR Delta**  
-A signed numeric field on a `ContractLine` record capturing the change in ARR at the most recent contract renewal. Positive indicates expansion; negative indicates contraction; zero or absent means flat renewal or no renewal data yet. Post-MVP, surfaced in the Contract Line detail view and renewal health reporting.
-
-**Logo**  
-The parent commercial customer entity. A Logo may have multiple Sites. ARR is reported at both the Logo level (aggregate) and Site level (individual).
-
-**MappingDecision**  
-A system record that tracks how a source column or value was interpreted during import: the source field, the mapped domain field, the transformation applied, and whether the mapping required human review.
-
-**Recognition Rule**  
-A rule that governs how revenue is spread over time for a product/service category. The four supported types are: `subscription_term`, `fallback_one_year_from_invoice`, `fixed_36_months_from_invoice`, and `invoice_date_immediate`.
-
-**Site**  
-A billing entity, subsidiary, or physical location under a Logo. Sites carry the accounting and CRM reference IDs. Multiple Sites can exist under one Logo.
-
-**SourceImport**  
-The system record for a completed workbook upload. Stores filename, uploader, source system, processing status, and row-level warning/error counts. Immutable after creation.
-
-**Super User (SU)**  
-The highest privilege level in ARR V2. SUs can switch between tenant contexts, manage all clients, and perform any admin action across the system. All SU actions are logged.
-
-**Tenant**  
-A client company onboarded into ARR V2. Each tenant has fully isolated data storage, user accounts, and ARR configuration.
-
-**Tenant Admin**  
-An elevated role within a single tenant. Tenant Admins can manage users and configure ARR policy for their organization, but cannot access other tenants or SU-level functions.
-
-**Tenant Context**  
-The active tenant scope during a SU session. A SU must explicitly switch into a tenant context before accessing or modifying that client's data. Context switches are logged.
-
-**Two-Step Override Approval**  
-An optional tenant-level configuration requiring a second authorized user to confirm any ARR monthly override before it takes effect. Supported by the `approved_by` field on the `ARRMonthlyOverride` record.
