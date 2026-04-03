@@ -335,6 +335,141 @@ export const demoCustomerDetails: Record<string, Record<string, CustomerDetail>>
   },
 };
 
+export const demoCustomerCube = {
+  importId: DEMO_IMPORT_ID,
+  periods: ['2026-01', '2026-02', '2026-03'],
+  summary: {
+    openingArr: 5_290_000,
+    closingArr: 5_610_000,
+    grossRetentionPct: 97.1,
+    netRevenueRetentionPct: 105.6,
+    expansionArr: 96_000,
+    contractionArr: 0,
+    churnArr: 0,
+    trackedCustomers: 8,
+  },
+  segmentTotals: [
+    { segment: 'Healthcare', arr: 775_000, customers: 2 },
+    { segment: 'Retail', arr: 474_000, customers: 1 },
+    { segment: 'Education', arr: 328_000, customers: 1 },
+    { segment: 'Logistics', arr: 381_000, customers: 1 },
+    { segment: 'Staffing', arr: 301_000, customers: 1 },
+    { segment: 'Media', arr: 264_000, customers: 1 },
+    { segment: 'Food', arr: 248_000, customers: 1 },
+  ],
+  rows: [
+    {
+      customer: 'Northstar Health',
+      segment: 'Healthcare',
+      logoId: 'HC-014',
+      openingArr: 466_000,
+      closingArr: 488_000,
+      movement: 'Expansion',
+      netChange: 22_000,
+      productFamilies: [
+        { family: 'Enterprise Analytics Platform', arr: [402_000, 412_000, 420_000] },
+        { family: 'Premium Support Subscription', arr: [64_000, 64_000, 68_000] },
+      ],
+      traceability: 'INV-1001 renewal + March support uplift',
+    },
+    {
+      customer: 'Apex Retail Group',
+      segment: 'Retail',
+      logoId: 'RT-009',
+      openingArr: 454_000,
+      closingArr: 474_000,
+      movement: 'Expansion',
+      netChange: 20_000,
+      productFamilies: [
+        { family: 'Retail Insights Platform', arr: [370_000, 370_000, 370_000] },
+        { family: 'AI Forecasting Module', arr: [84_000, 84_000, 84_000] },
+        { family: 'Advanced Benchmarking Add-On', arr: [0, 8_000, 20_000] },
+      ],
+      traceability: 'INV-1088 and INV-1304 mapped to Dashboard Subscription',
+    },
+    {
+      customer: 'Beacon Education',
+      segment: 'Education',
+      logoId: 'ED-021',
+      openingArr: 276_000,
+      closingArr: 328_000,
+      movement: 'Expansion',
+      netChange: 52_000,
+      productFamilies: [
+        { family: 'Campus Insights Suite', arr: [276_000, 276_000, 276_000] },
+        { family: 'Student Retention Add-On', arr: [0, 0, 52_000] },
+      ],
+      traceability: 'March add-on booked on INV-1292',
+    },
+    {
+      customer: 'Harbor Logistics',
+      segment: 'Logistics',
+      logoId: 'LG-011',
+      openingArr: 361_000,
+      closingArr: 381_000,
+      movement: 'Expansion',
+      netChange: 20_000,
+      productFamilies: [
+        { family: 'Logistics Control Tower', arr: [347_000, 355_000, 366_000] },
+        { family: 'Usage Overage Pack', arr: [14_000, 17_000, 15_000] },
+      ],
+      traceability: 'Control Tower base contract + peak-season overage invoices',
+    },
+    {
+      customer: 'Summit Workforce',
+      segment: 'Staffing',
+      logoId: 'WF-033',
+      openingArr: 289_000,
+      closingArr: 301_000,
+      movement: 'Expansion',
+      netChange: 12_000,
+      productFamilies: [
+        { family: 'Workforce Planning Cloud', arr: [289_000, 295_000, 301_000] },
+      ],
+      traceability: 'Seat expansion reflected in renewal snapshot',
+    },
+    {
+      customer: 'Blue Harbor Media',
+      segment: 'Media',
+      logoId: 'MD-018',
+      openingArr: 252_000,
+      closingArr: 264_000,
+      movement: 'Expansion',
+      netChange: 12_000,
+      productFamilies: [
+        { family: 'Audience Intelligence Suite', arr: [252_000, 258_000, 264_000] },
+      ],
+      traceability: 'Expansion traced to March active-seat true-up',
+    },
+    {
+      customer: 'Granite Foods',
+      segment: 'Food',
+      logoId: 'FD-027',
+      openingArr: 237_000,
+      closingArr: 248_000,
+      movement: 'Expansion',
+      netChange: 11_000,
+      productFamilies: [
+        { family: 'Supply Chain Visibility', arr: [237_000, 242_000, 248_000] },
+      ],
+      traceability: 'Renewal uplift carries through ARR snapshot roll-forward',
+    },
+    {
+      customer: 'Riverbank Clinics',
+      segment: 'Healthcare',
+      logoId: 'HC-022',
+      openingArr: 258_000,
+      closingArr: 287_000,
+      movement: 'Expansion',
+      netChange: 29_000,
+      productFamilies: [
+        { family: 'Clinic Performance Suite', arr: [258_000, 272_000, 287_000] },
+      ],
+      traceability: 'Clinic suite ramp matched to January start-date cohort',
+    },
+  ],
+};
+
 export function isStaticDemoEnvironment(): boolean {
   if (typeof window === 'undefined') return false;
   return window.location.hostname.endsWith('github.io') || window.location.search.includes('demo=1');

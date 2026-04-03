@@ -2,8 +2,8 @@
  * DashboardPage — ARR timeseries chart + summary stats for a given import.
  * Includes date range filter and top-customers breakdown.
  */
-import { useState, useMemo, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
@@ -11,6 +11,7 @@ import {
 import { downloadArrCsv, downloadArrMovementsCsv } from '@/lib/api';
 import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, useCustomerList } from '@/lib/hooks';
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
+import { demoCustomerCube, isDemoImportId } from '@/lib/demoData';
 import { useArrSettings } from '@/lib/settings';
 import styles from './DashboardPage.module.css';
 
@@ -48,7 +49,9 @@ const LIVE_POLL_MS = 30_000;
 
 export default function DashboardPage() {
   const { importId } = useParams<{ importId: string }>();
+  const [searchParams] = useSearchParams();
   const { tenantId } = useArrSettings();
+  const customerCubeRef = useRef<HTMLDivElement | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadingKind, setDownloadingKind] = useState<'arr' | 'movements' | null>(null);
@@ -124,6 +127,12 @@ export default function DashboardPage() {
     }
   }, [summary, reviewStats, customerList, ts, movements]);
 
+  useEffect(() => {
+    if (searchParams.get('focus') === 'cube' && customerCubeRef.current) {
+      customerCubeRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [searchParams]);
+
   function handleRefreshNow() {
     refetchSummary();
     refetchTimeseries();
@@ -182,6 +191,7 @@ export default function DashboardPage() {
     ? Math.round(((reviewStats.resolvedCount + reviewStats.overriddenCount) / reviewStats.total) * 100)
     : null;
 
+  const cube = importId && isDemoImportId(importId) ? demoCustomerCube : null;
   const customers = customerList?.customers ?? [];
   const customersWithReview = customers.filter(customer => customer.requiresReview);
   const customersWithCurrentArr = customers.filter(customer => customer.currentArr > 0);
@@ -470,6 +480,95 @@ export default function DashboardPage() {
               + {(latestPeriod!.byCustomer.length - 10)} more customers
             </div>
           )}
+        </div>
+      )}
+
+      {cube && (
+        <div ref={customerCubeRef} className={`card ${styles.tableCard} ${styles.customerCubeCard}`}>
+          <div className={styles.sectionHeader} style={{ marginTop: 0 }}>
+            <div>
+              <h2 className={styles.sectionTitle}>Customer Cube</h2>
+              <div className={styles.rangeInfo}>
+                Structured customer-by-product ARR view for {cube.periods[0]} → {cube.periods[cube.periods.length - 1]}
+              </div>
+            </div>
+            <span className={styles.cubeBadge}>Investor + audit ready concept</span>
+          </div>
+
+          <div className={styles.statGrid}>
+            <StatCard label="Gross Retention" value={`${cube.summary.grossRetentionPct.toFixed(1)}%`} sub="Excludes expansion; period-over-period logo durability" />
+            <StatCard label="Net Revenue Retention" value={`${cube.summary.netRevenueRetentionPct.toFixed(1)}%`} sub="Expansion / contraction / churn roll-forward" />
+            <StatCard label="Tracked Customers" value={cube.summary.trackedCustomers.toLocaleString()} sub="Customer x segment x product families in the seed cube" />
+            <StatCard label="Quarter Net Change" value={formatArr(cube.summary.closingArr - cube.summary.openingArr)} sub={`${formatArr(cube.summary.openingArr)} → ${formatArr(cube.summary.closingArr)}`} />
+          </div>
+
+          <div className={styles.cubeNarrativeGrid}>
+            <div className={`card ${styles.cubeNarrativePanel}`}>
+              <h3 className={styles.panelTitle}>Why it matters</h3>
+              <div className={styles.issueList}>
+                <div className={styles.issueRow}><span className={styles.issueLabel}>Retention / expansion story</span><span className={styles.issueCount}>NRR {cube.summary.netRevenueRetentionPct.toFixed(1)}%</span></div>
+                <div className={styles.issueRow}><span className={styles.issueLabel}>Segment rollups</span><span className={styles.issueCount}>{cube.segmentTotals.length}</span></div>
+                <div className={styles.issueRow}><span className={styles.issueLabel}>Traceable to invoice + mapping inputs</span><span className={styles.issueCount}>Yes</span></div>
+              </div>
+            </div>
+            <div className={`card ${styles.cubeNarrativePanel}`}>
+              <h3 className={styles.panelTitle}>Dimensions in this demo</h3>
+              <div className={styles.cubeDimList}>
+                <span>Customer</span>
+                <span>Segment</span>
+                <span>Product family</span>
+                <span>Monthly periods</span>
+                <span>Movement classification</span>
+                <span>Invoice traceability note</span>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.cubeSegmentStrip}>
+            {cube.segmentTotals.map(segment => (
+              <div key={segment.segment} className={styles.cubeSegmentPill}>
+                <strong>{segment.segment}</strong>
+                <span>{formatArr(segment.arr)} · {segment.customers} cust.</span>
+              </div>
+            ))}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Segment</th>
+                <th>Product Families</th>
+                {cube.periods.map(period => <th key={period} style={{ textAlign: 'right' }}>{period}</th>)}
+                <th style={{ textAlign: 'right' }}>Net Δ</th>
+                <th>Movement</th>
+                <th>Traceability</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cube.rows.map(row => {
+                const totals = cube.periods.map((_, idx) => row.productFamilies.reduce((sum, family) => sum + (family.arr[idx] ?? 0), 0));
+                return (
+                  <tr key={row.customer}>
+                    <td>
+                      <Link to={`/customers/${importId}/${encodeURIComponent(row.customer)}`} className={styles.inlineLink}>{row.customer}</Link>
+                      <div className={styles.cubeMeta}>{row.logoId}</div>
+                    </td>
+                    <td>{row.segment}</td>
+                    <td>
+                      <div className={styles.cubeFamilyList}>
+                        {row.productFamilies.map(family => <span key={family.family}>{family.family}</span>)}
+                      </div>
+                    </td>
+                    {totals.map((value, idx) => <td key={`${row.customer}-${cube.periods[idx]}`} style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(value)}</td>)}
+                    <td style={{ textAlign: 'right', color: row.netChange >= 0 ? 'var(--success)' : 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>{row.netChange >= 0 ? '+' : ''}{formatArr(row.netChange)}</td>
+                    <td>{row.movement}</td>
+                    <td className={styles.cubeTrace}>{row.traceability}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

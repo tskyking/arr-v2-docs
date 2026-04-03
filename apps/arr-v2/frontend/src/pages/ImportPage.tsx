@@ -124,6 +124,10 @@ export default function ImportPage() {
           {demoMode && <span className={styles.demoBadge}>Public demo mode</span>}
         </div>
         <div className={styles.demoGrid}>
+          <a className={styles.demoCard} href={`${import.meta.env.BASE_URL}demo/arr-v2-demo-import.xlsx`} download>
+            <span className={styles.demoTitle}>Download demo import workbook</span>
+            <span className={styles.demoText}>Real 3-sheet XLSX template with seeded transactions, mapping coverage, and recognition assumptions.</span>
+          </a>
           <Link className={styles.demoCard} to="/import">
             <span className={styles.demoTitle}>Sample import history</span>
             <span className={styles.demoText}>Seeded import runs with realistic dates, row counts, and dashboard entry points.</span>
@@ -139,6 +143,10 @@ export default function ImportPage() {
           <Link className={styles.demoCard} to={`/review/${DEMO_IMPORT_ID}?demoItem=rq-104`}>
             <span className={styles.demoTitle}>Sample expanded detail state</span>
             <span className={styles.demoText}>Opens a realistic ambiguous-product case with the detail drawer already expanded.</span>
+          </Link>
+          <Link className={styles.demoCard} to={`/dashboard/${DEMO_IMPORT_ID}?focus=cube`}>
+            <span className={styles.demoTitle}>Customer Cube demo view</span>
+            <span className={styles.demoText}>Investor-friendly customer x segment x product ARR matrix with traceability notes back to imports.</span>
           </Link>
         </div>
       </div>
