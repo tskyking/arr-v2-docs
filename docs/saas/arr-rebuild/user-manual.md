@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 26 — documented live dashboard refresh and CSV export behavior, clarified customer-roster troubleshooting, and refreshed import/dashboard guidance to match the latest beta build)_
+_Last updated: 2026-04-03 (Session 27 — clarified customer-roster behavior, customer detail expectations, and review-queue/dashboard guidance to match the latest beta build and recent route coverage)_
 
 ---
 
@@ -226,6 +226,7 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 - **ARR Movements** — a waterfall view of New, Expansion, Contraction, and Churn
 - **Top customers** — highest-ARR customers for the latest visible period, with quick access into account-level detail
 - **Customer roster** — an API-backed customer list showing current ARR, contract counts, last invoice date, and review attention
+- **Sorted customer list** — customer lists are shown in descending current-ARR order so the biggest accounts appear first
 - **Category breakdown** — imported row totals grouped by category
 - **Customer detail drill-down** — open a customer from the dashboard to inspect ARR history, peak ARR, and review attention for the active import
 - **Live refresh / auto-refresh controls** — in current beta builds, dashboard cards and charts can refresh automatically so you can see import and review changes without manually reloading the page
@@ -276,12 +277,14 @@ If your deployment has live refresh enabled, the dashboard can update summary ca
 
 1. In the **Top customers** or **Customer roster** section, click a customer name.
 2. Review the customer's current ARR, peak ARR, period count, and period-by-period history.
-3. Use the history view to spot step changes, drops, or unusual movement for that account.
-4. Check whether the customer has open review attention attached to the current import.
-5. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
+3. Expect the ARR history to appear in chronological order, from oldest month to newest month.
+4. Use the history view to spot step changes, drops, or unusual movement for that account.
+5. Check whether the customer has open review attention attached to the current import.
+6. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
 
 > 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
 > 💡 **Tip:** The customer roster is especially useful when a customer is not in the top-ARR list but still needs operational review because of open flags or recent invoice activity.
+> 💡 **Tip:** If a customer name includes spaces or special punctuation, the app should still open that customer correctly from the roster or detail link.
 
 ### Understanding the ARR Number
 
@@ -323,6 +326,7 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 | `INVALID_DATE` | Error | A date value couldn't be parsed |
 | `INVALID_NUMBER` | Error | A quantity or amount couldn't be parsed as a number |
 | `UNKNOWN_TRANSACTION_TYPE` | Warning | The transaction type isn't recognized |
+| `LONG_REASON_LABEL` | Info | A long issue label may wrap onto multiple lines in the current beta UI without affecting the underlying review item |
 | `MISSING_INVOICE_NUMBER` | Info | The invoice number is blank |
 | `AMOUNT_PRICE_QUANTITY_MISMATCH` | Warning | The amount doesn't match price × quantity |
 | `MULTIPLE_PRODUCT_SERVICE_CATEGORIES` | Error | The product maps to more than one revenue category |
@@ -447,7 +451,7 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 ### My imported customers are not showing in the live customer roster
 
-**Cause:** You may be looking at a different import than the one you just uploaded, or the current dashboard date range may exclude the period where those customers have ARR.
+**Cause:** You may be looking at a different import than the one you just uploaded, the current dashboard date range may exclude the period where those customers have ARR, or the customer may simply rank below the top-customer summary and only appear in the broader roster.
 **Fix:**
 1. Confirm the active import in the header.
 2. Reopen the expected import from the Import page if needed.
@@ -504,6 +508,8 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 ### A customer detail page looks incomplete or missing history
 
 **Cause:** Customer detail reflects the active import and its date range only. If you switched imports, filtered the dashboard to a shorter window, or uploaded a partial workbook, the customer's visible history may look incomplete.
+
+**What to expect:** The customer's ARR history should be displayed in chronological order from oldest to newest within the active import.
 **Fix:**
 1. Confirm the active import in the header.
 2. Reopen the expected import from **Import** if needed.
@@ -611,6 +617,9 @@ A rule that determines how a revenue item's value is spread over time. For examp
 
 **Review Item / Flag**  
 A row in your imported data that the system couldn't process with full confidence. Flags appear in the Review Queue, carry a status such as `open`, `resolved`, or `overridden`, and require human review.
+
+**Review Attention**  
+A customer-level signal shown in dashboard roster/detail views indicating that one or more rows related to that customer still need review in the active import.
 
 **Revenue Segment**  
 An internal representation of a single recognized revenue contribution for a specific customer, category, and time period.

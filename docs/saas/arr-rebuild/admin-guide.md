@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 26 — documented live dashboard refresh and active CSV exports, refreshed tenant/admin notes for the latest beta UI, and clarified operational troubleshooting around import and customer views)_
+_Last updated: 2026-04-03 (Session 27 — clarified customer-list/detail behavior, active-import troubleshooting, and admin expectations around tenant-scoped customer routes and UI polish in the latest beta build)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -150,7 +150,9 @@ Client data is loaded via the **Import** function within a client's tenant conte
 7. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
 8. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
 9. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
-10. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
+10. Expect tenant-scoped customer lists to be sorted by current ARR descending so the largest accounts appear first.
+11. Expect customer ARR history to be returned in chronological order for the active import.
+12. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -166,6 +168,8 @@ Each client can have multiple import records. Imports are not automatically repl
 - Customer-level dashboard views and live customer rosters are always scoped to the currently active import, not all imports combined
 
 > ⚠️ **Warning:** The `removeImport` operation permanently deletes the import record and all associated review overrides. It cannot be undone. Always verify you are removing the correct import ID before confirming.
+
+> 💡 **Tip:** When testing a customer-detail bug report, use the real customer name from the roster link rather than manually editing the URL. Current route coverage explicitly validates URL-encoded customer names, which reduces false alarms caused by punctuation or spaces.
 
 ### CSV Export: Technical Details (Admin Reference)
 
@@ -285,8 +289,9 @@ If a tenant admin reports that a customer is missing from the dashboard roster, 
 2. Confirm the active import ID in the header import selector.
 3. Confirm the dashboard date range includes months where that customer has ARR.
 4. Check whether the customer is absent from **Top Customers** only, but still present in the broader **Customer Roster**.
-5. Check the Review Queue for error-level items that may have excluded that customer's source rows.
-6. Reopen a prior import if the client expected to see historical data from an older upload.
+5. Remember that the full customer list is sorted by current ARR descending; smaller accounts may simply be farther down the list.
+6. Check the Review Queue for error-level items that may have excluded that customer's source rows.
+7. Reopen a prior import if the client expected to see historical data from an older upload.
 
 > 💡 **Tip:** In the current build, "missing customer" reports are more often active-import or date-range misunderstandings than backend data loss.
 ### Customer Hierarchy: Logos and Sites
@@ -477,6 +482,7 @@ ARR V2 enforces strict data isolation at multiple layers:
 3. **Service layer:** All store functions (`saveImport`, `loadAllImports`, `deleteImport`, etc.) require a `tenantId` parameter. There are no global queries - every read and write is tenant-scoped.
 
 4. **Invalid tenantId rejection:** TenantId values containing path traversal characters (`..`, `/`, `\`, etc.) are rejected at the route layer before any file system operation.
+5. **Tenant-scoped customer routes:** Customer list and customer detail endpoints are resolved within the active tenant only; valid import IDs and customer names from another tenant must not resolve across tenant boundaries.
 
 ### What "Data Isolation" Means in Practice
 
@@ -823,6 +829,7 @@ The current QA summary still lists several post-MVP or hardening items that admi
 3. `GET /imports/:id` without a sub-route still has no confirmed product behavior and currently returns `404`.
 4. Production authentication, MFA, and session enforcement are not finalized.
 5. Browser-side Tenant/User context controls still need to be replaced by hardened server-backed auth and role enforcement for production use.
+6. UI polish work is still ongoing; for example, long labels in beta dashboard/review views may wrap differently as frontend fixes land.
 
 > ⚠️ **Warning:** The current build has clean automated coverage for real workbook upload success paths, tenant-scoped routes, and CSV exports, but it is still suitable for guided beta use rather than a fully hardened production rollout until auth, MFA, and concurrency validation are completed.
 
