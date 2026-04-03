@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 21 — added current customer-detail workflow notes, refreshed dashboard/review guidance, and kept end-user/admin separation tight)_
+_Last updated: 2026-04-03 (Session 22 — refined import workflow guidance, clarified dashboard/review behavior, and added current CSV/export caveats for end users)_
 
 ---
 
@@ -175,9 +175,10 @@ Before uploading, check your file against these criteria:
    - Active customers
    - Rows imported
    - Review items needing attention
-8. Check the **Review Progress** section on the dashboard to see how many items are still open and which issue types are most common.
+8. Check the **Review Progress** section on the dashboard to see how many items are still open, the completion percentage, and which issue types are most common.
 9. Open **Review Queue** to resolve any flagged rows.
 10. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
+11. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 
 > 💡 **Tip:** The Import page may also show recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -243,6 +244,7 @@ You can download the ARR timeseries data shown on the dashboard as a CSV file fo
 1. Set your desired date range using the **From** and **To** selectors.
 2. Use the ARR CSV export control when it is available in your deployment.
 3. A `.csv` file will download to your computer.
+4. Open the file in Excel, Google Sheets, or another spreadsheet tool to analyze the exported period-by-period ARR data.
 
 **What the export contains:**
 - One row per period (month), in `YYYY-MM` format
@@ -386,6 +388,7 @@ The movement analysis can be exported as a CSV file for offline analysis or shar
 1. Set your desired date range from the dashboard filter.
 2. Click **Export CSV** for the movement analysis view when that control is available in your deployment.
 3. A `.csv` file will download to your computer.
+4. Review the last row carefully — it is a summary TOTAL row rather than another monthly period.
 
 **What the movements export contains:**
 - One row per period (month), in `YYYY-MM` format
@@ -422,8 +425,8 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 ### The dashboard shows no data after import
 
-**Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state.
-**Fix:** Refresh the page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
+**Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state, or the active import in the header is not the one you just uploaded.
+**Fix:** Refresh the page. Then confirm the active import in the header or reopen the expected import from the Import page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
 
 ### I think I'm in the wrong company workspace or import
 

@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 21 — refreshed current beta workflow notes, captured customer-detail support in the live UI, and kept SU/admin guidance separate from end-user docs)_
+_Last updated: 2026-04-03 (Session 22 — tightened import/export operational notes, refreshed current beta workflow details, and captured current QA-backed caveats for admins)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -245,6 +245,8 @@ Use this workflow when a client discovers errors in their source data after an i
 ### File Size Limits
 
 The import server enforces a maximum file size on uploaded workbooks. Uploads that exceed this limit are rejected with a `413 Payload Too Large` response before any parsing occurs. This check applies regardless of file format.
+
+The current QA coverage verifies both the fast `Content-Length` rejection path and the streaming drain path, so admins should expect large uploads to fail cleanly rather than partially process.
 
 **What to do if an upload is rejected for file size:**
 1. Open the workbook in Excel and check how many years of transaction data it contains.
@@ -790,7 +792,8 @@ The current QA summary still lists several post-MVP or hardening items that admi
 1. Real HTTP-level success-path upload testing for a valid workbook is still not covered end-to-end.
 2. Duplicate invoice detection is still a product/open-design question.
 3. Multi-tenant concurrent-write isolation is not yet explicitly tested.
-4. Production authentication, MFA, and session enforcement are not finalized.
+4. `GET /imports/:id` without a sub-route still has no confirmed product behavior and currently returns `404`.
+5. Production authentication, MFA, and session enforcement are not finalized.
 
 > ⚠️ **Warning:** This means the current build is suitable for guided beta use and documentation prep, but not yet for a fully hardened production rollout without additional auth, audit, and concurrency validation work.
 
