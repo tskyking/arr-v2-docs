@@ -78,8 +78,8 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Release Prep / Final QA &amp; Product Decisions</span>
-        <span class="badge todo">Target: close the real-upload success-path gap, fix repo metadata drift, settle product decisions, and prep staging/hosting</span>
+        <span class="badge active">Current Phase: Release Prep / Docs + Final Product Decisions</span>
+        <span class="badge todo">Target: lock repo/package hygiene, settle remaining product decisions, and prep staging/hosting</span>
       </div>
     </div>
 
@@ -87,21 +87,21 @@
       <div class="card col-4">
         <h3>Overall Progress</h3>
         <div class="metric">83%</div>
-        <div class="sub">Backlog completion is 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. Backend is healthy at 740 passing tests across 36 files (re-verified during the 2026-04-03 2:00 AM PT coordinator pass via fresh <code>npx vitest run</code>), and the frontend production build still passes via <code>npm run build</code>. The repo is no longer in planning-only mode: import, dashboard, review workflow, tenant-aware routing, customer detail, and CSV export paths are present in code. No unresolved HIGH or CRITICAL QA bugs are currently documented as open; the prior HIGH external-workbook issue remains documented as fixed and covered by passing tests. The main release-prep gaps still visible in repo/docs are: real valid-XLSX upload success-path coverage at the HTTP layer, backend <code>package.json</code> metadata drift (<code>test</code> script / explicit Vitest tooling), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, concurrency/isolation hardening beyond current tests, and staging/hosting planning.</div>
+        <div class="sub">Backlog completion remains 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. Backend QA is healthy at 741 passing tests across 36 files (re-verified on 2026-04-03 around 4:00 AM PT via fresh <code>npx vitest run</code>). Recent commit history is steady rather than stalled: dashboard work, customer-roster wiring, and repeated doc-agent updates are all landing. The repo is clearly past MVP build-out: import, dashboard, review workflow, tenant-aware routing, customer detail, CSV exports, and the HTTP-level real-XLSX upload success path are present in code/tests. No unresolved HIGH or CRITICAL QA bugs are currently documented as open; the prior HIGH external-workbook issue is explicitly marked fixed and covered by passing tests. The main release-prep gaps still visible in repo/docs are: backend <code>package.json</code> metadata drift (<code>test</code> script / explicit Vitest tooling), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, concurrency/isolation hardening beyond current tests, the Todd/Brian plan review item, and staging/hosting planning.</div>
         <div style="margin-top:12px" class="progress"><div style="width:83%"></div></div>
       </div>
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>The MVP is effectively built, and doc/manual work is already underway. Import, dashboard, review workflow, tenant-aware routing, exports, and ARR movement logic are all in place, and the project has crossed the 80% milestone. The current objective is release prep: prove the upload happy path end to end, align repo metadata with the working test suite, settle the remaining product decisions, and lock staging/hosting direction.</p>
+        <p>The MVP is effectively built, and doc/manual work is actively landing in recent commits. Import, dashboard, review workflow, tenant-aware routing, customer detail, exports, ARR movement logic, and the upload happy path are all in place, and the project has crossed the 80% milestone. The current objective is release prep: align repo metadata with the working test suite, close the remaining backlog planning/decision items, and lock staging/hosting direction.</p>
       </div>
 
       <div class="card col-4">
         <h3>Next 3 Actions</h3>
         <ul>
-          <li>Add a real valid-XLSX upload end-to-end HTTP server test that proves a 200 success path</li>
           <li>Fix backend package metadata drift (`test` script / declared Vitest tooling) so repo setup matches reality</li>
           <li>Review the final plan with Todd/Brian and settle duplicate-invoice + <code>GET /imports/:id</code> product decisions</li>
+          <li>Lock staging/hosting direction and add the next round of lower-priority concurrency/isolation coverage</li>
         </ul>
       </div>
 
@@ -134,11 +134,11 @@
           </div>
           <div class="step done">
             <strong>7. Controlled Testing</strong>
-            <p>Major QA coverage is in place and the current QA summary is green at 740 passing tests; the project has cleared the MVP-complete threshold.</p>
+            <p>Major QA coverage is in place and the current QA summary is green at 741 passing tests; the project has cleared the MVP-complete threshold.</p>
           </div>
           <div class="step active">
             <strong>8. Staging / Production Prep</strong>
-            <p>Finish upload happy-path coverage, repo/package hygiene, stakeholder review, and staging/hosting decisions before deployment.</p>
+            <p>Finish repo/package hygiene, stakeholder review, documentation handoff, and staging/hosting decisions before deployment, then tighten lower-priority concurrency/isolation coverage as needed.</p>
           </div>
         </div>
       </div>
@@ -159,7 +159,7 @@
           <li><strong>User manual / admin guide:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Tenant-aware API + CSV exports:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Backend QA regression suite:</strong> <span class="pill pill-done">done</span></li>
-          <li><strong>Real upload 200-path coverage:</strong> <span class="pill pill-next">next</span></li>
+          <li><strong>Real upload 200-path coverage:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Repo/package hygiene:</strong> <span class="pill pill-next">next</span></li>
           <li><strong>Review Todd/Brian final plan:</strong> <span class="pill pill-next">next</span></li>
           <li><strong>Staging / hosting plan:</strong> <span class="pill pill-next">next</span></li>
