@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 24 — corrected stale QA coverage notes, clarified active-import analysis workflow, and tightened admin guidance around dashboard context and customer inspection)_
+_Last updated: 2026-04-03 (Session 25 — aligned admin guidance to the current beta UI, clarified tenant/user header behavior and path-based imports, and refreshed notes on customer-roster troubleshooting)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -94,9 +94,9 @@ Each client (company using ARR V2) has a **tenant ID** - a stable unique identif
 
 - **Default tenant context:** The system has a default tenant for single-tenant deployments. In production multi-tenant mode, there is no default - you must always select a tenant explicitly.
 - **URL structure:** All data API routes are scoped under `/tenants/:tenantId/`. The server rejects requests where the tenantId in the URL does not match the active session context.
-- **Frontend context fields:** Current frontend builds display editable **Tenant** and **User** fields in the application header. These values are stored locally in the browser and affect which tenant-scoped API paths are called and which user identity is attached to review actions and uploads.
+- **Frontend context fields:** Current frontend builds display editable **Tenant** and **User** fields in the application header. These values are stored locally in the browser, affect which tenant-scoped API paths are called, and determine which user identity is attached to uploads and review actions.
 - **Import selector in header:** When multiple imports exist for a tenant, the header provides an import selector that switches the current Dashboard or Review Queue context without creating a new upload.
-- **Current top-level navigation:** The current beta UI exposes **Import**, **Dashboard**, and **Review Queue** as primary pages. ARR movement analysis is embedded inside the Dashboard page rather than living on its own route.
+- **Current top-level navigation:** The current beta UI exposes **Import**, **Dashboard**, and **Review Queue** as primary pages. ARR movement analysis and customer drill-down remain inside the Dashboard workflow rather than separate routes.
 
 ### Switching to a Client Context
 
@@ -144,12 +144,12 @@ Client data is loaded via the **Import** function within a client's tenant conte
 1. Switch into the client's tenant context (see Section 3).
 2. Navigate to **Import**.
 3. Verify the tenant and user identity shown in the header.
-4. Upload the client's `.xlsx` workbook using file selection or drag-and-drop.
+4. Upload the client's `.xlsx` workbook using file selection, drag-and-drop, or a trusted server-local file path if that deployment flow is enabled.
 5. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, and visible date range.
 6. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
 7. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
 8. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
-9. Use dashboard customer links or the live customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, or review attention within that import.
+9. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
 10. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
@@ -264,16 +264,16 @@ When using the customer detail view from the dashboard or reviewing a specific c
 
 ### Missing Customer in Dashboard Investigation
 
-If a tenant admin reports that a customer is missing from the live dashboard roster or customer detail links:
+If a tenant admin reports that a customer is missing from the dashboard roster, top-customer list, or customer detail links:
 
 1. Confirm the tenant context in the header.
 2. Confirm the active import ID in the header import selector.
 3. Confirm the dashboard date range includes months where that customer has ARR.
-4. Check the Review Queue for error-level items that may have excluded that customer's source rows.
-5. Reopen a prior import if the client expected to see historical data from an older upload.
+4. Check whether the customer is absent from **Top Customers** only, but still present in the broader **Customer Roster**.
+5. Check the Review Queue for error-level items that may have excluded that customer's source rows.
+6. Reopen a prior import if the client expected to see historical data from an older upload.
 
 > 💡 **Tip:** In the current build, "missing customer" reports are more often active-import or date-range misunderstandings than backend data loss.
-
 ### Customer Hierarchy: Logos and Sites
 
 ARR V2 uses a two-level customer hierarchy:

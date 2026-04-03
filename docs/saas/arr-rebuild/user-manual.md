@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 24 — refined dashboard workflow language, clarified date-range and customer-drilldown behavior, and refreshed import/review guidance for the current beta UI)_
+_Last updated: 2026-04-03 (Session 25 — aligned the manual to the current beta navigation, clarified live-refresh and customer-roster behavior, and expanded import guidance around file-path imports and previous-import reopening)_
 
 ---
 
@@ -49,8 +49,8 @@ _Last updated: 2026-04-03 (Session 24 — refined dashboard workflow language, c
 
 The main navigation bar currently contains:
 
-- **Import** — upload a new data file and reopen earlier imports
-- **Dashboard** — your ARR summary, trend charts, and movement analysis for the active import
+- **Import** — upload a new workbook, import by local file path, and reopen earlier imports
+- **Dashboard** — your ARR summary, trend charts, movement analysis, and customer roster for the active import
 - **Review Queue** — rows that need your attention before ARR is finalized
 
 The application header also shows:
@@ -59,7 +59,7 @@ The application header also shows:
 - The current **User** identity attached to uploads and review actions
 - An **Import** selector for reopening a previous import without uploading again
 
-> 💡 **Tip:** In the current beta UI, ARR Movement Analysis is displayed inside the Dashboard page rather than as a separate top-level navigation item.
+> 💡 **Tip:** In the current beta UI, ARR Movement Analysis and customer drill-down are part of the Dashboard workflow rather than separate top-level navigation items.
 > 💡 **Tip:** If you're using the tool for the first time, go to **Import** first. The dashboard and review queue won't show any data until you've uploaded a file.
 
 ---
@@ -167,7 +167,7 @@ Before uploading, check your file against these criteria:
 1. From the main navigation, click **Import**.
 2. Confirm you are in the correct company workspace shown in the page header.
 3. Confirm the **Tenant** shown in the app header is correct before uploading.
-4. Click inside the upload area to browse for a file, or drag and drop your `.xlsx` workbook onto the page.
+4. Click inside the upload area to browse for a file, drag and drop your `.xlsx` workbook onto the page, or enter a local file path if your deployment supports server-side path import.
 5. Wait while the system processes the file. This usually takes a few seconds.
 6. If the import succeeds, the app opens the new import in **Dashboard** automatically.
 7. Review the dashboard summary cards for:
@@ -180,7 +180,9 @@ Before uploading, check your file against these criteria:
 10. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
 11. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 
-> 💡 **Tip:** The Import page may also show recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
+> 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
+
+> 💡 **Tip:** If your team imports the same workbook more than once while testing, use the import date, row count, and import selector together to confirm you're analyzing the right run.
 
 > 💡 **Tip:** After a successful import, check the Review Queue even if there are only a few flagged rows. Unresolved flags can affect the accuracy of your ARR numbers.
 
@@ -222,7 +224,8 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 - **Review Progress** — completion percentage, open issue count, and the most common open issue type
 - **ARR over time** — a monthly trend chart
 - **ARR Movements** — a waterfall view of New, Expansion, Contraction, and Churn
-- **Top customers / live customer roster** — highest-ARR customers for the latest visible period, with quick access into account-level detail
+- **Top customers** — highest-ARR customers for the latest visible period, with quick access into account-level detail
+- **Customer roster** — an API-backed customer list showing current ARR, contract counts, last invoice date, and review attention
 - **Category breakdown** — imported row totals grouped by category
 - **Customer detail drill-down** — open a customer from the dashboard to inspect ARR history, peak ARR, and review attention for the active import
 
@@ -260,14 +263,14 @@ You can download the ARR timeseries data shown on the dashboard as a CSV file fo
 
 ### Opening Customer Detail
 
-1. In the **Top customers** or live customer roster section, click a customer name.
-2. Review the customer's current ARR, peak ARR, and period-by-period history.
+1. In the **Top customers** or **Customer roster** section, click a customer name.
+2. Review the customer's current ARR, peak ARR, period count, and period-by-period history.
 3. Use the history view to spot step changes, drops, or unusual movement for that account.
 4. Check whether the customer has open review attention attached to the current import.
 5. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
 
 > 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
-> 💡 **Tip:** The live customer roster is most useful after a fresh import because it gives you a quick read on which accounts are driving the latest visible ARR.
+> 💡 **Tip:** The customer roster is especially useful when a customer is not in the top-ARR list but still needs operational review because of open flags or recent invoice activity.
 
 ### Understanding the ARR Number
 
