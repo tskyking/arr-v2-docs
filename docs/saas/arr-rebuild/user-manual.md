@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 25 — aligned the manual to the current beta navigation, clarified live-refresh and customer-roster behavior, and expanded import guidance around file-path imports and previous-import reopening)_
+_Last updated: 2026-04-03 (Session 26 — documented live dashboard refresh and CSV export behavior, clarified customer-roster troubleshooting, and refreshed import/dashboard guidance to match the latest beta build)_
 
 ---
 
@@ -228,6 +228,7 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 - **Customer roster** — an API-backed customer list showing current ARR, contract counts, last invoice date, and review attention
 - **Category breakdown** — imported row totals grouped by category
 - **Customer detail drill-down** — open a customer from the dashboard to inspect ARR history, peak ARR, and review attention for the active import
+- **Live refresh / auto-refresh controls** — in current beta builds, dashboard cards and charts can refresh automatically so you can see import and review changes without manually reloading the page
 
 ### Using the Date Range Filter
 
@@ -243,10 +244,8 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 
 You can download the ARR timeseries data shown on the dashboard as a CSV file for use in Excel, Google Sheets, or other tools.
 
-<!-- TODO: add when dashboard CSV export control is exposed in the frontend -->
-
 1. Set your desired date range using the **From** and **To** selectors.
-2. Use the ARR CSV export control when it is available in your deployment.
+2. Click the ARR CSV export control on the dashboard.
 3. A `.csv` file will download to your computer.
 4. Open the file in Excel, Google Sheets, or another spreadsheet tool to analyze the exported period-by-period ARR data.
 
@@ -260,6 +259,18 @@ You can download the ARR timeseries data shown on the dashboard as a CSV file fo
 > 💡 **Tip:** The CSV export reflects the same data range and filters as what's currently shown on the dashboard. Adjust your date range before exporting if you need a specific window.
 
 > ⚠️ **Warning:** The export contains calculated ARR data, not raw invoice rows.
+
+### Using Live Refresh
+
+If your deployment has live refresh enabled, the dashboard can update summary cards and charts automatically after an import finishes or after review items are resolved.
+
+1. Confirm you are viewing the correct import in the header.
+2. Leave the dashboard open while the import completes or while a teammate works through review items.
+3. Watch for summary cards, trend charts, or review-progress counts to update.
+4. If something still looks stale, manually refresh the browser and confirm the active import/date range.
+
+> 💡 **Tip:** Live refresh is most useful right after a new upload or during review cleanup, when totals and issue counts may change several times in a short window.
+> ⚠️ **Warning:** Live refresh does not replace checking your active import and date range. If numbers look wrong, verify context first.
 
 ### Opening Customer Detail
 
@@ -431,7 +442,7 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 ### The dashboard shows no data after import
 
-**Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state, or the active import in the header is not the one you just uploaded.
+**Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state, the active import in the header is not the one you just uploaded, or live refresh has not yet caught up.
 **Fix:** Refresh the page. Then confirm the active import in the header or reopen the expected import from the Import page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
 
 ### My imported customers are not showing in the live customer roster
@@ -503,6 +514,15 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 **Cause:** The export reflects the date range currently selected in the dashboard filter, not automatically the full range of your imported data.
 **Fix:** Before clicking Export CSV, make sure the dashboard filter shows the full period you want. The export will match the active dashboard range.
+
+### My dashboard numbers changed while I was viewing the page
+
+**Cause:** Live refresh may be enabled, and the active import or its review state changed while you were on the dashboard.
+**Fix:**
+1. Check the active import in the header.
+2. Reconfirm the current date range.
+3. Review the Review Progress card for updated open/resolved counts.
+4. Re-export CSV if you need a file that matches the newest visible totals exactly.
 
 ### The CSV export file opens with garbled text
 

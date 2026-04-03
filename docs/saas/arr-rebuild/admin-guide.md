@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 25 — aligned admin guidance to the current beta UI, clarified tenant/user header behavior and path-based imports, and refreshed notes on customer-roster troubleshooting)_
+_Last updated: 2026-04-03 (Session 26 — documented live dashboard refresh and active CSV exports, refreshed tenant/admin notes for the latest beta UI, and clarified operational troubleshooting around import and customer views)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -182,6 +182,8 @@ ARR V2 supports two CSV export endpoints. Both are tenant-scoped (under `/tenant
 | Null guard | NaN and `undefined` values are coerced to `0` before output |
 | Returns `null` | If the importId is unknown to the tenant |
 
+These exports are now surfaced in the current dashboard workflow, so admins can validate the active import visually and then download tenant-scoped CSV output without leaving the reporting flow.
+
 **Movement Analysis Export (`exportMovementsCsv`)**
 
 | Detail | Value |
@@ -261,6 +263,19 @@ The current QA coverage verifies both the fast `Content-Length` rejection path a
 ### Customer ARR History Sort Order
 
 When using the customer detail view from the dashboard or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
+
+### Dashboard Refresh Behavior
+
+Current beta builds include live dashboard refresh behavior. Admins should expect summary cards, review-progress counts, and some chart data to update automatically after a successful import or after review actions change the state of the active import.
+
+Operational guidance:
+
+1. Confirm the active tenant and import shown in the header.
+2. Wait briefly for the dashboard to refresh before assuming data is missing.
+3. If counts still look stale, manually refresh the browser.
+4. If exported CSV does not match what you expected, re-check the date range and active import, then export again.
+
+> ⚠️ **Warning:** Auto-refresh improves feedback, but it is not a security or attribution boundary. Header tenant/user context still determines which tenant-scoped data and actions you are seeing.
 
 ### Missing Customer in Dashboard Investigation
 
@@ -620,7 +635,7 @@ The policy is defined in the tenant's **Recognition Assumptions sheet** (in the 
 
 ### Current UI Status
 
-As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards, issue summaries, and live customer roster links so admins can assess cleanup status and jump into account-level investigation before entering the Review Queue.
+As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards, issue summaries, live customer roster links, live refresh behavior, and active CSV exports so admins can assess cleanup status and jump into account-level investigation before entering the Review Queue.
 
 > ⚠️ **Warning:** The current Tenant and User fields in the header are browser-side beta controls, not a hardened authentication boundary. They are useful for workflow testing and attribution in the current build, but production auth and role enforcement still need hardening.
 
