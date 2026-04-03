@@ -30,10 +30,13 @@
     ul.checklist li::before { content: '☐ '; color: var(--accent); }
     .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: #dbeafe; color: #1d4ed8; margin-right: 4px; }
     .last-updated { font-size: 12px; color: var(--muted); }
+    .back-top { text-align: right; margin-top: 18px; font-size: 12px; }
+    .back-top a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .back-top a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-<div class="wrap" style="padding-top:92px">
+<div class="wrap" id="top" style="padding-top:92px">
 
   <div style="position:fixed;top:14px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
     <a href="https://tskyking.github.io/arr-v2-docs/saas/arr-rebuild/dashboard-view/" style="display:inline-block;padding:8px 18px;background:#2563eb;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;letter-spacing:0.01em;box-shadow:0 2px 8px rgba(37,99,235,0.25)">🛠️ Dev Dashboard →</a>
@@ -59,6 +62,7 @@
       <li><a href="#glossary">Glossary</a></li>
       <li><a href="#example-gui-screens">Example GUI Screen Shots</a></li>
     </ol>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="intro">
@@ -75,6 +79,7 @@
       <li>It does not connect directly to QuickBooks, Salesforce, or other systems — you export a file and upload it</li>
       <li>It does not send invoices or manage billing</li>
     </ul>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="start">
@@ -94,6 +99,7 @@
       <li><strong>Movements</strong> — waterfall breakdown of ARR changes over time</li>
     </ul>
     <blockquote>💡 <strong>Tip:</strong> If you're using the tool for the first time, go to <strong>Import</strong> first. The dashboard and review queue won't show any data until you've uploaded a file.</blockquote>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="import">
@@ -166,6 +172,7 @@
       <tr><td>Could not find product/service mapping sheet</td><td>Missing sheet</td><td>Add mapping sheet</td></tr>
       <tr><td>Could not find recognition assumptions sheet</td><td>Missing sheet</td><td>Add assumptions sheet</td></tr>
     </table>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="dashboard">
@@ -179,6 +186,7 @@
       <li>A $1,200/month subscription → $14,400/year ARR</li>
       <li>A one-time setup fee → $0 ARR</li>
     </ul>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="customers">
@@ -197,6 +205,7 @@
     </ul>
     <blockquote>💡 <strong>Tip:</strong> Peak ARR is a useful reference point during renewal conversations. A current ARR well below peak often signals contraction worth investigating.</blockquote>
     <blockquote class="warn">⚠️ The customer list reflects the <strong>current import</strong>. Make sure you're viewing the right import for the period you're analyzing.</blockquote>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="review">
@@ -229,6 +238,7 @@
       <li>Choose <strong>Resolve</strong> (accept as-is) or <strong>Override</strong> (enter correct value).</li>
     </ol>
     <blockquote class="warn">⚠️ <strong>Important:</strong> Overrides are tied to the specific import they were applied to. If you re-import a corrected workbook, you must re-apply overrides — they do not carry forward automatically.</blockquote>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="movements">
@@ -243,6 +253,7 @@
       <tr><td><strong>Churn</strong></td><td>ARR lost from customers who left entirely</td></tr>
     </table>
     <p>Formula: <code>Closing ARR = Opening ARR + New + Expansion − Contraction − Churn</code></p>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="roles">
@@ -254,6 +265,7 @@
       <tr><td><strong>Admin</strong></td><td>All Analyst permissions + manage users, configure ARR policies, apply overrides</td></tr>
     </table>
     <blockquote>💡 Role definitions are subject to finalization as the auth system is completed.</blockquote>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="troubleshoot">
@@ -264,6 +276,7 @@
     <p><strong>Fix:</strong> Check the Review Queue for unresolved flags. Verify recognition assumptions are correct.</p>
     <h3>Unexpected error on upload</h3>
     <p><strong>Fix:</strong> Try again. If it persists, re-export from QuickBooks and try the fresh file.</p>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="glossary">
@@ -276,6 +289,7 @@
     <p><strong>Review Item / Flag</strong> — A row the system couldn't process with full confidence.</p>
     <p><strong>Waterfall Chart</strong> — Shows how ARR moved period-to-period, broken down by New, Expansion, Contraction, and Churn.</p>
     <p><strong>Workbook</strong> — An Excel <code>.xlsx</code> file with the three required sheets.</p>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
   <div class="section" id="example-gui-screens">
@@ -304,6 +318,7 @@
     <p><a href="https://tskyking.github.io/arr-v2-docs/saas/arr-rebuild/docs/">Open User Manual</a></p>
 
     <blockquote class="warn">⚠️ <strong>Note:</strong> The GUI demo is currently a static preview for review and walkthrough purposes. It shows the interface shape and flow, but not the full hosted backend behavior yet.</blockquote>
+    <div class="back-top"><a href="#top">Back to top ↑</a></div>
   </div>
 
 </div>
