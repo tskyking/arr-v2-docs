@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 29 — expanded tenant/import attribution guidance and sharpened customer-route isolation notes for admins and SUs)_
+_Last updated: 2026-04-03 (Session 30 — refined admin import verification and review-completion operating guidance for the current beta workflow)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -146,7 +146,7 @@ Client data is loaded via the **Import** function within a client's tenant conte
 3. Verify the tenant and user identity shown in the header.
 4. Confirm the user identity is the correct attributable operator before uploading, resolving review items, or applying overrides.
 5. Upload the client's `.xlsx` workbook using file selection, drag-and-drop, or a trusted server-local file path if that deployment flow is enabled.
-6. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, and visible date range.
+6. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, visible date range, and the import timestamp you expect to be working from.
 7. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
 8. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
 9. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
@@ -155,6 +155,7 @@ Client data is loaded via the **Import** function within a client's tenant conte
 12. Expect customer ARR history to be returned in chronological order for the active import.
 13. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
 14. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
+15. Before reporting results back to a client, confirm whether review items are still open. A clean import summary does not necessarily mean the review workflow is complete.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -269,6 +270,18 @@ The current QA coverage verifies both the fast `Content-Length` rejection path a
 ### Customer ARR History Sort Order
 
 When using the customer detail view from the dashboard or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
+
+### Post-Import Operational Check
+
+After any import, use this short admin verification loop before you report numbers externally:
+
+1. Confirm the tenant, user attribution, and active import in the header.
+2. Confirm the dashboard summary cards roughly match the workbook you expected to upload.
+3. Check **Review Progress** and note whether any Error-level work is still open.
+4. Open the customer roster or top-customer list and spot-check one or two expected accounts.
+5. Export CSV only after confirming the import and date range are correct.
+
+> ⚠️ **Warning:** It is easy in a multi-import tenant to export the wrong run if you skip header verification. Treat import ID and date range as part of every reporting checklist.
 
 ### Dashboard Refresh Behavior
 

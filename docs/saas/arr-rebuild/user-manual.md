@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 29 — tightened import/context guidance and expanded customer roster/detail notes based on current tenant-scoped customer route coverage)_
+_Last updated: 2026-04-03 (Session 30 — refined import verification and dashboard/review follow-up guidance based on the current beta workflow)_
 
 ---
 
@@ -179,7 +179,8 @@ Before uploading, check your file against these criteria:
 9. Check the **Review Progress** section on the dashboard to see how many items are still open, the completion percentage, and which issue types are most common.
 10. Open **Review Queue** to resolve any flagged rows.
 11. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
-12. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
+12. After the dashboard opens, verify the latest ARR, active customers, rows imported, and review-item count before sharing results with anyone else.
+13. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -217,6 +218,8 @@ If you see "An unexpected error occurred while reading the workbook," please try
 The **Dashboard** shows your ARR at a glance. It is the starting point for understanding your recurring revenue health and trend over time.
 
 ### What You'll See
+
+Start each dashboard review by confirming the active import and date range shown in the page header. Most apparent reporting mismatches in the current beta come from looking at the wrong import or a narrower-than-expected period window.
 
 - **Latest ARR** — your current annualized recurring revenue for the active import
 - **Active Customers** — the customer count in the latest visible period
@@ -355,6 +358,15 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 > ⚠️ **Important:** Overrides are tied to the specific import they were applied to. If you upload a corrected workbook (re-import), the overrides you applied to the previous import **do not carry forward** to the new one. You will need to re-apply any overrides after each re-import.
 >
 > **Best practice:** Fix data issues in the source workbook and re-import a clean file, rather than relying on overrides to patch a recurring problem. Overrides are for exceptions, not systematic corrections.
+
+### Review Workflow Best Practice
+
+1. Resolve **Error** items first, because those rows are excluded from ARR until handled.
+2. Then review **Warning** items, especially missing subscription dates and negative amounts.
+3. Use the dashboard's **Review Progress** summary to confirm the open count is dropping as expected.
+4. Before final sign-off, reopen the dashboard and confirm totals using the same import you just cleaned up.
+
+> 💡 **Tip:** If the dashboard still looks unchanged right after review work, give live refresh a moment or manually reload the page before assuming the review action failed.
 
 ### Bulk Resolve
 
