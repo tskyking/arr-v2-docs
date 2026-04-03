@@ -54,6 +54,84 @@
 
 .tableCard { margin-bottom: 20px; }
 
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+}
+
+.inlineLink {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
+
+.reviewPanels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.reviewPanel {
+  padding: 18px;
+}
+
+.panelTitle {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.issueList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.issueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.issueRow:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.issueLabel {
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.issueCount {
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.emptyState {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* ─── Date range filter ─────────────────────────────────────────────── */
 
 .filterRow {
@@ -97,4 +175,15 @@
   font-size: 12px;
   color: var(--text-muted);
   margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .reviewPanels {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

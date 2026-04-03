@@ -2,7 +2,7 @@
  * Thin React hooks wrapping the API client.
  */
 import { useEffect, useState, useCallback } from 'react';
-import type { ImportListItem, ImportSummary, ArrTimeseries, ReviewQueue } from './api';
+import type { ImportListItem, ImportSummary, ArrTimeseries, ReviewQueue, ReviewStats } from './api';
 import * as api from './api';
 import { useArrSettings } from './settings';
 
@@ -53,6 +53,11 @@ export function useArrTimeseries(importId: string, from?: string | null, to?: st
 export function useReviewQueue(importId: string, status?: string) {
   const { tenantId } = useArrSettings();
   return useAsync<ReviewQueue>(() => api.getReviewQueue(importId, status), [tenantId, importId, status]);
+}
+
+export function useReviewStats(importId: string) {
+  const { tenantId } = useArrSettings();
+  return useAsync<ReviewStats>(() => api.getReviewStats(importId), [tenantId, importId]);
 }
 
 export function useArrMovements(importId: string, from?: string | null, to?: string | null) {

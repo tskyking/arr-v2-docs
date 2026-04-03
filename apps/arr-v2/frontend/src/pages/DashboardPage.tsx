@@ -8,7 +8,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
 } from 'recharts';
-import { useImportSummary, useArrTimeseries, useArrMovements } from '@/lib/hooks';
+import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats } from '@/lib/hooks';
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
 import { useArrSettings } from '@/lib/settings';
 import styles from './DashboardPage.module.css';
@@ -82,6 +82,7 @@ export default function DashboardPage() {
     fromParam,
     toParam,
   );
+  const { data: reviewStats, loading: reviewStatsLoading, error: reviewStatsErr } = useReviewStats(importId!);
 
   if (sumLoading) return <div className="loading">Loading summary…</div>;
   if (sumErr) return <div className="error-banner">Summary error: {sumErr}</div>;
@@ -110,6 +111,10 @@ export default function DashboardPage() {
   const topCustomers = (latestPeriod?.byCustomer ?? [])
     .filter(c => c.arr > 0)
     .slice(0, 10);
+
+  const reviewCompletion = reviewStats && reviewStats.total > 0
+    ? Math.round(((reviewStats.resolvedCount + reviewStats.overriddenCount) / reviewStats.total) * 100)
+    : null;
 
   return (
     <div>
@@ -194,6 +199,77 @@ export default function DashboardPage() {
           sub={`${summary.reviewItems} need review · ${summary.skippedRows} skipped`}
         />
       </div>
+
+      {/* Review progress */}
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.sectionTitle}>Review Progress</h2>
+        <Link to={`/review/${importId}`} className={styles.inlineLink}>Open review queue →</Link>
+      </div>
+
+      {reviewStatsLoading && <div className={styles.tsLoading}>Loading review stats…</div>}
+      {reviewStatsErr && <div className="error-banner">Review stats error: {reviewStatsErr}</div>}
+      {reviewStats && (
+        <>
+          <div className={styles.statGrid}>
+            <StatCard
+              label="Review Completion"
+              value={reviewCompletion !== null ? `${reviewCompletion}%` : '—'}
+              sub={reviewStats.allResolved ? 'All items cleared' : `${reviewStats.openCount} still open`}
+            />
+            <StatCard
+              label="Open Issues"
+              value={reviewStats.openCount.toLocaleString()}
+              sub={`${reviewStats.errorCount} errors · ${reviewStats.warningCount} warnings`}
+            />
+            <StatCard
+              label="Resolved"
+              value={reviewStats.resolvedCount.toLocaleString()}
+              sub={`${reviewStats.overriddenCount} overridden`}
+            />
+            <StatCard
+              label="Most Common Issue"
+              value={reviewStats.openByReasonCode[0]?.reasonCode ?? '—'}
+              sub={reviewStats.openByReasonCode[0] ? `${reviewStats.openByReasonCode[0].count} open items` : 'No open issues'}
+            />
+          </div>
+
+          {(reviewStats.openByReasonCode.length > 0 || reviewStats.topCustomersWithIssues.length > 0) && (
+            <div className={styles.reviewPanels}>
+              <div className={`card ${styles.reviewPanel}`}>
+                <h3 className={styles.panelTitle}>Open Issues by Reason</h3>
+                {reviewStats.openByReasonCode.length === 0 ? (
+                  <div className={styles.emptyState}>No open issues.</div>
+                ) : (
+                  <div className={styles.issueList}>
+                    {reviewStats.openByReasonCode.slice(0, 6).map(item => (
+                      <div key={item.reasonCode} className={styles.issueRow}>
+                        <span className={styles.issueLabel}>{item.reasonCode}</span>
+                        <span className={styles.issueCount}>{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={`card ${styles.reviewPanel}`}>
+                <h3 className={styles.panelTitle}>Customers With Open Issues</h3>
+                {reviewStats.topCustomersWithIssues.length === 0 ? (
+                  <div className={styles.emptyState}>No customers blocked.</div>
+                ) : (
+                  <div className={styles.issueList}>
+                    {reviewStats.topCustomersWithIssues.slice(0, 6).map(item => (
+                      <div key={item.customerName} className={styles.issueRow}>
+                        <span className={styles.issueLabel}>{item.customerName}</span>
+                        <span className={styles.issueCount}>{item.openCount}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* ARR timeseries chart */}
       {chartData.length > 0 && (

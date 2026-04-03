@@ -147,12 +147,30 @@ export interface ReviewQueue {
   resolvedCount: number;
 }
 
+export interface ReviewStats {
+  importId: string;
+  total: number;
+  openCount: number;
+  resolvedCount: number;
+  overriddenCount: number;
+  errorCount: number;
+  warningCount: number;
+  openByReasonCode: Array<{ reasonCode: string; count: number }>;
+  openBySeverity: Array<{ severity: string; count: number }>;
+  topCustomersWithIssues: Array<{ customerName: string; openCount: number }>;
+  allResolved: boolean;
+}
+
 export async function getReviewQueue(
   importId: string,
   status?: string,
 ): Promise<ReviewQueue> {
   const qs = status ? `?status=${status}` : '';
   return request<ReviewQueue>(`/imports/${importId}/review${qs}`);
+}
+
+export async function getReviewStats(importId: string): Promise<ReviewStats> {
+  return request<ReviewStats>(`/imports/${importId}/review/stats`);
 }
 
 export async function resolveReviewItem(
