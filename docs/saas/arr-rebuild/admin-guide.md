@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 19 — aligned guide to current beta UI, dashboard review-progress cards, and active import workflow)_
+_Last updated: 2026-04-03 (Session 20 — aligned SU/admin guidance to the current tenant-aware beta, clarified import/export details, and tightened separation from the end-user manual)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -489,7 +489,7 @@ If you ever want to verify isolation for a client:
 
 1. Note the client's tenant ID.
 2. Attempt to access another tenant's API route using that tenant ID.
-3. The server should return `403 Forbidden` or `404 Not Found`.
+3. The server should return `404 Not Found` for real import IDs that do not belong to that tenant, or `400 INVALID_TENANT_ID` when the tenant ID itself is malformed.
 
 > 💡 **Tip:** Periodic spot-checks of isolation are good practice before onboarding sensitive clients. If you ever see data that doesn't belong to the current tenant context in the UI, treat this as a critical security incident and report it immediately.
 
@@ -603,7 +603,11 @@ The policy is defined in the tenant's **Recognition Assumptions sheet** (in the 
 
 ### Current UI Status
 
-As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards and issue summaries so admins can assess cleanup status before entering the Review Queue. Screenshots and final UI notes will be added when the UI is stable enough for formal delivery.
+As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards and issue summaries so admins can assess cleanup status before entering the Review Queue.
+
+> ⚠️ **Warning:** The current Tenant and User fields in the header are browser-side beta controls, not a hardened authentication boundary. They are useful for workflow testing and attribution in the current build, but production auth and role enforcement still need hardening.
+
+Screenshots and final UI notes will be added when the UI is stable enough for formal delivery.
 
 ### Supported Recognition Rule Types
 
@@ -777,6 +781,17 @@ Processed import data (JSON) is stored on the server's file system. Encryption a
 All API communication should be over HTTPS. HTTP access to production instances should be rejected or redirected.
 
 <!-- TODO: TLS configuration details to be documented when hosting setup is finalized -->
+
+### Current Hardening Gaps
+
+The current QA summary still lists several post-MVP or hardening items that admins should treat as open:
+
+1. Real HTTP-level success-path upload testing for a valid workbook is still not covered end-to-end.
+2. Duplicate invoice detection is still a product/open-design question.
+3. Multi-tenant concurrent-write isolation is not yet explicitly tested.
+4. Production authentication, MFA, and session enforcement are not finalized.
+
+> ⚠️ **Warning:** This means the current build is suitable for guided beta use and documentation prep, but not yet for a fully hardened production rollout without additional auth, audit, and concurrency validation work.
 
 ### Access Controls
 

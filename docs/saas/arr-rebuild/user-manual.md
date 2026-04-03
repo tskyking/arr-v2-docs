@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 19 — aligned docs to current beta UI, dashboard review progress panels, date presets, and review queue workflow details)_
+_Last updated: 2026-04-03 (Session 20 — tightened end-user/admin separation, aligned import/dashboard/review docs to the current beta workflow, and clarified CSV/export and re-import behavior)_
 
 ---
 
@@ -237,19 +237,22 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 
 You can download the ARR timeseries data shown on the dashboard as a CSV file for use in Excel, Google Sheets, or other tools.
 
+<!-- TODO: add when dashboard CSV export control is exposed in the frontend -->
+
 1. Set your desired date range using the **From** and **To** selectors.
-2. Click the **Export CSV** button (near the top of the dashboard).
+2. Use the ARR CSV export control when it is available in your deployment.
 3. A `.csv` file will download to your computer.
 
 **What the export contains:**
 - One row per period (month), in `YYYY-MM` format
-- One column per revenue category (e.g., Dashboard Subscription, Website Hosting), sorted alphabetically
-- One column per customer (if customer-level export is available), sorted alphabetically
-- All values are numeric — no blank or missing cells in the data area
+- Standard columns for `period`, `total_arr`, and `active_customers`
+- Additional columns for revenue categories, sorted alphabetically
+- Additional columns for customers, sorted alphabetically
+- Numeric values only in the data area
 
 > 💡 **Tip:** The CSV export reflects the same data range and filters as what's currently shown on the dashboard. Adjust your date range before exporting if you need a specific window.
 
-> ⚠️ **Warning:** The export contains calculated ARR data, not raw invoice rows. If you need the raw invoice data, export before clearing from the Reset Data workflow (see Section 8).
+> ⚠️ **Warning:** The export contains calculated ARR data, not raw invoice rows.
 
 ### Understanding the ARR Number
 
@@ -434,13 +437,17 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 2. Review the recognition assumptions sheet in your workbook — make sure the rules for each category are correct.
 3. If a specific customer or product looks off, look for rows flagged with `MISSING_PRODUCT_SERVICE_MAPPING` or `MISSING_SUBSCRIPTION_DATES_FOR_RECURRING_ITEM`.
 
-### I want to start over with a corrected data file
+### I want to re-import a corrected data file
 
-**Situation:** You've already imported data but discovered errors in the source workbook, and you want to replace everything with a clean version.  
+**Situation:** You've already imported data but discovered errors in the source workbook, and you want the dashboard and review queue to reflect the corrected file.  
 **Fix:**
-1. Ask your Administrator to use the **Reset Data** function under Settings (Admin only).
-2. When prompted, choose **Export current data** first — this gives you a downloadable workbook you can use as a starting point for corrections.
-3. After the reset, go to **Import** and upload your corrected `.xlsx` file.
+1. Correct the workbook in Excel or in the source accounting export.
+2. Return to **Import**.
+3. Upload the corrected `.xlsx` workbook as a new import.
+4. Open the new import from **Previous Imports** or from the header import selector.
+5. Re-check the **Review Queue** and re-apply any needed overrides.
+
+> ⚠️ **Warning:** Overrides are tied to a specific import. If you upload a corrected workbook, overrides from the prior import do not automatically carry forward.
 
 ---
 
@@ -497,16 +504,13 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 The annualized value of your active recurring subscriptions. A subscription worth $500/month contributes $6,000 to ARR. One-time fees are not included.
 
 **Billing Schedule**  
-A planned or actual sequence of billing events for a customer's contract — for example, an annual invoice billed in January. In future versions of ARR V2, the system will reconcile planned billing against actual invoices. For now, billing data flows in through your QuickBooks export.
+A planned or actual sequence of billing events for a customer's contract — for example, an annual invoice billed in January. In the current workflow, billing detail reaches ARR V2 through the workbook you import.
 
 **Contract**  
-The commercial agreement between your organization and a customer. A contract defines the term (start/end dates), scope (which Sites it covers), renewal terms, and billing method. In ARR V2, contracts are the structure that ties together individual product/service subscription lines and drives ARR recognition.
-
-**Contract Amendment**  
-A tracked change to an existing contract — such as an expansion, contraction, repricing, or early termination. Contract amendments are important because they explain *why* ARR moved in a given period. ARR V2 will surface contract amendment history in future versions.
+The commercial agreement between your organization and a customer. In practice, ARR V2 infers recurring-revenue behavior from imported transaction rows, product/service mappings, and recognition assumptions.
 
 **Contract Line**  
-A single product or service item within a contract — also called a SKU or subscription line. Each contract line has its own start and end date, quantity, price, and revenue recognition method. A customer with multiple product subscriptions will have one contract line per product.
+A single product or service item within an imported record or customer subscription. Each line contributes to ARR based on its dates, amount, category mapping, and recognition rule.
 
 **Churn**  
 When a customer cancels or does not renew, and their ARR drops to zero.
@@ -515,7 +519,7 @@ When a customer cancels or does not renew, and their ARR drops to zero.
 When an existing customer's subscription value decreases (but they don't fully cancel).
 
 **Customer Type**  
-A classification applied to a customer or contract that affects how their ARR is categorized in reporting — for example, Enterprise vs. Self-Serve. Customer type affects segmentation in movement analysis and board-level reporting. Administrators can adjust customer type classifications with an audit trail.
+A classification used to group customers for reporting — for example, Enterprise vs. Self-Serve. <!-- TODO: add when customer segmentation is exposed in the product -->
 
 **Expansion**  
 When an existing customer's subscription value increases (upgrade, add-on, seat increase, etc.).
@@ -527,10 +531,10 @@ The process of uploading an Excel workbook containing your invoice and subscript
 The date an invoice was issued to a customer. Used as a fallback when subscription dates are not provided.
 
 **Logo**  
-The parent commercial customer or enterprise entity. A Logo may have multiple Sites (subsidiaries, billing entities, locations). ARR is rolled up to the Logo level for account-level reporting.
+The parent commercial customer or enterprise entity. A Logo may have multiple Sites (subsidiaries, billing entities, or locations).
 
-**Monthly Override**  
-An admin-level adjustment to the ARR calculated for a specific contract line in a specific month. All overrides are logged for audit purposes.
+**Override**  
+A reviewed exception applied to a flagged item when the imported source data needs a one-off correction or annotation. Overrides are scoped to a specific import.
 
 **CSV Export**  
 A downloadable file containing your calculated ARR or movement data in comma-separated values format, suitable for use in Excel, Google Sheets, or other analysis tools. Two export types are available: ARR timeseries (one row per month, one column per category or customer) and Movement analysis (one row per month plus a TOTAL summary row).
@@ -539,7 +543,7 @@ A downloadable file containing your calculated ARR or movement data in comma-sep
 *(Not yet in-product — for reference)* A metric that shows how much ARR you retain from existing customers over time, including expansion and contraction. NRR > 100% means your existing customers are growing faster than they churn.
 
 **Recurrence Type**  
-A classification on each contract line that determines how it contributes to ARR: `recurring` (counted in ARR), `non_recurring` (excluded from ARR, recognized immediately), or `hybrid` (partially recurring). The product/service mapping and recognition assumptions in your workbook determine how the system assigns recurrence type to each row.
+A classification that determines how a line contributes to ARR: `recurring` items count toward ARR, while `non_recurring` items do not. The product/service mapping and recognition assumptions in your workbook drive this behavior.
 
 **Normalization**  
 The process the system uses to clean, parse, and standardize the raw data in your workbook before calculating ARR.
@@ -563,16 +567,4 @@ The period of time covered by a subscription, defined by a start date and end da
 A chart that shows how ARR moved from one period to the next, broken down by New, Expansion, Contraction, and Churn components.
 
 **Workbook**  
-An Excel `.xlsx` file containing the three required sheets: transaction detail, product/service mapping, and recognition assumptions.
-
-**Two-Step Override Approval**  
-An optional workflow where a submitted ARR override must be reviewed and approved by a second authorized user before it takes effect. Whether this is enabled depends on your organization's configuration.
-
-**Business Note** *(planned feature — not yet in-product)*  
-An operational comment or annotation that can be attached to a customer, contract, or review item. Business Notes are for team communication within the platform — for example, flagging a pending renewal, logging a known issue, or leaving context for a colleague. Unlike the audit log, notes can be marked resolved or informational. This feature is planned for a future release.
-
-**Renewal ARR Delta** *(planned feature — not yet in-product)*  
-The change in ARR at the point of contract renewal — a positive number means the customer expanded at renewal, a negative number means they contracted. This field will be visible in the Contract Line detail view in a future version. Tracking renewal ARR delta over time helps identify accounts where ARR is eroding at renewal, even when they don't fully churn.
-
-**Workbook (re-importable)**  
-When you export your data before a reset, the exported file is formatted as a re-importable workbook — meaning it has the same three-sheet structure (transaction detail, product/service mapping, recognition assumptions) as the original file you uploaded. You can open it in Excel, correct any errors, and re-upload it using the standard import flow.
+An Excel `.xlsx` file containing the sheets and columns ARR V2 needs in order to process transaction data, map products/services, and apply recognition rules.
