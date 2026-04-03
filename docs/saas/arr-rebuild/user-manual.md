@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 13 — Operational Notes forward-look added to Customer Explorer; Glossary expanded with Business Note, Renewal ARR Delta, and Operational Note terms)_
+_Last updated: 2026-04-02 (Session 14 — CSV export documented for ARR Dashboard and Movement Analysis; export glossary entry added; troubleshooting expanded for export scenarios)_
 
 ---
 
@@ -215,6 +215,24 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 
 > 💡 **Tip:** ARR is calculated as of the **end of each month**. The "current ARR" figure reflects the most recent month in your imported data.
 
+### Exporting ARR Data to CSV
+
+You can download the ARR timeseries data shown on the dashboard as a CSV file for use in Excel, Google Sheets, or other tools.
+
+1. Set your desired date range using the **From** and **To** selectors.
+2. Click the **Export CSV** button (near the top of the dashboard).
+3. A `.csv` file will download to your computer.
+
+**What the export contains:**
+- One row per period (month), in `YYYY-MM` format
+- One column per revenue category (e.g., Dashboard Subscription, Website Hosting), sorted alphabetically
+- One column per customer (if customer-level export is available), sorted alphabetically
+- All values are numeric — no blank or missing cells in the data area
+
+> 💡 **Tip:** The CSV export reflects the same data range and filters as what's currently shown on the dashboard. Adjust your date range before exporting if you need a specific window.
+
+> ⚠️ **Warning:** The export contains calculated ARR data, not raw invoice rows. If you need the raw invoice data, export before clearing from the Reset Data workflow (see Section 8).
+
 ### Understanding the ARR Number
 
 ARR represents the annualized value of your active recurring subscriptions. It is **not** the same as your cash collected or your invoiced revenue in a given month. For example:
@@ -397,6 +415,27 @@ Below the chart, you'll see totals across your entire selected date range:
 
 > 💡 **Tip:** High churn + high new ARR can look like a stable business on the dashboard, but the Movements page will reveal the underlying churn. Watch both.
 
+### Exporting Movement Data to CSV
+
+The movement analysis can be exported as a CSV file for offline analysis or sharing with stakeholders.
+
+1. Set your desired date range.
+2. Click **Export CSV** on the Movements page.
+3. A `.csv` file will download to your computer.
+
+**What the movements export contains:**
+- One row per period (month), in `YYYY-MM` format
+- Columns: Period, Opening ARR, New, Expansion, Contraction, Churn, Closing ARR, Net Movement
+- A **TOTAL** row at the bottom summarizing cumulative values across all periods
+- All numeric values — no blank or undefined cells
+
+**The net movement invariant:**  
+In every row (including TOTAL), the following always holds:  
+`Closing ARR = Opening ARR + New + Expansion − Contraction − Churn`  
+If this equation doesn't balance in your downstream analysis, check for rounding or formula errors in your spreadsheet — the exported data is always internally consistent.
+
+> 💡 **Tip:** The TOTAL row is always the last row in the file. If you're processing the CSV programmatically, filter it out before summing movement columns — adding the TOTAL row to per-period values will double-count.
+
 ---
 
 ## 8. User Roles and Permissions
@@ -515,6 +554,16 @@ The exported workbook is formatted to be re-imported directly into ARR V2. You c
 **Cause:** If customers had ARR in a prior import but that import is not currently active, they will appear as "new" in the current import even if they are returning customers.
 **Fix:** This is expected when switching between separate imports. For period-over-period analysis to be meaningful, each import should cover a continuous time range. Consider importing a longer date range in a single workbook rather than multiple short imports.
 
+### My CSV export has the wrong date range
+
+**Cause:** The export reflects the date range currently selected in the dashboard or movements filter, not the full range of your imported data.
+**Fix:** Before clicking Export CSV, make sure the date range selector shows the full period you want. The export will match what's displayed in the UI.
+
+### The CSV export file opens with garbled text
+
+**Cause:** The file is encoded in UTF-8, which some older versions of Excel may not detect automatically when double-clicking a `.csv` file.
+**Fix:** In Excel, use **Data → From Text/CSV** (instead of double-clicking the file) and choose UTF-8 encoding when prompted. Google Sheets handles UTF-8 automatically.
+
 ### My review queue override disappeared after re-importing
 
 **Cause:** Overrides are scoped to a specific import. When you upload a new workbook (re-import), a brand-new import record is created. Overrides from the previous import are not attached to the new one.
@@ -585,6 +634,9 @@ The parent commercial customer or enterprise entity. A Logo may have multiple Si
 
 **Monthly Override**  
 An admin-level adjustment to the ARR calculated for a specific contract line in a specific month. All overrides are logged for audit purposes.
+
+**CSV Export**  
+A downloadable file containing your calculated ARR or movement data in comma-separated values format, suitable for use in Excel, Google Sheets, or other analysis tools. Two export types are available: ARR timeseries (one row per month, one column per category or customer) and Movement analysis (one row per month plus a TOTAL summary row).
 
 **Net Revenue Retention (NRR)**  
 *(Not yet in-product — for reference)* A metric that shows how much ARR you retain from existing customers over time, including expansion and contraction. NRR > 100% means your existing customers are growing faster than they churn.

@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 13 — Added Business Notes model under Section 4 and Section 8; documented renewal_arr_delta field on ContractLine in Section 4; expanded Glossary with BusinessNote and Renewal ARR Delta)_
+_Last updated: 2026-04-02 (Session 14 — Added CSV export technical details; documented tenantId validation rules; added test coverage summary for admin reference; clarified export column sort and TOTAL row behavior)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -152,6 +152,41 @@ Each client can have multiple import records. Imports are not automatically repl
 - Older imports remain accessible for comparison or audit purposes
 
 > ⚠️ **Warning:** The `removeImport` operation permanently deletes the import record and all associated review overrides. It cannot be undone. Always verify you are removing the correct import ID before confirming.
+
+### CSV Export: Technical Details (Admin Reference)
+
+ARR V2 supports two CSV export endpoints. Both are tenant-scoped (under `/tenants/:tenantId/`) and return UTF-8 encoded CSV with RFC 4180-compliant quoting.
+
+**ARR Timeseries Export (`exportArrCsv`)**
+
+| Detail | Value |
+|---|---|
+| Endpoint | `GET /tenants/:tenantId/imports/:importId/arr.csv` |
+| Period format | `YYYY-MM` |
+| Column sort | Revenue categories and customer names sorted **alphabetically** |
+| Empty cells | Never blank — all data cells contain a numeric value |
+| Null guard | NaN and `undefined` values are coerced to `0` before output |
+| Returns `null` | If the importId is unknown to the tenant |
+
+**Movement Analysis Export (`exportMovementsCsv`)**
+
+| Detail | Value |
+|---|---|
+| Endpoint | `GET /tenants/:tenantId/imports/:importId/movements.csv` |
+| Period format | `YYYY-MM` |
+| Columns | Period, opening_arr, new, expansion, contraction, churn, closing_arr, net_movement |
+| TOTAL row | Always the **last row** in the file; never inline |
+| Net movement invariant | `closing_arr − opening_arr = net_movement` holds in every row, including TOTAL |
+| Returns `null` | If the importId is unknown to the tenant |
+
+**CSV escaping:**  
+Cells containing commas or double-quote characters are wrapped in double quotes per RFC 4180. Double quotes within cell content are escaped as `""`. This is handled automatically — downstream tools that consume CSV (Excel, Python `csv`, Google Sheets) will handle it transparently.
+
+> ⚠️ **Warning:** The TOTAL row in the movements export represents cumulative sums. If you are building a downstream report that aggregates rows, filter out the TOTAL row before summing — including it will double-count values.
+
+> 💡 **Tip:** Both exports scope to a specific `importId`. If a tenant has multiple imports, each import has its own independent export. Always confirm which import the tenant is currently analyzing before directing them to export.
+
+---
 
 ### Import Lifecycle and Best Practices
 
@@ -403,6 +438,37 @@ ARR V2 enforces strict data isolation at multiple layers:
 - A Viewer or Analyst logged into Client A's tenant will never see Client B's data - it is structurally impossible given the data model.
 - A Tenant Admin in Client A cannot query or access Client B's routes, even if they know Client B's tenant ID, because the server checks that their session is authenticated to Client A's context.
 - A SU in Client A's context cannot perform operations on Client B's data in the same API call - they must explicitly exit and switch contexts.
+
+### TenantId Validation Rules
+
+The system enforces strict validation on all `tenantId` values before any file system or data operation occurs. This prevents path traversal, injection attacks, and accidental cross-tenant access.
+
+**Valid tenantId characters:**
+- Lowercase and uppercase letters (a–z, A–Z)
+- Digits (0–9)
+- Hyphens (`-`)
+- Underscores (`_`)
+
+**Rejected characters (returns `400 INVALID_TENANT_ID`):**
+- Dots (`.`) — prevents `..` path traversal
+- Forward or backward slashes
+- Spaces or other whitespace
+- Any special characters not listed above
+
+**Examples:**
+
+| TenantId | Valid? | Reason |
+|---|---|---|
+| `acme-corp` | ✅ Yes | Hyphens allowed |
+| `client_123` | ✅ Yes | Underscores and digits allowed |
+| `client.alpha` | ❌ No | Dot rejected |
+| `client/data` | ❌ No | Slash rejected |
+| `my tenant` | ❌ No | Space rejected |
+| `../evil` | ❌ No | Path traversal rejected |
+
+> ⚠️ **Warning:** TenantId validation is enforced at the route layer, before any file system access. A request with an invalid tenantId is rejected immediately with a `400 INVALID_TENANT_ID` error and is logged. If you see unexpected 400 errors on a client's import attempts, the first thing to check is whether their tenantId was set correctly during onboarding.
+
+> 💡 **Tip:** TenantIds are assigned during onboarding and should not be changed after the first import. Changing a tenantId effectively orphans all existing data under the old ID. Coordinate with the build team if a tenantId rename is ever required.
 
 ### Verifying Isolation
 
