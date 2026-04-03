@@ -49,6 +49,9 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.15;
 }
 
 .statSub {
