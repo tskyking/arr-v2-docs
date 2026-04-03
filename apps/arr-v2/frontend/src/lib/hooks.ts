@@ -4,6 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { ImportListItem, ImportSummary, ArrTimeseries, ReviewQueue } from './api';
 import * as api from './api';
+import { useArrSettings } from './settings';
 
 // Generic async-state hook
 function useAsync<T>(
@@ -32,27 +33,32 @@ function useAsync<T>(
 }
 
 export function useImportList() {
-  return useAsync<ImportListItem[]>(() => api.listImports(), []);
+  const { tenantId } = useArrSettings();
+  return useAsync<ImportListItem[]>(() => api.listImports(), [tenantId]);
 }
 
 export function useImportSummary(importId: string) {
-  return useAsync<ImportSummary>(() => api.getImportSummary(importId), [importId]);
+  const { tenantId } = useArrSettings();
+  return useAsync<ImportSummary>(() => api.getImportSummary(importId), [tenantId, importId]);
 }
 
 export function useArrTimeseries(importId: string, from?: string | null, to?: string | null) {
+  const { tenantId } = useArrSettings();
   return useAsync<ArrTimeseries>(
     () => api.getArrTimeseries(importId, from ?? undefined, to ?? undefined),
-    [importId, from, to],
+    [tenantId, importId, from, to],
   );
 }
 
 export function useReviewQueue(importId: string, status?: string) {
-  return useAsync<ReviewQueue>(() => api.getReviewQueue(importId, status), [importId, status]);
+  const { tenantId } = useArrSettings();
+  return useAsync<ReviewQueue>(() => api.getReviewQueue(importId, status), [tenantId, importId, status]);
 }
 
 export function useArrMovements(importId: string, from?: string | null, to?: string | null) {
+  const { tenantId } = useArrSettings();
   return useAsync<import('./api').ArrMovementsResult>(
     () => api.getArrMovements(importId, from ?? undefined, to ?? undefined),
-    [importId, from, to],
+    [tenantId, importId, from, to],
   );
 }

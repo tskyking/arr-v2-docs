@@ -45,6 +45,11 @@ export interface ImportResult {
   toDate: string;
 }
 
+function normalizeResolvedBy(userEmail?: string): string {
+  const value = userEmail?.trim().toLowerCase();
+  return value || 'user@arr.local';
+}
+
 // ─── Tenant-scoped in-memory store ──────────────────────────────────────────
 //
 // All data is keyed by tenantId at the top level.
@@ -266,6 +271,7 @@ export function patchReviewItem(
   itemId: string,
   action: 'resolve' | 'override',
   note?: string,
+  userEmail?: string,
 ): ReviewItem | null {
   const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
@@ -281,7 +287,7 @@ export function patchReviewItem(
   const override: ReviewOverride = {
     status: action === 'override' ? 'overridden' : 'resolved',
     resolvedAt: new Date().toISOString(),
-    resolvedBy: 'user',  // placeholder until auth is added
+    resolvedBy: normalizeResolvedBy(userEmail),
     overrideNote: note,
   };
   getTenantOverrides(tenantId).set(itemId, override);
@@ -328,6 +334,7 @@ export function bulkResolveReview(
   action: 'resolve' | 'override',
   itemIds?: string[],
   note?: string,
+  userEmail?: string,
 ): { updatedCount: number; items: ReviewItem[] } | null {
   const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
@@ -357,7 +364,7 @@ export function bulkResolveReview(
     const override: ReviewOverride = {
       status: action === 'override' ? 'overridden' : 'resolved',
       resolvedAt: new Date().toISOString(),
-      resolvedBy: 'user',
+      resolvedBy: normalizeResolvedBy(userEmail),
       overrideNote: note,
     };
     tenantOvr.set(target.id, override);

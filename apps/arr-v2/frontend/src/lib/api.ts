@@ -3,11 +3,16 @@
  * All requests go through /api proxy (Vite rewrites to :3001).
  */
 
-const BASE = '/api';
+import { buildApiPath, getArrSettings } from './settings';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  const { userEmail } = getArrSettings();
+  const res = await fetch(buildApiPath(path), {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Email': userEmail,
+      ...options?.headers,
+    },
     ...options,
   });
   if (!res.ok) {
@@ -60,10 +65,14 @@ export async function listImports(): Promise<ImportListItem[]> {
 }
 
 export async function uploadImportFile(file: File): Promise<ImportUploadResult> {
-  const res = await fetch(`${BASE}/imports`, {
+  const { userEmail } = getArrSettings();
+  const res = await fetch(buildApiPath('/imports'), {
     method: 'POST',
     body: file,
-    headers: { 'Content-Type': 'application/octet-stream' },
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'X-User-Email': userEmail,
+    },
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
@@ -164,6 +173,16 @@ export async function overrideReviewItem(
   return request<ReviewItem>(`/imports/${importId}/review/${itemId}`, {
     method: 'PATCH',
     body: JSON.stringify({ action: 'override', note }),
+  });
+}
+
+export async function bulkResolveReviewItems(
+  importId: string,
+  itemIds?: string[],
+): Promise<{ updatedCount: number; items: ReviewItem[] }> {
+  return request<{ updatedCount: number; items: ReviewItem[] }>(`/imports/${importId}/review/bulk-resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'resolve', itemIds }),
   });
 }
 

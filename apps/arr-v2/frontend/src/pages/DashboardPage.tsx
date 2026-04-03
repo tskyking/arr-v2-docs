@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { useImportSummary, useArrTimeseries, useArrMovements } from '@/lib/hooks';
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
+import { useArrSettings } from '@/lib/settings';
 import styles from './DashboardPage.module.css';
 
 function formatArr(n: number) {
@@ -44,6 +45,7 @@ function toMonthStr(s: string): string {
 
 export default function DashboardPage() {
   const { importId } = useParams<{ importId: string }>();
+  const { tenantId } = useArrSettings();
 
   // ─── Date range state ──────────────────────────────────────────────────
   const [preset, setPreset] = useState<Preset>('all');
@@ -115,7 +117,8 @@ export default function DashboardPage() {
         <div>
           <h1 className={styles.heading}>ARR Dashboard</h1>
           <p className={styles.sub}>
-            Import: <span className={styles.mono}>{importId?.slice(0, 8)}…</span>{' '}
+            Tenant: <span className={styles.mono}>{tenantId}</span>
+            {' '}· Import: <span className={styles.mono}>{importId?.slice(0, 8)}…</span>{' '}
             · {new Date(summary.importedAt).toLocaleString()}
           </p>
         </div>

@@ -11,6 +11,17 @@
   margin-bottom: 24px;
 }
 
+.tenantTag {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(99,102,241,0.12);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .dropzone {
   border: 2px dashed var(--border);
   border-radius: var(--radius);

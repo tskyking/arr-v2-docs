@@ -72,6 +72,8 @@
   align-items: center;
   gap: 8px;
   margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .selectLabel {
@@ -87,6 +89,23 @@
   font-size: 12px;
   padding: 4px 8px;
   max-width: 240px;
+}
+
+.textInput {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.textInput:first-of-type {
+  width: 112px;
+}
+
+.textInput:last-of-type {
+  width: 180px;
 }
 
 .main {

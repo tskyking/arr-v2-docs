@@ -307,7 +307,25 @@ describe('importService — full pipeline integration', () => {
     expect(patched).not.toBeNull();
     expect(patched!.status).toBe('resolved');
     expect(patched!.resolvedAt).toBeDefined();
-    expect(patched!.resolvedBy).toBe('user');
+    expect(patched!.resolvedBy).toBe('user@arr.local');
+  });
+
+  it('patchReviewItem — resolve uses supplied user email for audit trail', () => {
+    if (importId === FAKE_ID) return;
+    const queue = getReviewQueue(TEST_TENANT, importId, 'open');
+    if (!queue || queue.items.length === 0) return;
+
+    const firstOpenItem = queue.items[0];
+    const patched = patchReviewItem(
+      TEST_TENANT,
+      importId,
+      firstOpenItem.id,
+      'resolve',
+      undefined,
+      'finance@example.com',
+    );
+    expect(patched).not.toBeNull();
+    expect(patched!.resolvedBy).toBe('finance@example.com');
   });
 
   it('patchReviewItem — override sets status to overridden with note', () => {
@@ -525,8 +543,8 @@ describe('importService — full pipeline integration', () => {
     // This tests the store layer directly without needing a real import.
     const testId = 'persistence-test-round-trip';
     const overrides = new Map([
-      ['item-001', { status: 'resolved' as const, resolvedAt: '2026-04-02T00:00:00Z', resolvedBy: 'user' }],
-      ['item-002', { status: 'overridden' as const, resolvedAt: '2026-04-02T01:00:00Z', resolvedBy: 'user', overrideNote: 'One-time exception' }],
+      ['item-001', { status: 'resolved' as const, resolvedAt: '2026-04-02T00:00:00Z', resolvedBy: 'user@arr.local' }],
+      ['item-002', { status: 'overridden' as const, resolvedAt: '2026-04-02T01:00:00Z', resolvedBy: 'user@arr.local', overrideNote: 'One-time exception' }],
     ]);
 
     saveOverrides(TEST_TENANT, testId, overrides);

@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useNavigate, useMatch } from 'react-router-dom';
 import styles from './Layout.module.css';
 import { useImportList } from '@/lib/hooks';
+import { useArrSettings } from '@/lib/settings';
 
 export default function Layout() {
+  const { tenantId, userEmail, updateSettings } = useArrSettings();
   const { data: imports } = useImportList();
   const navigate = useNavigate();
 
@@ -49,8 +51,25 @@ export default function Layout() {
             </>
           )}
         </div>
-        {imports && imports.length > 0 && (
-          <div className={styles.importSelect}>
+        <div className={styles.importSelect}>
+          <label className={styles.selectLabel}>Tenant</label>
+          <input
+            className={styles.textInput}
+            type="text"
+            value={tenantId}
+            onChange={e => updateSettings({ tenantId: e.target.value })}
+            spellCheck={false}
+          />
+          <label className={styles.selectLabel}>User</label>
+          <input
+            className={styles.textInput}
+            type="email"
+            value={userEmail}
+            onChange={e => updateSettings({ userEmail: e.target.value })}
+            spellCheck={false}
+          />
+          {imports && imports.length > 0 && (
+            <>
             <label className={styles.selectLabel}>Import</label>
             <select
               className={styles.select}
@@ -63,8 +82,9 @@ export default function Layout() {
                 </option>
               ))}
             </select>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </nav>
       <main className={styles.main}>
         <Outlet />

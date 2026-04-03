@@ -83,6 +83,12 @@ function err(res: http.ServerResponse, status: number, code: string, message: st
   json(res, status, { code, message });
 }
 
+function getUserEmail(req: http.IncomingMessage): string | undefined {
+  const header = req.headers['x-user-email'];
+  if (Array.isArray(header)) return header[0];
+  return header;
+}
+
 /**
  * Buffer the full request body up to MAX_BODY_BYTES.
  *
@@ -144,7 +150,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, X-User-Email',
     });
     res.end();
     return;
@@ -319,7 +325,14 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (payload.action === 'override' && !payload.note?.trim()) {
           err(res, 400, 'NOTE_REQUIRED', 'override requires a note'); return;
         }
-        const result = bulkResolveReview(tenantId, importId, payload.action, payload.itemIds, payload.note);
+        const result = bulkResolveReview(
+          tenantId,
+          importId,
+          payload.action,
+          payload.itemIds,
+          payload.note,
+          getUserEmail(req),
+        );
         if (!result) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         json(res, 200, result);
         return;
@@ -338,7 +351,14 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (payload.action === 'override' && !payload.note?.trim()) {
           err(res, 400, 'NOTE_REQUIRED', 'override requires a note'); return;
         }
-        const updated = patchReviewItem(tenantId, importId, itemId, payload.action, payload.note);
+        const updated = patchReviewItem(
+          tenantId,
+          importId,
+          itemId,
+          payload.action,
+          payload.note,
+          getUserEmail(req),
+        );
         if (!updated) { err(res, 404, 'NOT_FOUND', 'Review item not found'); return; }
         json(res, 200, updated);
         return;

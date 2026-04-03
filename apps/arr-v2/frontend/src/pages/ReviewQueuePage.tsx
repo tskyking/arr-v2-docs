@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useReviewQueue } from '@/lib/hooks';
-import { resolveReviewItem, overrideReviewItem } from '@/lib/api';
+import { resolveReviewItem, overrideReviewItem, bulkResolveReviewItems } from '@/lib/api';
+import { useArrSettings } from '@/lib/settings';
 import styles from './ReviewQueuePage.module.css';
 import type { ReviewItem } from '@/lib/api';
 
@@ -159,10 +160,13 @@ function ReviewRow({
 
 export default function ReviewQueuePage() {
   const { importId } = useParams<{ importId: string }>();
+  const { tenantId, userEmail } = useArrSettings();
   const [severityFilter, setSeverityFilter] = useState<'all' | 'warning' | 'error'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved' | 'overridden'>('all');
   const { data: queue, loading, error, refetch } = useReviewQueue(importId!);
   const [localItems, setLocalItems] = useState<ReviewItem[] | null>(null);
+  const [bulkActing, setBulkActing] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   // Merge server-refreshed items with any local optimistic updates
   const items = localItems ?? queue?.items ?? [];
@@ -172,6 +176,25 @@ export default function ReviewQueuePage() {
     setLocalItems(base.map(i => i.id === updated.id ? updated : i));
     // Trigger a background refetch to sync counts
     refetch();
+  }
+
+  async function handleResolveAllOpen() {
+    if (!importId) return;
+    setBulkActing(true);
+    setBulkError(null);
+    try {
+      const result = await bulkResolveReviewItems(importId);
+      if (result.items.length > 0) {
+        const base = localItems ?? queue?.items ?? [];
+        const updates = new Map(result.items.map(item => [item.id, item]));
+        setLocalItems(base.map(item => updates.get(item.id) ?? item));
+      }
+      refetch();
+    } catch (err: any) {
+      setBulkError(err.message ?? 'Failed to resolve all open items');
+    } finally {
+      setBulkActing(false);
+    }
   }
 
   if (loading && !queue) return <div className="loading">Loading…</div>;
@@ -195,14 +218,27 @@ export default function ReviewQueuePage() {
         <div>
           <h1 className={styles.heading}>Review Queue</h1>
           <p className={styles.sub}>
-            Import: <span className={styles.mono}>{importId?.slice(0, 8)}…</span>{' '}
+            Tenant: <span className={styles.mono}>{tenantId}</span>
+            {' '}· User: <span className={styles.mono}>{userEmail}</span>
+            {' '}· Import: <span className={styles.mono}>{importId?.slice(0, 8)}…</span>{' '}
             · {queue.total} items requiring attention
           </p>
         </div>
-        <Link to={`/dashboard/${importId}`}>
-          <button className="ghost">← Dashboard</button>
-        </Link>
+        <div className={styles.headerActions}>
+          <button
+            className="ghost"
+            onClick={handleResolveAllOpen}
+            disabled={bulkActing || openCount === 0}
+          >
+            {bulkActing ? 'Resolving…' : `Mark All Open Resolved (${openCount})`}
+          </button>
+          <Link to={`/dashboard/${importId}`}>
+            <button className="ghost">← Dashboard</button>
+          </Link>
+        </div>
       </div>
+
+      {bulkError && <div className="error-banner">{bulkError}</div>}
 
       {/* Summary row */}
       <div className={styles.summaryRow}>

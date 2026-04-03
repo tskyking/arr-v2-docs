@@ -6,10 +6,12 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadImportFile, uploadImportPath } from '@/lib/api';
 import { useImportList } from '@/lib/hooks';
+import { useArrSettings } from '@/lib/settings';
 import styles from './ImportPage.module.css';
 
 export default function ImportPage() {
   const navigate = useNavigate();
+  const { tenantId } = useArrSettings();
   const { data: imports, refetch } = useImportList();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,10 @@ export default function ImportPage() {
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>Import Workbook</h1>
-      <p className={styles.sub}>Upload an XLSX workbook to start an ARR analysis run.</p>
+      <p className={styles.sub}>
+        Upload an XLSX workbook to start an ARR analysis run.
+        <span className={styles.tenantTag}>Tenant: {tenantId}</span>
+      </p>
 
       {error && <div className="error-banner">{error}</div>}
 
