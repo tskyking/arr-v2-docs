@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 22 — refined import workflow guidance, clarified dashboard/review behavior, and added current CSV/export caveats for end users)_
+_Last updated: 2026-04-03 (Session 23 — expanded import success-state guidance, clarified live customer roster behavior on the dashboard, and tightened end-user troubleshooting notes)_
 
 ---
 
@@ -222,9 +222,9 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 - **Review Progress** — completion percentage, open issue count, and the most common open issue type
 - **ARR over time** — a monthly trend chart
 - **ARR Movements** — a waterfall view of New, Expansion, Contraction, and Churn
-- **Top customers** — highest-ARR customers for the latest visible period
+- **Top customers / live customer roster** — highest-ARR customers for the latest visible period, with quick access into account-level detail
 - **Category breakdown** — imported row totals grouped by category
-- **Customer detail drill-down** — open a customer from the dashboard to inspect its ARR history and review attention
+- **Customer detail drill-down** — open a customer from the dashboard to inspect its ARR history, peak ARR, and review attention
 
 ### Using the Date Range Filter
 
@@ -259,12 +259,14 @@ You can download the ARR timeseries data shown on the dashboard as a CSV file fo
 
 ### Opening Customer Detail
 
-1. In the **Top customers** section, click a customer name.
+1. In the **Top customers** or live customer roster section, click a customer name.
 2. Review the customer's current ARR, peak ARR, and period-by-period history.
 3. Use the history view to spot step changes, drops, or unusual movement for that account.
-4. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
+4. Check whether the customer has open review attention attached to the current import.
+5. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
 
 > 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
+> 💡 **Tip:** The live customer roster is most useful after a fresh import because it gives you a quick read on which accounts are driving the latest visible ARR.
 
 ### Understanding the ARR Number
 
@@ -427,6 +429,16 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 **Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state, or the active import in the header is not the one you just uploaded.
 **Fix:** Refresh the page. Then confirm the active import in the header or reopen the expected import from the Import page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
+
+### My imported customers are not showing in the live customer roster
+
+**Cause:** You may be looking at a different import than the one you just uploaded, or the current dashboard date range may exclude the period where those customers have ARR.
+**Fix:**
+1. Confirm the active import in the header.
+2. Reopen the expected import from the Import page if needed.
+3. Set the dashboard date range to **All time** or widen the custom range.
+4. Check the Review Queue for error-level flags that may have excluded affected rows from ARR.
+5. Refresh the page after switching imports to make sure the roster reloads against the selected import.
 
 ### I think I'm in the wrong company workspace or import
 

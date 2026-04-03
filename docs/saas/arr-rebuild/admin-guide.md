@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 22 — tightened import/export operational notes, refreshed current beta workflow details, and captured current QA-backed caveats for admins)_
+_Last updated: 2026-04-03 (Session 23 — clarified current dashboard customer-inspection workflow, strengthened import context checks, and refreshed admin caveats around active-import analysis)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -149,7 +149,8 @@ Client data is loaded via the **Import** function within a client's tenant conte
 6. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
 7. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
 8. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
-9. Use dashboard customer links to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, or review attention within that import.
+9. Use dashboard customer links or the live customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, or review attention within that import.
+10. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -162,6 +163,7 @@ Each client can have multiple import records. Imports are not automatically repl
 - A client can have several months' worth of imports in the system simultaneously
 - The dashboard defaults to the most recent import
 - Older imports remain accessible for comparison or audit purposes
+- Customer-level dashboard views and live customer rosters are always scoped to the currently active import, not all imports combined
 
 > ⚠️ **Warning:** The `removeImport` operation permanently deletes the import record and all associated review overrides. It cannot be undone. Always verify you are removing the correct import ID before confirming.
 
@@ -258,7 +260,19 @@ The current QA coverage verifies both the fast `Content-Length` rejection path a
 
 ### Customer ARR History Sort Order
 
-When using the Customer Explorer or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
+When using the customer detail view from the dashboard or reviewing a specific customer's detail view, ARR history is returned in **chronological order** (oldest period first). This is enforced at the service layer and is not configurable. If a client reports their ARR history appearing in the wrong order, it is likely a UI rendering issue rather than a data problem — check the browser console or file a bug report.
+
+### Missing Customer in Dashboard Investigation
+
+If a tenant admin reports that a customer is missing from the live dashboard roster or customer detail links:
+
+1. Confirm the tenant context in the header.
+2. Confirm the active import ID in the header import selector.
+3. Confirm the dashboard date range includes months where that customer has ARR.
+4. Check the Review Queue for error-level items that may have excluded that customer's source rows.
+5. Reopen a prior import if the client expected to see historical data from an older upload.
+
+> 💡 **Tip:** In the current build, "missing customer" reports are more often active-import or date-range misunderstandings than backend data loss.
 
 ### Customer Hierarchy: Logos and Sites
 
