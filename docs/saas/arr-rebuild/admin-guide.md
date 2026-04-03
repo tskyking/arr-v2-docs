@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 18 — clarified beta tenant/user header controls, import switching, and review filter workflow)_
+_Last updated: 2026-04-03 (Session 19 — aligned guide to current beta UI, dashboard review-progress cards, and active import workflow)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -96,6 +96,7 @@ Each client (company using ARR V2) has a **tenant ID** - a stable unique identif
 - **URL structure:** All data API routes are scoped under `/tenants/:tenantId/`. The server rejects requests where the tenantId in the URL does not match the active session context.
 - **Frontend context fields:** Current frontend builds display editable **Tenant** and **User** fields in the application header. These values are stored locally in the browser and affect which tenant-scoped API paths are called and which user identity is attached to review actions and uploads.
 - **Import selector in header:** When multiple imports exist for a tenant, the header provides an import selector that switches the current Dashboard or Review Queue context without creating a new upload.
+- **Current top-level navigation:** The current beta UI exposes **Import**, **Dashboard**, and **Review Queue** as primary pages. ARR movement analysis is embedded inside the Dashboard page rather than living on its own route.
 
 ### Switching to a Client Context
 
@@ -144,9 +145,10 @@ Client data is loaded via the **Import** function within a client's tenant conte
 2. Navigate to **Import**.
 3. Verify the tenant and user identity shown in the header.
 4. Upload the client's `.xlsx` workbook using file selection or drag-and-drop.
-5. Verify the import summary - row count, flagged items, date range.
-6. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
-7. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
+5. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, and visible date range.
+6. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
+7. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
+8. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -601,7 +603,7 @@ The policy is defined in the tenant's **Recognition Assumptions sheet** (in the 
 
 ### Current UI Status
 
-As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, and bulk review resolution. Screenshots and final UI notes will be added when the UI is stable enough for formal delivery.
+As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards and issue summaries so admins can assess cleanup status before entering the Review Queue. Screenshots and final UI notes will be added when the UI is stable enough for formal delivery.
 
 ### Supported Recognition Rule Types
 
@@ -720,7 +722,7 @@ The system logs the following events automatically:
 | Import deletion | Actor, tenant, import ID, timestamp |
 | Review item resolve | Actor, item ID, previous status, new status |
 | Bulk review resolve | Actor, import ID, number of items affected, timestamp |
-| Review item override | Actor, item ID, original value, override value, reason |
+| Review item override | Actor, item ID, override note/reason, resulting status |
 | ARR policy change | Actor, tenant, changed fields |
 | ARR monthly override | Actor, contract line ID, original ARR, override ARR, reason |
 | User account change | Actor, affected user ID, change type |

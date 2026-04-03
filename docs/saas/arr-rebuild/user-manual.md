@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 18 — clarified active import switching, drag/drop import flow, review filters, and tenant/user context troubleshooting)_
+_Last updated: 2026-04-03 (Session 19 — aligned docs to current beta UI, dashboard review progress panels, date presets, and review queue workflow details)_
 
 ---
 
@@ -47,19 +47,19 @@ _Last updated: 2026-04-03 (Session 18 — clarified active import switching, dra
 
 ### Navigation Overview
 
-The main navigation bar contains:
+The main navigation bar currently contains:
 
-- **Dashboard** — your ARR summary and trend charts
-- **Import** — upload a new data file
+- **Import** — upload a new data file and reopen earlier imports
+- **Dashboard** — your ARR summary, trend charts, and movement analysis for the active import
 - **Review Queue** — rows that need your attention before ARR is finalized
-- **Movements** — waterfall breakdown of ARR changes over time
 
-The application header may also show:
+The application header also shows:
 
-- Your signed-in identity
-- The company workspace or tenant you are currently working in
-- An import selector for reopening a previous import without uploading again
+- The current **Tenant** you are working in
+- The current **User** identity attached to uploads and review actions
+- An **Import** selector for reopening a previous import without uploading again
 
+> 💡 **Tip:** In the current beta UI, ARR Movement Analysis is displayed inside the Dashboard page rather than as a separate top-level navigation item.
 > 💡 **Tip:** If you're using the tool for the first time, go to **Import** first. The dashboard and review queue won't show any data until you've uploaded a file.
 
 ---
@@ -167,15 +167,17 @@ Before uploading, check your file against these criteria:
 1. From the main navigation, click **Import**.
 2. Confirm you are in the correct company workspace shown in the page header.
 3. Confirm the **Tenant** shown in the app header is correct before uploading.
-4. Click **Choose File** or drag and drop your `.xlsx` file into the upload area.
+4. Click inside the upload area to browse for a file, or drag and drop your `.xlsx` workbook onto the page.
 5. Wait while the system processes the file. This usually takes a few seconds.
-6. If the import succeeds, you will see a summary:
-   - Number of rows processed
-   - Number of rows flagged for review
-   - Date range covered by the data
-7. The app will open the new import in **Dashboard** automatically.
-8. Open **Review Queue** to resolve any flagged rows.
-9. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
+6. If the import succeeds, the app opens the new import in **Dashboard** automatically.
+7. Review the dashboard summary cards for:
+   - Latest ARR
+   - Active customers
+   - Rows imported
+   - Review items needing attention
+8. Check the **Review Progress** section on the dashboard to see how many items are still open and which issue types are most common.
+9. Open **Review Queue** to resolve any flagged rows.
+10. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
 
 > 💡 **Tip:** The Import page may also show recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -212,18 +214,24 @@ The **Dashboard** shows your ARR at a glance. It is the starting point for under
 
 ### What You'll See
 
-- **Total ARR** — your current annualized recurring revenue
-- **ARR over time** — a line or bar chart showing how ARR has changed month by month
-- **Top customers** — a list of your highest-ARR customers
-- **Date range filter** — select a time window to focus on a specific period
+- **Latest ARR** — your current annualized recurring revenue for the active import
+- **Active Customers** — the customer count in the latest period
+- **ARR Growth** — change between the first and latest visible periods
+- **Rows Imported** — total imported rows, plus skipped rows and review-item counts
+- **Review Progress** — completion percentage, open issue count, and the most common open issue type
+- **ARR over time** — a monthly trend chart
+- **ARR Movements** — a waterfall view of New, Expansion, Contraction, and Churn
+- **Top customers** — highest-ARR customers for the latest visible period
+- **Category breakdown** — imported row totals grouped by category
 
 ### Using the Date Range Filter
 
-1. At the top of the dashboard, you will see a **From** and **To** date selector.
-2. Change the dates to zoom in on a specific time window.
-3. The charts and totals will update automatically.
+1. At the top of the dashboard, choose one of the preset filters: **All time**, **Last 12 mo**, **Last 24 mo**, or **Custom**.
+2. If you choose **Custom**, enter the **From** and **To** months.
+3. The charts, movement view, and summary metrics update to match the selected period.
+4. Check the period label shown beside the filter to confirm the exact visible range.
 
-> 💡 **Tip:** ARR is calculated as of the **end of each month**. The "current ARR" figure reflects the most recent month in your imported data.
+> 💡 **Tip:** ARR is calculated as of the **end of each month**. The "Latest ARR" figure reflects the most recent month visible in your current dashboard filter, not necessarily the full import range.
 
 ### Exporting ARR Data to CSV
 
@@ -292,13 +300,15 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 ### Resolving a Flag
 
 1. In the Review Queue, find the row you want to review.
-2. Use the **Severity** and **Status** filters if you want to narrow the list to open errors, warnings, resolved items, or overrides.
-3. Click the row to expand its details — you'll see the raw data, the reason it was flagged, and the current item status.
-4. Choose one of two actions:
-   - **Resolve** — mark the flag as reviewed and accepted as-is. The system's assumption stands and the row is counted in ARR at the estimated value.
-   - **Override** — enter the correct note or correction reason. The system records the override against that review item and recalculates ARR for that row using your correction workflow.
-5. Confirm the tenant and signed-in user shown at the top of the page before you submit the action.
+2. Use the **Severity** and **Status** filters to narrow the list to open errors, warnings, resolved items, or overrides.
+3. Click the row to expand its details.
+4. Review the message, source row number, amount, customer, product/service, and invoice date.
+5. Choose one of two actions:
+   - **Resolve** — mark the flag as reviewed and accepted as-is.
+   - **Override** — enter a required explanation note and submit the override.
+6. Confirm the tenant and signed-in user shown at the top of the page before you submit the action.
 
+> 💡 **Tip:** The Review Queue header shows live counts for Total, Open, Errors, and Resolved / Overridden items. Use those counts to confirm progress after each review pass.
 > 💡 **Tip:** Use **Resolve** when the system's assumption is close enough and you don't have better source data. Use **Override** when you know the correct value and want the ARR calculation to reflect it precisely.
 
 ### A Note on Overrides and Re-Imports
@@ -360,8 +370,8 @@ Below the chart, you'll see totals across your entire selected date range:
 
 The movement analysis can be exported as a CSV file for offline analysis or sharing with stakeholders.
 
-1. Set your desired date range.
-2. Click **Export CSV** on the Movements page.
+1. Set your desired date range from the dashboard filter.
+2. Click **Export CSV** for the movement analysis view when that control is available in your deployment.
 3. A `.csv` file will download to your computer.
 
 **What the movements export contains:**
@@ -439,15 +449,15 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 **Cause:** The file may be corrupted, or there's a temporary issue with the server.  
 **Fix:** Try uploading again. If the problem continues, try re-exporting the file from QuickBooks and uploading the fresh export. If it still fails, contact support.
 
-### The Movements page shows unexpectedly large "New" numbers
+### The Dashboard shows unexpectedly large "New" movement numbers
 
 **Cause:** If customers had ARR in a prior import but that import is not currently active, they will appear as "new" in the current import even if they are returning customers.
 **Fix:** This is expected when switching between separate imports. For period-over-period analysis to be meaningful, each import should cover a continuous time range. Consider importing a longer date range in a single workbook rather than multiple short imports.
 
 ### My CSV export has the wrong date range
 
-**Cause:** The export reflects the date range currently selected in the dashboard or movements filter, not the full range of your imported data.
-**Fix:** Before clicking Export CSV, make sure the date range selector shows the full period you want. The export will match what's displayed in the UI.
+**Cause:** The export reflects the date range currently selected in the dashboard filter, not automatically the full range of your imported data.
+**Fix:** Before clicking Export CSV, make sure the dashboard filter shows the full period you want. The export will match the active dashboard range.
 
 ### The CSV export file opens with garbled text
 
