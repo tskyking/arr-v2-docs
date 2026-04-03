@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 30 — refined admin import verification and review-completion operating guidance for the current beta workflow)_
+_Last updated: 2026-04-03 (Session 31 — tightened SU/admin operating guidance around import validation, tenant-scoped customer investigation, and beta attribution controls)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -95,6 +95,7 @@ Each client (company using ARR V2) has a **tenant ID** - a stable unique identif
 - **Default tenant context:** The system has a default tenant for single-tenant deployments. In production multi-tenant mode, there is no default - you must always select a tenant explicitly.
 - **URL structure:** All data API routes are scoped under `/tenants/:tenantId/`. The server rejects requests where the tenantId in the URL does not match the active session context.
 - **Frontend context fields:** Current frontend builds display editable **Tenant** and **User** fields in the application header. These values are stored locally in the browser, affect which tenant-scoped API paths are called, and determine which user identity is attached to uploads and review actions.
+- **Beta control caveat:** These header fields are operational beta controls for testing and attribution, not a substitute for hardened production authentication.
 - **Import selector in header:** When multiple imports exist for a tenant, the header provides an import selector that switches the current Dashboard or Review Queue context without creating a new upload.
 - **Current top-level navigation:** The current beta UI exposes **Import**, **Dashboard**, and **Review Queue** as primary pages. ARR movement analysis and customer drill-down remain inside the Dashboard workflow rather than separate routes.
 
@@ -156,6 +157,7 @@ Client data is loaded via the **Import** function within a client's tenant conte
 13. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
 14. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
 15. Before reporting results back to a client, confirm whether review items are still open. A clean import summary does not necessarily mean the review workflow is complete.
+16. If a tenant reports a missing customer, verify the active import and dashboard date range before escalating it as a backend defect.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -308,6 +310,7 @@ If a tenant admin reports that a customer is missing from the dashboard roster, 
 5. Remember that the full customer list is sorted by current ARR descending; smaller accounts may simply be farther down the list.
 6. Check the Review Queue for error-level items that may have excluded that customer's source rows.
 7. Reopen a prior import if the client expected to see historical data from an older upload.
+8. If the customer detail link works for one tenant but not another, treat that as expected unless the customer is truly present in both tenant-scoped imports.
 
 > 💡 **Tip:** In the current build, "missing customer" reports are more often active-import or date-range misunderstandings than backend data loss.
 ### Customer Hierarchy: Logos and Sites

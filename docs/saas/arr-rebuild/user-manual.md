@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 30 — refined import verification and dashboard/review follow-up guidance based on the current beta workflow)_
+_Last updated: 2026-04-03 (Session 31 — clarified import prerequisites, dashboard/customer investigation flow, and current beta navigation for end users)_
 
 ---
 
@@ -52,6 +52,8 @@ The main navigation bar currently contains:
 - **Import** — upload a new workbook, import by local file path, and reopen earlier imports
 - **Dashboard** — your ARR summary, trend charts, movement analysis, and customer roster for the active import
 - **Review Queue** — rows that need your attention before ARR is finalized
+
+> ⚠️ **Warning:** In the current beta, page names and button placement may still shift slightly between builds. Focus on the workflow order: **Import → Dashboard → Review Queue → back to Dashboard for verification**.
 
 The application header also shows:
 
@@ -180,7 +182,8 @@ Before uploading, check your file against these criteria:
 10. Open **Review Queue** to resolve any flagged rows.
 11. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
 12. After the dashboard opens, verify the latest ARR, active customers, rows imported, and review-item count before sharing results with anyone else.
-13. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
+13. Spot-check one or two expected customers from the customer roster or top-customer list to confirm the import opened the data set you expected.
+14. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -229,7 +232,7 @@ Start each dashboard review by confirming the active import and date range shown
 - **ARR over time** — a monthly trend chart
 - **ARR Movements** — a waterfall view of New, Expansion, Contraction, and Churn
 - **Top customers** — highest-ARR customers for the latest visible period, with quick access into account-level detail
-- **Customer roster** — an API-backed customer list showing current ARR, contract counts, last invoice date, and review attention
+- **Customer roster** — a customer list showing current ARR, contract counts, last invoice date, and review attention for the active import
 - **Sorted customer list** — customer lists are shown in descending current-ARR order so the biggest accounts appear first
 - **Category breakdown** — imported row totals grouped by category
 - **Customer detail drill-down** — open a customer from the dashboard to inspect ARR history, peak ARR, and review attention for the active import
@@ -287,6 +290,7 @@ If your deployment has live refresh enabled, the dashboard can update summary ca
 5. Check whether the customer has open review attention attached to the current import.
 6. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
 7. If the same customer name exists in another company workspace, remember that this detail view still only shows the active tenant's import data.
+8. If a customer name contains spaces or punctuation, use the in-app link rather than trying to edit the URL manually.
 
 > 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
 > 💡 **Tip:** The customer roster is especially useful when a customer is not in the top-ARR list but still needs operational review because of open flags or recent invoice activity.
@@ -471,8 +475,9 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 1. Confirm the active import in the header.
 2. Reopen the expected import from the Import page if needed.
 3. Set the dashboard date range to **All time** or widen the custom range.
-4. Check the Review Queue for error-level flags that may have excluded affected rows from ARR.
-5. Refresh the page after switching imports to make sure the roster reloads against the selected import.
+4. Scroll the broader customer roster instead of relying only on the top-customer summary cards.
+5. Check the Review Queue for error-level flags that may have excluded affected rows from ARR.
+6. Refresh the page after switching imports to make sure the roster reloads against the selected import.
 
 ### I think I'm in the wrong company workspace or import
 
