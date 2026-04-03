@@ -3,15 +3,17 @@
  * On success, navigates to the dashboard for the new import.
  */
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { uploadImportFile, uploadImportPath } from '@/lib/api';
 import { useImportList } from '@/lib/hooks';
-import { useArrSettings } from '@/lib/settings';
+import { isStaticDemoEnvironment, useArrSettings } from '@/lib/settings';
+import { DEMO_IMPORT_ID } from '@/lib/demoData';
 import styles from './ImportPage.module.css';
 
 export default function ImportPage() {
   const navigate = useNavigate();
   const { tenantId } = useArrSettings();
+  const demoMode = isStaticDemoEnvironment();
   const { data: imports, refetch } = useImportList();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +110,37 @@ export default function ImportPage() {
         >
           Import
         </button>
+      </div>
+
+      <div className={`${styles.demoPanel} card`}>
+        <div className={styles.demoHeaderRow}>
+          <div>
+            <div className={styles.demoEyebrow}>Static Product Walkthrough</div>
+            <h2 className={styles.demoHeading}>Jump to seeded finance-review states</h2>
+            <p className={styles.demoCopy}>
+              Use these polished example screens for Todd/Brian walkthroughs, manual screenshots, and quick review of the import-to-dashboard flow.
+            </p>
+          </div>
+          {demoMode && <span className={styles.demoBadge}>Public demo mode</span>}
+        </div>
+        <div className={styles.demoGrid}>
+          <Link className={styles.demoCard} to="/import">
+            <span className={styles.demoTitle}>Sample import history</span>
+            <span className={styles.demoText}>Seeded import runs with realistic dates, row counts, and dashboard entry points.</span>
+          </Link>
+          <Link className={styles.demoCard} to={`/dashboard/${DEMO_IMPORT_ID}`}>
+            <span className={styles.demoTitle}>Sample dashboard metrics</span>
+            <span className={styles.demoText}>ARR trend, waterfall movement summary, customer mix, and review progress panels.</span>
+          </Link>
+          <Link className={styles.demoCard} to={`/review/${DEMO_IMPORT_ID}`}>
+            <span className={styles.demoTitle}>Sample review queue rows</span>
+            <span className={styles.demoText}>Open vs resolved examples with finance-friendly reason codes and seeded customer context.</span>
+          </Link>
+          <Link className={styles.demoCard} to={`/review/${DEMO_IMPORT_ID}?demoItem=rq-104`}>
+            <span className={styles.demoTitle}>Sample expanded detail state</span>
+            <span className={styles.demoText}>Opens a realistic ambiguous-product case with the detail drawer already expanded.</span>
+          </Link>
+        </div>
       </div>
 
       {/* Prior imports */}

@@ -2,8 +2,8 @@
  * ReviewQueuePage — finance-user review workflow.
  * Lists all open review items for an import with severity, reason, and context.
  */
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useReviewQueue } from '@/lib/hooks';
 import { resolveReviewItem, overrideReviewItem, bulkResolveReviewItems } from '@/lib/api';
 import { useArrSettings } from '@/lib/settings';
@@ -21,15 +21,21 @@ function formatAmount(n: number) {
 function ReviewRow({
   item,
   onUpdated,
+  initiallyExpanded = false,
 }: {
   item: ReviewItem;
   onUpdated: (updated: ReviewItem) => void;
+  initiallyExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showOverride, setShowOverride] = useState(false);
   const [overrideNote, setOverrideNote] = useState('');
+
+  useEffect(() => {
+    setExpanded(initiallyExpanded);
+  }, [initiallyExpanded]);
 
   const isOpen = item.status === 'open';
 
@@ -160,6 +166,8 @@ function ReviewRow({
 
 export default function ReviewQueuePage() {
   const { importId } = useParams<{ importId: string }>();
+  const [searchParams] = useSearchParams();
+  const highlightedItemId = searchParams.get('demoItem');
   const { tenantId, userEmail } = useArrSettings();
   const [severityFilter, setSeverityFilter] = useState<'all' | 'warning' | 'error'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved' | 'overridden'>('all');
@@ -307,7 +315,12 @@ export default function ReviewQueuePage() {
             </thead>
             <tbody>
               {filtered.map(item => (
-                <ReviewRow key={item.id} item={item} onUpdated={handleItemUpdated} />
+                <ReviewRow
+                  key={item.id}
+                  item={item}
+                  onUpdated={handleItemUpdated}
+                  initiallyExpanded={highlightedItemId === item.id}
+                />
               ))}
             </tbody>
           </table>

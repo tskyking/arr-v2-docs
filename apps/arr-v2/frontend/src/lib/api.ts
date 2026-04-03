@@ -4,6 +4,18 @@
  */
 
 import { buildApiPath, getArrSettings } from './settings';
+import {
+  demoCustomers,
+  demoImports,
+  demoMovements,
+  demoReviewQueue,
+  demoReviewStats,
+  demoSummary,
+  demoTimeseries,
+  getDemoCustomerDetail,
+  isDemoImportId,
+  isStaticDemoEnvironment,
+} from './demoData';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const { userEmail } = getArrSettings();
@@ -60,6 +72,7 @@ export interface ImportSummary {
 }
 
 export async function listImports(): Promise<ImportListItem[]> {
+  if (isStaticDemoEnvironment()) return demoImports;
   const data = await request<{ imports: ImportListItem[] }>('/imports');
   return data.imports;
 }
@@ -89,6 +102,9 @@ export async function uploadImportPath(filePath: string): Promise<ImportUploadRe
 }
 
 export async function getImportSummary(importId: string): Promise<ImportSummary> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    return demoSummary[importId] ?? demoSummary['demo-q1-2026'];
+  }
   return request<ImportSummary>(`/imports/${importId}/summary`);
 }
 
@@ -121,6 +137,9 @@ export async function getArrTimeseries(
   from?: string,
   to?: string,
 ): Promise<ArrTimeseries> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    return demoTimeseries[importId] ?? demoTimeseries['demo-q1-2026'];
+  }
   return request<ArrTimeseries>(`/imports/${importId}/arr${buildQueryString(from, to)}`);
 }
 
@@ -168,11 +187,25 @@ export async function getReviewQueue(
   importId: string,
   status?: string,
 ): Promise<ReviewQueue> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    const queue = demoReviewQueue[importId] ?? demoReviewQueue['demo-q1-2026'];
+    if (!status || status === 'all') return queue;
+    const items = queue.items.filter(item => item.status === status);
+    return {
+      items,
+      total: items.length,
+      openCount: items.filter(item => item.status === 'open').length,
+      resolvedCount: items.filter(item => item.status !== 'open').length,
+    };
+  }
   const qs = status ? `?status=${status}` : '';
   return request<ReviewQueue>(`/imports/${importId}/review${qs}`);
 }
 
 export async function getReviewStats(importId: string): Promise<ReviewStats> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    return demoReviewStats[importId] ?? demoReviewStats['demo-q1-2026'];
+  }
   return request<ReviewStats>(`/imports/${importId}/review/stats`);
 }
 
@@ -246,6 +279,9 @@ export async function getArrMovements(
   from?: string,
   to?: string,
 ): Promise<ArrMovementsResult> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    return demoMovements[importId] ?? demoMovements['demo-q1-2026'];
+  }
   return request<ArrMovementsResult>(`/imports/${importId}/arr/movements${buildQueryString(from, to)}`);
 }
 
@@ -313,9 +349,15 @@ export interface CustomerDetail {
 }
 
 export async function getCustomerList(importId: string): Promise<CustomerListResult> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    return demoCustomers[importId] ?? demoCustomers['demo-q1-2026'];
+  }
   return request<CustomerListResult>(`/imports/${importId}/customers`);
 }
 
 export async function getCustomerDetail(importId: string, customerName: string): Promise<CustomerDetail> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    return getDemoCustomerDetail(importId, customerName);
+  }
   return request<CustomerDetail>(`/imports/${importId}/customers/${encodeURIComponent(customerName)}`);
 }

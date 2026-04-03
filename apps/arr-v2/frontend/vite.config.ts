@@ -4,6 +4,7 @@ import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/arr-v2-docs/saas/arr-rebuild/gui-demo/',
   plugins: [react()],
   resolve: {
     alias: {

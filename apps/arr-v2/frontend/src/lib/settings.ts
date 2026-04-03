@@ -13,6 +13,11 @@ const DEFAULT_SETTINGS: ArrSettings = {
   userEmail: 'user@arr.local',
 };
 
+export function isStaticDemoEnvironment(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname.endsWith('github.io') || window.location.search.includes('demo=1');
+}
+
 function normalizeTenantId(value: string | undefined): string {
   const trimmed = value?.trim() ?? '';
   const normalized = trimmed.replace(/[^a-zA-Z0-9_-]/g, '-');
@@ -26,6 +31,13 @@ function normalizeUserEmail(value: string | undefined): string {
 
 export function getArrSettings(): ArrSettings {
   if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+
+  if (isStaticDemoEnvironment()) {
+    return {
+      tenantId: 'aurora-capital',
+      userEmail: 'analyst@auroracap.com',
+    };
+  }
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -41,6 +53,10 @@ export function getArrSettings(): ArrSettings {
 }
 
 export function saveArrSettings(next: Partial<ArrSettings>): ArrSettings {
+  if (isStaticDemoEnvironment()) {
+    return getArrSettings();
+  }
+
   const merged = {
     ...getArrSettings(),
     ...next,

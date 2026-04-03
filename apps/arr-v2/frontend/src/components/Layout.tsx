@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate, useMatch } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useMatch, useLocation } from 'react-router-dom';
 import styles from './Layout.module.css';
 import { useImportList } from '@/lib/hooks';
 import { useArrSettings } from '@/lib/settings';
@@ -7,18 +7,21 @@ export default function Layout() {
   const { tenantId, userEmail, updateSettings } = useArrSettings();
   const { data: imports } = useImportList();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Extract importId from any matching route
   const dashboardMatch = useMatch('/dashboard/:importId');
   const reviewMatch = useMatch('/review/:importId');
+  const customerMatch = useMatch('/customers/:importId/:customerName');
   const activeImportId =
     dashboardMatch?.params?.importId ??
     reviewMatch?.params?.importId ??
+    customerMatch?.params?.importId ??
     (imports && imports.length > 0 ? imports[imports.length - 1].importId : undefined);
 
   function handleImportChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
-    const current = window.location.pathname;
+    const current = location.pathname;
     if (current.startsWith('/review')) navigate(`/review/${id}`);
     else navigate(`/dashboard/${id}`);
   }

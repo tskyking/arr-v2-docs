@@ -69,6 +69,86 @@
 .pathInput:focus { outline: none; border-color: var(--accent); }
 .pathInput::placeholder { color: var(--text-muted); }
 
+.demoPanel {
+  margin: 0 0 28px;
+  padding: 22px;
+}
+
+.demoHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.demoEyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.demoHeading {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+
+.demoCopy {
+  color: var(--text-muted);
+  max-width: 560px;
+  font-size: 13px;
+}
+
+.demoBadge {
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(34,197,94,0.12);
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.demoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.demoCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
+}
+
+.demoCard:hover {
+  border-color: var(--accent);
+  background: rgba(99,102,241,0.08);
+  transform: translateY(-1px);
+}
+
+.demoTitle {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.demoText {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .history { margin-top: 8px; }
 .historyHeading {
   font-size: 14px;
@@ -77,4 +157,15 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 12px;
+}
+
+@media (max-width: 760px) {
+  .demoHeaderRow,
+  .pathRow {
+    flex-direction: column;
+  }
+
+  .demoGrid {
+    grid-template-columns: 1fr;
+  }
 }
