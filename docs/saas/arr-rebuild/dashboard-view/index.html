@@ -77,30 +77,30 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Backend + Docs Complete — MVP UI &amp; Review Workflow</span>
-        <span class="badge todo">Target: Review UI, live dashboard views, and stakeholder testing</span>
+        <span class="badge active">Current Phase: MVP Complete / Verification &amp; Repo Hygiene</span>
+        <span class="badge todo">Target: stakeholder verification, upload happy-path coverage, package-script cleanup, and staging decisions</span>
       </div>
     </div>
 
     <div class="grid">
       <div class="card col-4">
         <h3>Overall Progress</h3>
-        <div class="metric">88%</div>
-        <div class="sub">Backlog completion is 21/24 items (88%). Backend is healthy at 737 passing tests across 36 files, and doc work is current through Session 14. Live source and recent commits show Bug #6 is fixed; QA docs need cleanup to match the code. Next: MVP UI &amp; review workflow, then controlled testing.</div>
-        <div style="margin-top:12px" class="progress"><div style="width:88%"></div></div>
+        <div class="metric">96%</div>
+        <div class="sub">Backlog completion is 23/24 items (96%) based on the checked items in <code>memory/backlog.md</code>. Backend is healthy at 739 passing tests across 36 files (verified 2026-04-02 around 10:00 PM PT via fresh <code>npx vitest run</code>). Recent commits show sustained momentum across tenant-aware API wiring, coordinator dashboard updates, and repeated user-manual/admin-guide refreshes. No unresolved HIGH or CRITICAL QA bugs are currently open. Remaining gaps are mostly verification and hygiene: real valid-XLSX upload success-path coverage, backend <code>package.json</code> metadata drift (<code>test</code> script / Vitest declaration), duplicate invoice behavior, and the unresolved product decision for <code>GET /imports/:id</code>.</div>
+        <div style="margin-top:12px" class="progress"><div style="width:96%"></div></div>
       </div>
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>Advance MVP UI &amp; Review Workflow (Step 6). Frontend scaffold and backend API are in place — next is wiring the review queue to live endpoints, building user-facing ARR dashboard views, and proving override/audit flows end to end.</p>
+        <p>The MVP is effectively built. Import, dashboard, review workflow, tenant-aware routing, exports, and ARR movement logic are all in place, and the project has crossed the 80% milestone. The current objective is verification and cleanup: prove the upload happy path end to end, align repo metadata with the working test suite, and close the remaining product decisions before staging work.</p>
       </div>
 
       <div class="card col-4">
         <h3>Next 3 Actions</h3>
         <ul>
-          <li>Wire review queue UI to live API (resolve/override actions)</li>
-          <li>Build ARR dashboard / timeseries views against live data</li>
-          <li>Clean up QA docs so Bug #6 status matches the fixed source and tests</li>
+          <li>Add a real valid-XLSX upload end-to-end HTTP server test that proves a 200 success path</li>
+          <li>Fix backend package metadata drift (`test` script / declared Vitest tooling) so repo setup matches reality</li>
+          <li>Review the final plan with Todd/Brian and settle duplicate-invoice + `GET /imports/:id` product decisions</li>
         </ul>
       </div>
 
@@ -127,17 +127,17 @@
             <strong>5. ARR Engine Validation</strong>
             <p>Validate calculations against workbook/spec and identify reusable logic from legacy code.</p>
           </div>
-          <div class="step active">
+          <div class="step done">
             <strong>6. MVP UI & Review Workflow</strong>
-            <p>Implement finance-user review screens, overrides, auditability, and reporting views.</p>
+            <p>Frontend routes now exist for import, dashboard, and review screens; review actions and dashboard charts are wired in code and the frontend builds clean.</p>
           </div>
-          <div class="step">
+          <div class="step done">
             <strong>7. Controlled Testing</strong>
-            <p>Test locally/private staging, compare expected outputs, review with stakeholders.</p>
+            <p>Major QA coverage is in place and the current QA summary is green at 739 passing tests; the project has cleared the MVP-complete threshold.</p>
           </div>
-          <div class="step">
+          <div class="step active">
             <strong>8. Staging / Production Prep</strong>
-            <p>Security hardening, hosting decisions, auth/roles, backups, and deployment.</p>
+            <p>Finish upload happy-path coverage, repo/package hygiene, stakeholder review, and staging/security decisions before deployment.</p>
           </div>
         </div>
       </div>
@@ -154,9 +154,13 @@
           <li><strong>XLSX parser + importer skeleton:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Mapping/assumption accuracy:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Backend API layer:</strong> <span class="pill pill-done">done</span></li>
-          <li><strong>Review UI:</strong> <span class="pill pill-next">next</span></li>
+          <li><strong>Review UI:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>User manual / admin guide:</strong> <span class="pill pill-done">done</span></li>
-          <li><strong>Bug #6 (ext workbook fix):</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Tenant-aware API + CSV exports:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Backend QA regression suite:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>Real upload 200-path coverage:</strong> <span class="pill pill-next">next</span></li>
+          <li><strong>Repo/package hygiene:</strong> <span class="pill pill-progress">in progress</span></li>
+          <li><strong>Staging / hosting plan:</strong> <span class="pill pill-next">next</span></li>
         </ul>
       </div>
 
