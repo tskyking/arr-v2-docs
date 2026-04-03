@@ -78,8 +78,8 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Release Prep / Docs + Final Product Decisions</span>
-        <span class="badge todo">Target: lock repo/package hygiene, settle remaining product decisions, and prep staging/hosting</span>
+        <span class="badge active">Current Phase: Release Prep / Documentation Hand-off + Final Product Decisions</span>
+        <span class="badge todo">Target: lock repo/package hygiene, settle remaining product decisions, and choose staging/hosting</span>
       </div>
     </div>
 
@@ -87,13 +87,13 @@
       <div class="card col-4">
         <h3>Overall Progress</h3>
         <div class="metric">83%</div>
-        <div class="sub">Backlog completion remains 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. Backend QA is healthy at 741 passing tests across 36 files (re-verified on 2026-04-03 around 4:00 AM PT via fresh <code>npx vitest run</code>). Recent commit history is steady rather than stalled: dashboard work, customer-roster wiring, and repeated doc-agent updates are all landing. The repo is clearly past MVP build-out: import, dashboard, review workflow, tenant-aware routing, customer detail, CSV exports, and the HTTP-level real-XLSX upload success path are present in code/tests. No unresolved HIGH or CRITICAL QA bugs are currently documented as open; the prior HIGH external-workbook issue is explicitly marked fixed and covered by passing tests. The main release-prep gaps still visible in repo/docs are: backend <code>package.json</code> metadata drift (<code>test</code> script / explicit Vitest tooling), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, concurrency/isolation hardening beyond current tests, the Todd/Brian plan review item, and staging/hosting planning.</div>
+        <div class="sub">Backlog completion remains 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. Backend QA is healthy at 741 passing tests across 36 files (re-verified on 2026-04-03 around 4:00 AM PT via fresh <code>npx vitest run</code>). The last 10 commits show steady forward motion rather than churn: dashboard refresh, live customer roster work, repeated documentation updates, and regular coordinator passes are all landing. The repo is clearly past MVP build-out: import, dashboard, review workflow, tenant-aware routing, customer detail, CSV exports, ARR movement logic, and the HTTP-level real-XLSX upload success path are present in code/tests. No unresolved HIGH or CRITICAL QA bugs are currently documented as open; the prior HIGH external-workbook issue is explicitly marked fixed and covered by passing tests. The main release-prep gaps still visible in repo/docs are: backend <code>package.json</code> metadata drift (<code>test</code> script / explicit Vitest tooling), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, concurrency/isolation hardening beyond current tests, the Todd/Brian plan review item, and staging/hosting planning.</div>
         <div style="margin-top:12px" class="progress"><div style="width:83%"></div></div>
       </div>
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>The MVP is effectively built, and doc/manual work is actively landing in recent commits. Import, dashboard, review workflow, tenant-aware routing, customer detail, exports, ARR movement logic, and the upload happy path are all in place, and the project has crossed the 80% milestone. The current objective is release prep: align repo metadata with the working test suite, close the remaining backlog planning/decision items, and lock staging/hosting direction.</p>
+        <p>The MVP is effectively built, and documentation/manual work is actively landing in recent commits. Import, dashboard, review workflow, tenant-aware routing, customer detail, exports, ARR movement logic, and the upload happy path are all in place, and the project has crossed the 80% milestone. The current objective is release prep: align repo metadata with the working test suite, close the remaining backlog planning/decision items, and lock staging/hosting direction.</p>
       </div>
 
       <div class="card col-4">
@@ -156,7 +156,7 @@
           <li><strong>Mapping/assumption accuracy:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Backend API layer:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Review UI:</strong> <span class="pill pill-done">done</span></li>
-          <li><strong>User manual / admin guide:</strong> <span class="pill pill-done">done</span></li>
+          <li><strong>User manual / admin guide:</strong> <span class="pill pill-progress">active</span></li>
           <li><strong>Tenant-aware API + CSV exports:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Backend QA regression suite:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Real upload 200-path coverage:</strong> <span class="pill pill-done">done</span></li>
