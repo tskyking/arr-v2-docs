@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-02 (Session 16 — import workflow refreshed for tenant-aware UI, previous imports, bulk review actions, and end-user role cleanup)_
+_Last updated: 2026-04-02 (Session 17 — clarified tenant/user header context, previous import navigation, review attribution, and bulk review workflow)_
 
 ---
 
@@ -162,16 +162,17 @@ Before uploading, check your file against these criteria:
 
 1. From the main navigation, click **Import**.
 2. Confirm you are in the correct company workspace shown in the page header.
-3. Click **Choose File** (or drag and drop your `.xlsx` file into the upload area).
-4. Wait while the system processes the file. This usually takes a few seconds.
-5. If the import succeeds, you will see a summary:
+3. Confirm the **Tenant** shown in the app header is correct before uploading.
+4. Click **Choose File** (or drag and drop your `.xlsx` file into the upload area).
+5. Wait while the system processes the file. This usually takes a few seconds.
+6. If the import succeeds, you will see a summary:
    - Number of rows processed
    - Number of rows flagged for review
    - Date range covered by the data
-6. Open the new import in **Dashboard** to review results.
-7. Open **Review Queue** to resolve any flagged rows.
+7. Open the new import in **Dashboard** to review results.
+8. Open **Review Queue** to resolve any flagged rows.
 
-> 💡 **Tip:** The Import page may also show recent prior imports so you can reopen an earlier dashboard view if you need to compare runs.
+> 💡 **Tip:** The Import page may also show recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
 > 💡 **Tip:** After a successful import, check the Review Queue even if there are only a few flagged rows. Unresolved flags can affect the accuracy of your ARR numbers.
 
@@ -286,10 +287,11 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 ### Resolving a Flag
 
 1. In the Review Queue, find the row you want to review.
-2. Click the row to expand its details — you'll see the raw data and the reason it was flagged.
+2. Click the row to expand its details — you'll see the raw data, the reason it was flagged, and the current item status.
 3. Choose one of two actions:
    - **Resolve** — mark the flag as reviewed and accepted as-is. The system's assumption stands and the row is counted in ARR at the estimated value.
-   - **Override** — enter the correct value or category. The system will recalculate ARR for that row using your correction.
+   - **Override** — enter the correct note or correction reason. The system records the override against that review item and recalculates ARR for that row using your correction workflow.
+4. Confirm the tenant and signed-in user shown at the top of the page before you submit the action.
 
 > 💡 **Tip:** Use **Resolve** when the system's assumption is close enough and you don't have better source data. Use **Override** when you know the correct value and want the ARR calculation to reflect it precisely.
 
@@ -302,6 +304,11 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 ### Bulk Resolve
 
 If you have many similar open flags, you can use **Mark All Open Resolved** to clear them in one action.
+
+1. Review the current filter and import so you understand what you're looking at.
+2. Click **Mark All Open Resolved**.
+3. Wait for the page counts to refresh.
+4. Spot-check several rows to confirm the expected items moved from **Open** to **Resolved**.
 
 > 💡 **Tip:** Bulk resolve is most useful for lower-risk flags such as `MISSING_INVOICE_NUMBER` and some `SUSPICIOUS_NEGATIVE_AMOUNT` rows where the data is understood and no field correction is needed.
 
@@ -488,7 +495,7 @@ A classification applied to a customer or contract that affects how their ARR is
 When an existing customer's subscription value increases (upgrade, add-on, seat increase, etc.).
 
 **Import**  
-The process of uploading an Excel workbook containing your invoice and subscription data into ARR V2.
+The process of uploading an Excel workbook containing your invoice and subscription data into ARR V2. Each upload creates its own import record that can be reopened later from the Import page.
 
 **Invoice Date**  
 The date an invoice was issued to a customer. Used as a fallback when subscription dates are not provided.
@@ -515,7 +522,7 @@ The process the system uses to clean, parse, and standardize the raw data in you
 A rule that determines how a revenue item's value is spread over time. For example, a subscription might be recognized evenly over its 12-month term, while a one-time fee is recognized immediately.
 
 **Review Item / Flag**  
-A row in your imported data that the system couldn't process with full confidence. Flags appear in the Review Queue and require human review.
+A row in your imported data that the system couldn't process with full confidence. Flags appear in the Review Queue, carry a status such as `open`, `resolved`, or `overridden`, and require human review.
 
 **Revenue Segment**  
 An internal representation of a single recognized revenue contribution for a specific customer, category, and time period.

@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-02 (Session 16 — refreshed tenant-aware frontend/admin notes, import attribution details, and removed stale external-workbook warning)_
+_Last updated: 2026-04-02 (Session 17 — clarified tenant/user UI context, import history behavior, and review-action attribution)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -94,7 +94,7 @@ Each client (company using ARR V2) has a **tenant ID** - a stable unique identif
 
 - **Default tenant context:** The system has a default tenant for single-tenant deployments. In production multi-tenant mode, there is no default - you must always select a tenant explicitly.
 - **URL structure:** All data API routes are scoped under `/tenants/:tenantId/`. The server rejects requests where the tenantId in the URL does not match the active session context.
-- **Frontend context fields:** Current frontend builds display the active tenant and signed-in user identity in the application header. Changes to those values affect which tenant-scoped API paths are called and which user identity is attached to review actions.
+- **Frontend context fields:** Current frontend builds display editable **Tenant** and **User** fields in the application header. Changes to those values affect which tenant-scoped API paths are called and which user identity is attached to review actions and uploads.
 
 ### Switching to a Client Context
 
@@ -144,10 +144,11 @@ Client data is loaded via the **Import** function within a client's tenant conte
 3. Verify the tenant and user identity shown in the header.
 4. Upload the client's `.xlsx` workbook.
 5. Verify the import summary - row count, flagged items, date range.
+6. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
-> 💡 **Tip:** The Import page now exposes recent prior imports, which is useful when you need to reopen an earlier dashboard for comparison without re-uploading the workbook.
+> 💡 **Tip:** The Import page now exposes recent prior imports, which is useful when you need to reopen an earlier dashboard for comparison without re-uploading the workbook. This reduces accidental duplicate uploads when you only need to inspect a prior run.
 
 ### Managing Multiple Imports per Client
 
@@ -278,6 +279,8 @@ ARR V2 uses a two-level customer hierarchy:
 ### Import Lineage Tracking
 
 Every import creates a **SourceImport** record that captures full lineage metadata:
+
+> 💡 **Tip:** Because the current frontend allows the active user identity to be set in the header, admins should confirm the correct email is shown before uploading. That value feeds the `uploaded_by` lineage field.
 
 | Field | What it captures |
 |---|---|
@@ -705,6 +708,8 @@ These two systems serve different purposes and should not be confused:
 ### What Is Logged
 
 The system logs the following events automatically:
+
+> ⚠️ **Warning:** Review actions and overrides are attributed to the current user identity supplied by the active session/header context. Verify that context before making changes in a client's tenant.
 
 | Event Type | What's Captured |
 |---|---|
