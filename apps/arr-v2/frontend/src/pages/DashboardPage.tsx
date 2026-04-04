@@ -706,7 +706,10 @@ export default function DashboardPage() {
                 Structured customer-by-product ARR view for {cube.periods[0]} → {cube.periods[cube.periods.length - 1]}
               </div>
             </div>
-            <span className={styles.cubeBadge}>Investor + audit ready concept</span>
+            <div className={styles.cubeHeaderActions}>
+              <Link to={`/customer-cube/${importId}`} className={styles.inlineLink}>Open full cube view →</Link>
+              <span className={styles.cubeBadge}>Investor + audit ready concept</span>
+            </div>
           </div>
 
           <div className={styles.statGrid}>

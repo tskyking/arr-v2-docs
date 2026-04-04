@@ -144,7 +144,7 @@ export default function ImportPage() {
             <span className={styles.demoTitle}>Sample expanded detail state</span>
             <span className={styles.demoText}>Opens a realistic ambiguous-product case with the detail drawer already expanded.</span>
           </Link>
-          <Link className={styles.demoCard} to={`/dashboard/${DEMO_IMPORT_ID}?focus=cube`}>
+          <Link className={styles.demoCard} to={`/customer-cube/${DEMO_IMPORT_ID}`}>
             <span className={styles.demoTitle}>Customer Cube demo view</span>
             <span className={styles.demoText}>Investor-friendly customer x segment x product ARR matrix with traceability notes back to imports.</span>
           </Link>
