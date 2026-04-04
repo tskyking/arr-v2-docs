@@ -5,8 +5,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { downloadArrCsv, downloadArrMovementsCsv } from '@/lib/api';
 import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, useCustomerList } from '@/lib/hooks';
@@ -140,6 +139,12 @@ export default function DashboardPage() {
     refetchReviewStats();
     refetchCustomerList();
     setLastRefreshedAt(new Date());
+
+    // Force a full-page reload with a cache-busting query param so new frontend
+    // bundles/layout changes show up immediately, not just fresh API data.
+    const url = new URL(window.location.href);
+    url.searchParams.set('refresh', String(Date.now()));
+    window.location.replace(url.toString());
   }
 
   async function handleDownload(kind: 'arr' | 'movements') {
@@ -169,13 +174,6 @@ export default function DashboardPage() {
   const arrGrowth = latestPeriod && firstPeriod && firstPeriod.totalArr > 0
     ? (((latestPeriod.totalArr - firstPeriod.totalArr) / firstPeriod.totalArr) * 100).toFixed(1)
     : null;
-
-  // Chart data
-  const chartData = periods.map(p => ({
-    period: p.period,
-    arr: p.totalArr,
-    customers: p.activeCustomers,
-  }));
 
   // Category breakdown from latest period
   const categoryData = (latestPeriod?.byCategory ?? [])
@@ -220,6 +218,13 @@ export default function DashboardPage() {
           <button className="ghost" onClick={() => handleDownload('movements')} disabled={downloadingKind !== null}>
             {downloadingKind === 'movements' ? 'Exporting movements…' : 'Export Movements CSV'}
           </button>
+          {cube && (
+            <Link to={`/customer-cube/${importId}`}>
+              <button className="ghost">
+                Customer Cube Download
+              </button>
+            </Link>
+          )}
           <button className="ghost" onClick={handleRefreshNow}>Refresh now</button>
           <Link to={`/review/${importId}`}>
             <button className="ghost">
@@ -368,47 +373,23 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* ARR timeseries chart */}
-      {chartData.length > 0 && (
-        <div className={`card ${styles.chartCard}`}>
-          <h2 className={styles.chartTitle}>ARR Over Time</h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="period" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
-              <YAxis
-                tickFormatter={v => formatArr(v)}
-                tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-                width={68}
-              />
-              <Tooltip
-                contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6 }}
-                labelStyle={{ color: 'var(--text)' }}
-                formatter={(v: number) => [formatArr(v), 'ARR']}
-              />
-              <Line
-                type="monotone"
-                dataKey="arr"
-                stroke="var(--accent)"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
       {/* ARR Movements waterfall */}
       {!movLoading && movements && movements.movements.length > 1 && (
         <div className={`card ${styles.chartCard}`}>
-          <h2 className={styles.chartTitle}>ARR Movements (New / Expansion / Contraction / Churn)</h2>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', gap: 16 }}>
+          <div className={styles.sectionHeader} style={{ marginTop: 0 }}>
+            <div>
+              <h2 className={styles.chartTitle}>ARR Movements + ARR Over Time</h2>
+              <div className={styles.rangeInfo}>Left axis = movements. Right purple axis = ARR.</div>
+            </div>
+            <a href="/docs/saas/arr-rebuild/gui-demo/" className={styles.inlineLink}>← Back to Demo</a>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <span>Net movement: <strong style={{ color: movements.totalNetMovement >= 0 ? 'var(--success)' : 'var(--danger)' }}>{movements.totalNetMovement >= 0 ? '+' : ''}{formatArr(movements.totalNetMovement)}</strong></span>
             <span>New: <strong style={{ color: '#22c55e' }}>+{formatArr(movements.totalNewArr)}</strong></span>
             <span>Expansion: <strong style={{ color: '#86efac' }}>+{formatArr(movements.totalExpansionArr)}</strong></span>
             <span>Contraction: <strong style={{ color: '#f97316' }}>−{formatArr(movements.totalContractionArr)}</strong></span>
             <span>Churn: <strong style={{ color: '#ef4444' }}>−{formatArr(movements.totalChurnArr)}</strong></span>
+            <span>Closing ARR: <strong style={{ color: '#6d28d9' }}>{formatArr(movements.movements[movements.movements.length - 1]?.closingArr ?? 0)}</strong></span>
           </div>
           <ArrWaterfallChart movements={movements.movements} />
         </div>
