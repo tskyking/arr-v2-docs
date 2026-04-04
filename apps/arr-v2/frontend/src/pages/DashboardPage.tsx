@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const [preset, setPreset] = useState<Preset>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [selectedMovementPeriod, setSelectedMovementPeriod] = useState<string | null>(null);
 
   const {
     data: summary,
@@ -132,6 +133,15 @@ export default function DashboardPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const latestPeriod = movements?.movements[movements.movements.length - 1]?.period ?? null;
+    setSelectedMovementPeriod((current) => {
+      if (!latestPeriod) return null;
+      if (!current) return latestPeriod;
+      return movements?.movements.some((movement) => movement.period === current) ? current : latestPeriod;
+    });
+  }, [movements]);
+
   function handleRefreshNow() {
     refetchSummary();
     refetchTimeseries();
@@ -190,11 +200,20 @@ export default function DashboardPage() {
     : null;
 
   const cube = importId && isDemoImportId(importId) ? demoCustomerCube : null;
+  const selectedMovement = movements?.movements.find((movement) => movement.period === selectedMovementPeriod)
+    ?? movements?.movements[movements.movements.length - 1]
+    ?? null;
   const customers = customerList?.customers ?? [];
   const customersWithReview = customers.filter(customer => customer.requiresReview);
   const customersWithCurrentArr = customers.filter(customer => customer.currentArr > 0);
   const reviewCustomersPreview = customersWithReview.slice(0, 6);
   const customerRosterPreview = customers.slice(0, 10);
+  const movementHighlights = selectedMovement ? [
+    selectedMovement.newArr > 75_000 ? `Strong new ARR month (${formatArr(selectedMovement.newArr)})` : null,
+    selectedMovement.expansionArr > 100_000 ? `Large expansion wave (${formatArr(selectedMovement.expansionArr)})` : null,
+    (selectedMovement.contractionArr + selectedMovement.churnArr) > 40_000 ? `Meaningful downside to inspect (${formatArr(selectedMovement.contractionArr + selectedMovement.churnArr)})` : null,
+    selectedMovement.churnArr > 0 ? `${selectedMovement.churnedCustomers} churned customer${selectedMovement.churnedCustomers === 1 ? '' : 's'}` : null,
+  ].filter(Boolean) as string[] : [];
 
   return (
     <div>
@@ -391,7 +410,91 @@ export default function DashboardPage() {
             <span>Churn: <strong style={{ color: '#ef4444' }}>−{formatArr(movements.totalChurnArr)}</strong></span>
             <span>Closing ARR: <strong style={{ color: '#6d28d9' }}>{formatArr(movements.movements[movements.movements.length - 1]?.closingArr ?? 0)}</strong></span>
           </div>
-          <ArrWaterfallChart movements={movements.movements} />
+          <ArrWaterfallChart
+            movements={movements.movements}
+            selectedPeriod={selectedMovement?.period ?? null}
+            onSelectPeriod={setSelectedMovementPeriod}
+          />
+
+          {selectedMovement && (
+            <>
+              <div className={styles.movementSelectorRow}>
+                {movements.movements.map((movement) => {
+                  const riskAmount = movement.contractionArr + movement.churnArr;
+                  const variant = riskAmount >= 40_000 ? 'risk' : movement.newArr >= 75_000 ? 'positive' : 'neutral';
+                  return (
+                    <button
+                      key={movement.period}
+                      type="button"
+                      className={selectedMovement.period === movement.period ? styles.movementChipActive : styles.movementChip}
+                      onClick={() => setSelectedMovementPeriod(movement.period)}
+                    >
+                      <span>{movement.period}</span>
+                      <strong>{movement.netMovement >= 0 ? '+' : ''}{formatArr(movement.netMovement)}</strong>
+                      <em className={variant === 'risk' ? styles.movementChipRisk : variant === 'positive' ? styles.movementChipPositive : undefined}>
+                        {riskAmount >= 40_000 ? 'watch downside' : movement.newArr >= 75_000 ? 'new ARR spike' : 'normal'}
+                      </em>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={styles.movementDrilldownGrid}>
+                <div className={`card ${styles.movementDetailCard}`}>
+                  <div className={styles.sectionHeader} style={{ marginTop: 0, marginBottom: 10 }}>
+                    <div>
+                      <h3 className={styles.panelTitle} style={{ marginBottom: 4 }}>Month drilldown — {selectedMovement.period}</h3>
+                      <div className={styles.rangeInfo}>Click bars or month chips to inspect one month without relying on hover.</div>
+                    </div>
+                  </div>
+
+                  <div className={styles.statGrid} style={{ marginBottom: 16 }}>
+                    <StatCard label="Opening ARR" value={formatArr(selectedMovement.openingArr)} sub="Starting point for the month" />
+                    <StatCard label="Net Movement" value={`${selectedMovement.netMovement >= 0 ? '+' : ''}${formatArr(selectedMovement.netMovement)}`} sub={`${formatArr(selectedMovement.closingArr)} closing ARR`} />
+                    <StatCard label="Gross New + Expansion" value={formatArr(selectedMovement.newArr + selectedMovement.expansionArr)} sub={`${selectedMovement.newCustomers} new · ${selectedMovement.expandedCustomers} expanded`} />
+                    <StatCard label="Contraction + Churn" value={formatArr(selectedMovement.contractionArr + selectedMovement.churnArr)} sub={`${selectedMovement.contractedCustomers} contracted · ${selectedMovement.churnedCustomers} churned`} />
+                  </div>
+
+                  <div className={styles.reviewPanels} style={{ marginBottom: 0 }}>
+                    <div className={`card ${styles.reviewPanel}`}>
+                      <h4 className={styles.panelTitle}>Positive movement</h4>
+                      <div className={styles.issueList}>
+                        <div className={styles.issueRow}><span className={styles.issueLabel}>New ARR</span><span className={styles.issueCount}>+{formatArr(selectedMovement.newArr)}</span></div>
+                        <div className={styles.issueRow}><span className={styles.issueLabel}>Expansion ARR</span><span className={styles.issueCount}>+{formatArr(selectedMovement.expansionArr)}</span></div>
+                        <div className={styles.issueRow}><span className={styles.issueLabel}>Customer adds</span><span className={styles.issueCount}>{selectedMovement.newCustomers + selectedMovement.expandedCustomers}</span></div>
+                      </div>
+                    </div>
+                    <div className={`card ${styles.reviewPanel}`}>
+                      <h4 className={styles.panelTitle}>Downside movement</h4>
+                      <div className={styles.issueList}>
+                        <div className={styles.issueRow}><span className={styles.issueLabel}>Contraction ARR</span><span className={styles.issueCount}>−{formatArr(selectedMovement.contractionArr)}</span></div>
+                        <div className={styles.issueRow}><span className={styles.issueLabel}>Churn ARR</span><span className={styles.issueCount}>−{formatArr(selectedMovement.churnArr)}</span></div>
+                        <div className={styles.issueRow}><span className={styles.issueLabel}>Customer losses</span><span className={styles.issueCount}>{selectedMovement.contractedCustomers + selectedMovement.churnedCustomers}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`card ${styles.movementDetailCard}`}>
+                  <h3 className={styles.panelTitle}>Evaluator notes</h3>
+                  {movementHighlights.length === 0 ? (
+                    <div className={styles.emptyState}>No extreme signal flags on this month; use the chips to scan for spikes or downside.</div>
+                  ) : (
+                    <div className={styles.movementHighlightList}>
+                      {movementHighlights.map((highlight) => (
+                        <span key={highlight} className={styles.movementHighlight}>{highlight}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className={styles.issueList} style={{ marginTop: 14 }}>
+                    <div className={styles.issueRow}><span className={styles.issueLabel}>New ARR share of gross adds</span><span className={styles.issueCount}>{selectedMovement.newArr + selectedMovement.expansionArr > 0 ? `${((selectedMovement.newArr / (selectedMovement.newArr + selectedMovement.expansionArr)) * 100).toFixed(0)}%` : '0%'}</span></div>
+                    <div className={styles.issueRow}><span className={styles.issueLabel}>Downside as % of opening ARR</span><span className={styles.issueCount}>{selectedMovement.openingArr > 0 ? `${(((selectedMovement.contractionArr + selectedMovement.churnArr) / selectedMovement.openingArr) * 100).toFixed(1)}%` : '0.0%'}</span></div>
+                    <div className={styles.issueRow}><span className={styles.issueLabel}>Net change vs opening</span><span className={styles.issueCount}>{selectedMovement.openingArr > 0 ? `${((selectedMovement.netMovement / selectedMovement.openingArr) * 100).toFixed(1)}%` : '0.0%'}</span></div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

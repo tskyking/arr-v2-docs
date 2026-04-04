@@ -21,10 +21,74 @@ import {
 } from 'recharts';
 import type { ArrMovement } from '@/lib/api';
 
+interface AxisTickProps {
+  x?: number;
+  y?: number;
+  payload?: { value: number };
+}
+
+function LeftAxisTick({ x = 0, y = 0, payload }: AxisTickProps) {
+  const value = Number(payload?.value ?? 0);
+  const color = value < 0 ? '#dc2626' : '#16a34a';
+  return (
+    <g>
+      <line x1={x - 6} y1={y} x2={x} y2={y} stroke={color} strokeWidth={1.5} />
+      <text x={x - 8} y={y} dy={4} textAnchor="end" fill={color} fontSize={11}>
+        {fmt(value)}
+      </text>
+    </g>
+  );
+}
+
+function LeftAxisLine({ x = 0, y1 = 0, y2 = 0 }: { x?: number; y1?: number; y2?: number }) {
+  const zeroY = (y1 + y2) / 2;
+  return (
+    <g>
+      <line x1={x} y1={y1} x2={x} y2={zeroY} stroke="#16a34a" strokeWidth={2} />
+      <line x1={x} y1={zeroY} x2={x} y2={y2} stroke="#dc2626" strokeWidth={2} />
+    </g>
+  );
+}
+
 interface Props {
   movements: ArrMovement[];
   /** Only render this many of the most-recent periods to avoid clutter */
   maxPeriods?: number;
+  selectedPeriod?: string | null;
+  onSelectPeriod?: (period: string) => void;
+}
+
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload || !payload.length) return null;
+
+  const byKey = new Map<string, number>();
+  for (const item of payload) {
+    byKey.set(item.dataKey, Number(item.value ?? 0));
+  }
+
+  const rows = [
+    { key: 'closingArr', label: 'Closing ARR', color: COLORS.closing },
+    { key: 'new', label: 'New ARR', color: COLORS.new },
+    { key: 'expansion', label: 'Expansion', color: COLORS.expansion },
+    { key: 'contraction', label: 'Contraction', color: COLORS.contraction },
+    { key: 'churn', label: 'Churn', color: COLORS.churn },
+  ];
+
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', fontSize: 12, minWidth: 180 }}>
+      <div style={{ color: 'var(--text)', marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      {rows.map((row) => {
+        const value = byKey.get(row.key);
+        if (value === undefined) return null;
+        return (
+          <div key={row.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 4 }}>
+            <span style={{ color: row.color, fontWeight: 600 }}>{row.label}</span>
+            <span style={{ color: 'var(--text)' }}>{fmt(Math.abs(value))}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function fmt(n: number) {
@@ -35,31 +99,80 @@ function fmt(n: number) {
 }
 
 const COLORS = {
-  new: '#22c55e',         // green
-  expansion: '#86efac',   // light green
-  contraction: '#f97316', // orange
-  churn: '#ef4444',       // red
-  closing: '#6366f1',     // indigo line
+  new: '#22c55e',
+  expansion: '#86efac',
+  contraction: '#f97316',
+  churn: '#ef4444',
+  closing: '#6d28d9',
+  leftAxis: '#16a34a',
+  rightAxis: '#6d28d9',
 };
 
-export default function ArrWaterfallChart({ movements, maxPeriods = 24 }: Props) {
+function roundUpTo(value: number, step: number) {
+  return Math.ceil(value / step) * step;
+}
+
+function buildLeftAxisTicks(leftMin: number, leftMax: number): number[] {
+  // Always include an explicit green $0 marker so the viewer can clearly see
+  // where positive bars rise from and negative bars fall from.
+  const ticks = new Set<number>([leftMin, 0, leftMax]);
+  const negMid = Math.round(leftMin / 2 / 25_000) * 25_000;
+  const posMid = Math.round(leftMax / 2 / 25_000) * 25_000;
+  if (negMid !== leftMin && negMid !== 0) ticks.add(negMid);
+  if (posMid !== leftMax && posMid !== 0) ticks.add(posMid);
+  return [...ticks].sort((a, b) => a - b);
+}
+
+export default function ArrWaterfallChart({
+  movements,
+  maxPeriods = 24,
+  selectedPeriod,
+  onSelectPeriod,
+}: Props) {
   const visible = movements.slice(-maxPeriods);
 
   const chartData = visible.map(m => ({
     period: m.period,
-    // Positive bars
     new: m.newArr,
     expansion: m.expansionArr,
-    // Negative bars (stored as negative for below-zero rendering)
     contraction: -m.contractionArr,
     churn: -m.churnArr,
-    // Overlay line
     closingArr: m.closingArr,
   }));
 
+  const maxPositiveMovement = Math.max(0, ...chartData.map(d => d.new + d.expansion));
+  const maxNegativeMovement = Math.max(0, ...chartData.map(d => Math.abs(d.contraction + d.churn)));
+
+  // Presentation-oriented movement axis:
+  // - always includes $0
+  // - keeps negative side close to real downside
+  // - expands positive side intentionally so bars stay visually low and do not
+  //   collide with the ARR line band above
+  const leftMin = -Math.max(100_000, roundUpTo(maxNegativeMovement * 1.1, 25_000));
+  const leftMax = Math.max(
+    750_000,
+    roundUpTo(maxPositiveMovement * 3.0, 100_000),
+  );
+
+  const leftTicks = buildLeftAxisTicks(leftMin, leftMax);
+
+  const maxClosing = Math.max(0, ...chartData.map(d => d.closingArr));
+  const minClosing = Math.min(...chartData.map(d => d.closingArr));
+  const closingSpan = Math.max(1, maxClosing - minClosing);
+
+  // Presentation-oriented ARR axis:
+  // push the lowest ARR point into the upper band of the chart so the purple
+  // line remains clearly above the movement bars even as data changes.
+  const rightTopPad = Math.max(500_000, closingSpan * 0.08);
+  const rightMax = roundUpTo(maxClosing + rightTopPad, 1_000_000);
+  const targetTopFractionForMinLine = 0.34;
+  const computedRightMin = rightMax - ((rightMax - minClosing) / targetTopFractionForMinLine);
+  const minimumFloor = minClosing - Math.max(3_000_000, closingSpan * 2.0);
+  const rightMin = Math.min(computedRightMin, minimumFloor);
+
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+    <ResponsiveContainer width="100%" height={360}>
+      <ComposedChart data={chartData} margin={{ top: 10, right: 28, left: 10, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis
           dataKey="period"
@@ -69,30 +182,36 @@ export default function ArrWaterfallChart({ movements, maxPeriods = 24 }: Props)
           height={visible.length > 12 ? 44 : 24}
         />
         <YAxis
+          yAxisId="left"
+          domain={[leftMin, leftMax]}
+          ticks={leftTicks}
+          tick={<LeftAxisTick />}
+          axisLine={<LeftAxisLine />}
+          tickLine={false}
+          width={82}
+          label={{ value: 'Movements', angle: -90, position: 'insideLeft', fill: COLORS.leftAxis, dx: -2 }}
+        />
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          domain={[rightMin, rightMax]}
           tickFormatter={v => fmt(v)}
-          tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-          width={72}
+          tick={{ fill: COLORS.rightAxis, fontSize: 11 }}
+          axisLine={{ stroke: COLORS.rightAxis, strokeWidth: 2 }}
+          tickLine={{ stroke: COLORS.rightAxis }}
+          width={88}
+          label={{ value: 'ARR', angle: 90, position: 'insideRight', fill: COLORS.rightAxis, dx: 2 }}
         />
-        <ReferenceLine y={0} stroke="var(--border)" strokeWidth={1.5} />
-        <Tooltip
-          contentStyle={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            fontSize: 12,
-          }}
-          labelStyle={{ color: 'var(--text)', marginBottom: 4, fontWeight: 600 }}
-          formatter={(value: number, name: string) => {
-            const labels: Record<string, string> = {
-              new: 'New ARR',
-              expansion: 'Expansion',
-              contraction: 'Contraction',
-              churn: 'Churn',
-              closingArr: 'Closing ARR',
-            };
-            return [fmt(Math.abs(value)), labels[name] ?? name];
-          }}
-        />
+        <ReferenceLine yAxisId="left" y={0} stroke="var(--border)" strokeWidth={1.5} />
+        {selectedPeriod && (
+          <ReferenceLine
+            x={selectedPeriod}
+            stroke="rgba(99, 102, 241, 0.7)"
+            strokeWidth={2}
+            strokeDasharray="4 4"
+          />
+        )}
+        <Tooltip content={<CustomTooltip />} />
         <Legend
           wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
           formatter={(value: string) => {
@@ -106,15 +225,16 @@ export default function ArrWaterfallChart({ movements, maxPeriods = 24 }: Props)
             return labels[value] ?? value;
           }}
         />
-        <Bar dataKey="new" stackId="pos" fill={COLORS.new} radius={[2, 2, 0, 0]} />
-        <Bar dataKey="expansion" stackId="pos" fill={COLORS.expansion} />
-        <Bar dataKey="contraction" stackId="neg" fill={COLORS.contraction} />
-        <Bar dataKey="churn" stackId="neg" fill={COLORS.churn} radius={[0, 0, 2, 2]} />
+        <Bar yAxisId="left" dataKey="new" stackId="pos" fill={COLORS.new} radius={[2, 2, 0, 0]} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="expansion" stackId="pos" fill={COLORS.expansion} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="contraction" stackId="neg" fill={COLORS.contraction} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="churn" stackId="neg" fill={COLORS.churn} radius={[0, 0, 2, 2]} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
         <Line
+          yAxisId="right"
           type="monotone"
           dataKey="closingArr"
           stroke={COLORS.closing}
-          strokeWidth={2}
+          strokeWidth={3}
           dot={false}
           activeDot={{ r: 4 }}
         />

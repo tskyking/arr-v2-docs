@@ -194,6 +194,80 @@
   margin-bottom: 8px;
 }
 
+.movementSelectorRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  margin-bottom: 16px;
+}
+
+.movementChip,
+.movementChipActive {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 118px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.movementChipActive {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.14);
+}
+
+.movementChip strong,
+.movementChipActive strong {
+  font-size: 14px;
+}
+
+.movementChip em,
+.movementChipActive em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.movementChipRisk {
+  color: var(--danger) !important;
+}
+
+.movementChipPositive {
+  color: var(--success) !important;
+}
+
+.movementDrilldownGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 16px;
+}
+
+.movementDetailCard {
+  padding: 18px;
+}
+
+.movementHighlightList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.movementHighlight {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-size: 12px;
+}
+
 .customerCubeCard {
   overflow: hidden;
 }
@@ -276,6 +350,10 @@
   }
 
   .cubeNarrativeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .movementDrilldownGrid {
     grid-template-columns: 1fr;
   }
 
