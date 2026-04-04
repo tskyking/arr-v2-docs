@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 40 — tightened Customer Cube tenant-scope/export checks and clarified admin validation steps before sharing)_
+_Last updated: 2026-04-04 (Session 41 — expanded Customer Cube date-window validation, reinforced active-import checks, and clarified export timing after filter changes)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -163,7 +163,8 @@ Client data is loaded via the **Import** function within a client's tenant conte
 19. Open at least one expected customer from the roster or top-customer list and confirm their history appears chronological and tenant-scoped.
 20. If you plan to export ARR, movements, or Customer Cube data for a client, verify the visible period window before downloading so the file matches the narrative you are preparing.
 21. If the tenant uses Customer Cube, confirm that the visible month columns stay aligned after any date filter change before you export or screenshot it.
-22. When validating a customer-specific complaint, prove the issue inside the active tenant first; a matching customer name in another tenant is not evidence of a shared-data defect.
+22. After changing a cube date filter, wait for the visible month columns to settle before exporting or capturing screenshots.
+23. When validating a customer-specific complaint, prove the issue inside the active tenant first; a matching customer name in another tenant is not evidence of a shared-data defect.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 > 💡 **Tip:** The seeded demo workbook is currently a clean 3-sheet reference example. It is useful for training, screenshots, and validating that a walkthrough environment is behaving as expected before you switch back to live tenant data.
@@ -336,7 +337,8 @@ Admin usage guidance:
 6. Before exporting the cube, confirm the month columns or date filters shown in the UI still match the reporting window you intend to share.
 7. Spot-check at least one visible customer row or traceability field before sending the export externally so you know the file reflects the intended import context.
 8. Re-export after any date-filter change; do not assume an older cube CSV still matches the on-screen window.
-9. If you are using the cube for audit or diligence support, verify that invoice and source-row traceability fields are still present in the current response/export.
+9. After any date-filter change, confirm the month columns on screen reflect the new window before exporting.
+10. If you are using the cube for audit or diligence support, verify that invoice and source-row traceability fields are still present in the current response/export.
 
 **Current cube dimensions and traceability fields:**
 - Customer
@@ -369,9 +371,10 @@ If a tenant says the exported ARR, movements CSV, or Customer Cube output does n
 3. Confirm the dashboard date range or cube month filter is set correctly.
 4. Re-export the file only after verifying those three context values.
 5. If Customer Cube is involved, also confirm the month-column window still matches the intended reporting range after the most recent filter change.
-6. If Customer Cube is involved, confirm the current export still contains the invoice/source-row traceability fields expected for diligence or audit support.
-7. Spot-check one customer row in the downloaded file against the on-screen cube before escalating.
-8. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
+6. If Customer Cube is involved, confirm the on-screen month columns have finished updating before exporting or comparing screenshots.
+7. If Customer Cube is involved, confirm the current export still contains the invoice/source-row traceability fields expected for diligence or audit support.
+8. Spot-check one customer row in the downloaded file against the on-screen cube before escalating.
+9. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
 
 > 💡 **Tip:** In the current verified behavior, Customer Cube JSON and CSV outputs are tenant-scoped and should stay aligned to the selected import and active date window. Most mismatches are context mistakes, not leakage or cross-tenant mixing.
 

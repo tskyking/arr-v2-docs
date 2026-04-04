@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 40 — clarified Customer Cube JSON/CSV export expectations, tenant scoping, and import/date-range verification before sharing)_
+_Last updated: 2026-04-04 (Session 41 — added Customer Cube date-window/export checks, clarified month alignment after filtering, and tightened guidance for validating the active import before sharing)_
 
 ---
 
@@ -356,11 +356,12 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 4. Follow the customer links in the cube when you need to drill back into account-level detail.
 5. If the Customer Cube download button is available, export the cube as CSV for offline review, board prep, or stakeholder walkthroughs.
 6. When filtering by date range, confirm the visible month columns still align with the period window you meant to present.
-7. Before sharing the export, verify that the active import and visible month range still match the story you intend to tell.
-8. If a customer appears in another company workspace with the same name, remember that the current cube should still reflect only the active company's import data.
-9. Re-export after any date-range change rather than assuming an older CSV still matches what is on screen.
-10. Before trusting the export, spot-check at least one visible invoice number or source-row traceability field against what you see on screen.
-11. Treat the export as a snapshot of the current import and visible month window, not as a live-updating report.
+7. After changing the date window, wait for the cube to finish updating before exporting or screenshotting it.
+8. Before sharing the export, verify that the active import and visible month range still match the story you intend to tell.
+9. If a customer appears in another company workspace with the same name, remember that the current cube should still reflect only the active company's import data.
+10. Re-export after any date-range change rather than assuming an older CSV still matches what is on screen.
+11. Before trusting the export, spot-check at least one visible invoice number or source-row traceability field against what you see on screen.
+12. Treat the export as a snapshot of the current import and visible month window, not as a live-updating report.
 
 **What the Customer Cube shows today:**
 - Customer
@@ -371,6 +372,7 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 - Review-needed indicator
 - Source invoice numbers and workbook row traceability notes
 - Period filtering that stays aligned with the visible dashboard range when available in your deployment
+- Month columns that should stay synchronized with the currently selected date window after filtering
 - Export behavior that preserves audit-friendly traceability fields for the selected import and date window
 - A CSV export that should mirror the same active import and visible period window you are reviewing on screen
 
@@ -379,7 +381,8 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 2. Confirm the visible date range or month window.
 3. Spot-check one customer row against the on-screen cube.
 4. Confirm traceability fields such as invoice references or source-row context are present if you need audit support.
-5. Re-export after any filter change instead of reusing an older file.
+5. After changing the date window, confirm the month columns updated before exporting.
+6. Re-export after any filter change instead of reusing an older file.
 
 > 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, product, movement, and traceability context in one place.
 > 💡 **Tip:** If you export the Customer Cube, keep it paired with the same active import and date range you used for the dashboard walkthrough.
