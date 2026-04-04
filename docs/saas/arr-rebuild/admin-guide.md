@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 42 — documented movement month drilldown behavior, added admin validation guidance for selected periods, and tightened export timing checks)_
+_Last updated: 2026-04-04 (Session 43 — clarified current import entry paths, documented live refresh and manual refresh controls, and tightened Customer Cube export validation for admins)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -141,6 +141,15 @@ This trail cannot be deleted or modified.
 ### Loading Client Data
 
 Client data is loaded via the **Import** function within a client's tenant context. As SU, you can perform imports on behalf of a client, or instruct the Tenant Admin to do so.
+
+In the current beta build, admins have three practical entry paths:
+
+1. **Upload a workbook** through the drag-and-drop or file-picker flow.
+2. **Import by trusted local file path** in internal or controlled deployments where the server can read the workbook directly.
+3. **Reopen an existing import** from the Import page history or the header import selector when validation does not require a new upload.
+
+> 💡 **Tip:** Prefer reopening an existing import when you are validating exports, screenshots, or prior review actions. It avoids accidental duplicate uploads and keeps the audit story cleaner.
+
 
 1. Switch into the client's tenant context (see Section 3).
 2. Navigate to **Import**.
@@ -311,7 +320,7 @@ When a tenant asks whether their workbook is "ready," check these basics before 
 
 ### Dashboard Refresh Behavior
 
-Current beta builds include live dashboard refresh behavior. Admins should expect summary cards, review-progress counts, and some chart data to update automatically after a successful import or after review actions change the state of the active import. The dashboard now also supports month-level drilldown on the ARR movement chart so admins can inspect one period in more detail without depending on hover state.
+Current beta builds include live dashboard refresh behavior. Admins should expect summary cards, review-progress counts, and some chart data to update automatically after a successful import or after review actions change the state of the active import. The dashboard now also supports month-level drilldown on the ARR movement chart so admins can inspect one period in more detail without depending on hover state. The header currently shows both **Live refresh every 30s** status and a **Refresh now** control.
 
 Operational guidance:
 
@@ -340,6 +349,8 @@ Admin usage guidance:
 8. Re-export after any date-filter change; do not assume an older cube CSV still matches the on-screen window.
 9. After any date-filter change, confirm the month columns on screen reflect the new window before exporting.
 10. If you are using the cube for audit or diligence support, verify that invoice and source-row traceability fields are still present in the current response/export.
+11. If the dashboard has been open during review activity, use **Refresh now** before exporting so the cube reflects the latest tenant-scoped state.
+12. If you switched imports from the header selector, verify that the cube export is tied to the intended import before sharing it with a client or stakeholder.
 
 **Current cube dimensions and traceability fields:**
 - Customer

@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 42 — documented dashboard month drilldown for ARR movements, clarified period-selection behavior, and tightened export guidance around the active month window)_
+_Last updated: 2026-04-04 (Session 43 — clarified current import entry paths, documented live refresh and manual refresh controls, and added Customer Cube export validation guidance for end users)_
 
 ---
 
@@ -192,6 +192,15 @@ A clean import-ready workbook usually has these qualities:
 
 ### 3.4 Step-by-Step Import Walkthrough
 
+In the current build, there are **three practical ways** to open data for analysis:
+
+1. **Upload an `.xlsx` file** by clicking the drop zone or dragging a file onto it.
+2. **Enter a local file path** if your deployment supports server-side imports for internal testing or guided admin-assisted workflows.
+3. **Reopen a previous import** from the Import page history table or the header import selector if you do not need to upload again.
+
+> 💡 **Tip:** Reopening a prior import is safer than re-uploading the same workbook when you only need to compare results or grab screenshots.
+
+
 1. From the main navigation, click **Import**.
 2. Confirm you are in the correct company workspace shown in the page header.
 3. Confirm the **Tenant** shown in the app header is correct before uploading.
@@ -342,6 +351,9 @@ If someone says a customer is missing, duplicated, or showing the wrong ARR:
 
 Use Customer Cube as a second-pass validation surface after import, not as your first signal that the import worked.
 
+In the current UI, the Dashboard header shows a **Customer Cube Download** button when that surface is available for the active import. You can also open the full cube page from the dashboard's customer section.
+
+
 A good quick check is:
 1. Confirm the dashboard summary cards look reasonable.
 2. Open one expected customer from the roster.
@@ -383,6 +395,8 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 4. Confirm traceability fields such as invoice references or source-row context are present if you need audit support.
 5. After changing the date window, confirm the month columns updated before exporting.
 6. Re-export after any filter change instead of reusing an older file.
+7. If the dashboard has been open for a while, use **Refresh now** before exporting so the cube and dashboard context reflect the latest import/review state.
+8. If you reopened an older import from the header selector, verify that you are exporting from that older run on purpose and not by accident.
 
 > 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, product, movement, and traceability context in one place.
 > 💡 **Tip:** If you export the Customer Cube, keep it paired with the same active import and date range you used for the dashboard walkthrough.
