@@ -206,6 +206,7 @@ export default function ArrWaterfallChart({
         {selectedPeriod && (
           <ReferenceLine
             x={selectedPeriod}
+            yAxisId="left"
             stroke="rgba(99, 102, 241, 0.7)"
             strokeWidth={2}
             strokeDasharray="4 4"
