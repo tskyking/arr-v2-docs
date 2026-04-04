@@ -111,6 +111,36 @@ export interface CustomerDetailResponse {
   openReviewCount: number;
 }
 
+export interface CustomerCubeRow {
+  customerName: string;
+  productService: string;
+  category: string;
+  sourceInvoiceNumbers: string[];
+  sourceRowNumbers: number[];
+  periods: Array<{ period: string; arr: number }>;
+  openingArr: number;
+  closingArr: number;
+  netChange: number;
+  movement: 'New' | 'Expansion' | 'Contraction' | 'Churn' | 'Flat';
+  requiresReview: boolean;
+}
+
+export interface CustomerCubeResponse {
+  importId: string;
+  fromDate: string;
+  toDate: string;
+  periods: string[];
+  summary: {
+    trackedCustomers: number;
+    trackedRows: number;
+    trackedProductServices: number;
+    openingArr: number;
+    closingArr: number;
+    netChange: number;
+  };
+  rows: CustomerCubeRow[];
+}
+
 // ─── Review Stats ────────────────────────────────────────────────
 
 /** Summary statistics for the review queue screen header. */

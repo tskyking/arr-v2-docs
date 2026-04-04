@@ -10,6 +10,7 @@ import type {
   ReviewStats,
   CustomerListResult,
   CustomerDetail,
+  CustomerCubeResult,
 } from './api';
 import * as api from './api';
 import { useArrSettings } from './settings';
@@ -94,6 +95,15 @@ export function useArrMovements(importId: string, from?: string | null, to?: str
 export function useCustomerList(importId: string, options?: UseAsyncOptions) {
   const { tenantId } = useArrSettings();
   return useAsync<CustomerListResult>(() => api.getCustomerList(importId), [tenantId, importId], options);
+}
+
+export function useCustomerCube(importId: string, from?: string | null, to?: string | null, options?: UseAsyncOptions) {
+  const { tenantId } = useArrSettings();
+  return useAsync<CustomerCubeResult>(
+    () => api.getCustomerCube(importId, from ?? undefined, to ?? undefined),
+    [tenantId, importId, from, to],
+    options,
+  );
 }
 
 export function useCustomerDetail(importId: string, customerName: string, options?: UseAsyncOptions) {

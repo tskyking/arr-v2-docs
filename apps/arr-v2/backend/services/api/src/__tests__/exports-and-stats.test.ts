@@ -33,7 +33,7 @@
 
 import http from 'node:http';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { listImports, exportArrCsv, exportMovementsCsv, getReviewStats } from '../importService.js';
+import { listImports, exportArrCsv, exportMovementsCsv, getReviewStats, getCustomerCube, exportCustomerCubeCsv } from '../importService.js';
 
 const TEST_TENANT = 'default';
 
@@ -297,5 +297,37 @@ describe('exportMovementsCsv — null for unknown importId', () => {
 describe('getReviewStats — null for unknown importId', () => {
   it('20. returns null for unknown importId', () => {
     expect(getReviewStats(TEST_TENANT, FAKE_ID)).toBeNull();
+  });
+});
+
+describe('GET /imports/:id/customer-cube and export', () => {
+  it('21. returns 200 JSON with cube summary + rows for a real import', async () => {
+    const id = getRealImportId();
+    if (!id) return;
+    const res = await request('GET', `/imports/${id}/customer-cube`);
+    expect(res.status).toBe(200);
+    const body = res.json as Record<string, any>;
+    expect(typeof body.importId).toBe('string');
+    expect(Array.isArray(body.periods)).toBe(true);
+    expect(Array.isArray(body.rows)).toBe(true);
+    expect(typeof body.summary?.trackedCustomers).toBe('number');
+  });
+
+  it('22. CSV export returns 200 and includes customer/product/category columns', async () => {
+    const id = getRealImportId();
+    if (!id) return;
+    const res = await request('GET', `/imports/${id}/customer-cube/export.csv`);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/text\/csv/);
+    const header = res.body.split('\n')[0];
+    expect(header).toContain('customer_name');
+    expect(header).toContain('product_service');
+    expect(header).toContain('category');
+    expect(header).toContain('source_invoice_numbers');
+  });
+
+  it('23. direct service functions return null for unknown importId', () => {
+    expect(getCustomerCube(TEST_TENANT, FAKE_ID)).toBeNull();
+    expect(exportCustomerCubeCsv(TEST_TENANT, FAKE_ID)).toBeNull();
   });
 });

@@ -21,6 +21,8 @@ import type {
   CustomerSummary,
   CustomerListResponse,
   CustomerDetailResponse,
+  CustomerCubeResponse,
+  CustomerCubeRow,
 } from './types.js';
 import { ImportError, wrapUnknownError } from '../../imports/src/importErrors.js';
 import {
@@ -538,6 +540,145 @@ export function exportMovementsCsv(tenantId: string, importId: string, from?: st
     '',
     '',
   ]));
+
+  return lines.join('\n') + '\n';
+}
+
+function classifyMovement(openingArr: number, closingArr: number): CustomerCubeRow['movement'] {
+  if (openingArr === 0 && closingArr > 0) return 'New';
+  if (openingArr > 0 && closingArr === 0) return 'Churn';
+  if (closingArr > openingArr) return 'Expansion';
+  if (closingArr < openingArr) return 'Contraction';
+  return 'Flat';
+}
+
+export function getCustomerCube(tenantId: string, importId: string, from?: string, to?: string): CustomerCubeResponse | null {
+  const result = getTenantStore(tenantId).get(importId);
+  if (!result) return null;
+
+  const ts = getArrTimeseries(tenantId, importId, from, to);
+  if (!ts) return null;
+
+  const periods = ts.periods.map(period => period.period);
+  const fromDate = ts.fromDate;
+  const toDate = ts.toDate;
+  const fromPeriod = fromDate.slice(0, 7);
+  const toPeriod = toDate.slice(0, 7);
+
+  const rowBySource = new Map<number, any>();
+  for (const row of result.bundle.normalizedRows) rowBySource.set(row.sourceRowNumber, row);
+
+  const cubeMap = new Map<string, {
+    customerName: string;
+    productService: string;
+    category: string;
+    sourceInvoiceNumbers: Set<string>;
+    sourceRowNumbers: Set<number>;
+    periods: Map<string, number>;
+    requiresReview: boolean;
+  }>();
+
+  for (const segment of result.segments) {
+    if (segment.arrContribution === 0) continue;
+    const row = rowBySource.get(segment.sourceRowNumber);
+    const periodStart = segment.periodStart.slice(0, 7);
+    const periodEnd = segment.periodEnd.slice(0, 7);
+    const key = `${segment.siteName}__${row?.productService ?? 'Unknown'}__${segment.category}`;
+    const entry = cubeMap.get(key) ?? {
+      customerName: segment.siteName,
+      productService: row?.productService ?? 'Unknown',
+      category: segment.category,
+      sourceInvoiceNumbers: new Set<string>(),
+      sourceRowNumbers: new Set<number>(),
+      periods: new Map<string, number>(),
+      requiresReview: false,
+    };
+
+    for (const period of periods) {
+      if (period >= periodStart && period <= periodEnd) {
+        entry.periods.set(period, (entry.periods.get(period) ?? 0) + segment.arrContribution);
+      }
+    }
+    if (row?.sourceInvoiceNumber) entry.sourceInvoiceNumbers.add(row.sourceInvoiceNumber);
+    entry.sourceRowNumbers.add(segment.sourceRowNumber);
+    entry.requiresReview = entry.requiresReview || !!row?.requiresReview || !!segment.requiresReview;
+    cubeMap.set(key, entry);
+  }
+
+  const rows: CustomerCubeRow[] = [...cubeMap.values()].map(entry => {
+    const periodSeries = periods.map(period => ({ period, arr: Number((entry.periods.get(period) ?? 0).toFixed(2)) }));
+    const openingArr = periodSeries[0]?.arr ?? 0;
+    const closingArr = periodSeries[periodSeries.length - 1]?.arr ?? 0;
+    return {
+      customerName: entry.customerName,
+      productService: entry.productService,
+      category: entry.category,
+      sourceInvoiceNumbers: [...entry.sourceInvoiceNumbers].sort(),
+      sourceRowNumbers: [...entry.sourceRowNumbers].sort((a, b) => a - b),
+      periods: periodSeries,
+      openingArr,
+      closingArr,
+      netChange: Number((closingArr - openingArr).toFixed(2)),
+      movement: classifyMovement(openingArr, closingArr),
+      requiresReview: entry.requiresReview,
+    };
+  }).sort((a, b) => {
+    if (b.closingArr !== a.closingArr) return b.closingArr - a.closingArr;
+    return a.customerName.localeCompare(b.customerName);
+  });
+
+  return {
+    importId,
+    fromDate,
+    toDate,
+    periods,
+    summary: {
+      trackedCustomers: new Set(rows.map(row => row.customerName)).size,
+      trackedRows: rows.length,
+      trackedProductServices: new Set(rows.map(row => row.productService)).size,
+      openingArr: Number(rows.reduce((sum, row) => sum + row.openingArr, 0).toFixed(2)),
+      closingArr: Number(rows.reduce((sum, row) => sum + row.closingArr, 0).toFixed(2)),
+      netChange: Number(rows.reduce((sum, row) => sum + row.netChange, 0).toFixed(2)),
+    },
+    rows,
+  };
+}
+
+export function exportCustomerCubeCsv(tenantId: string, importId: string, from?: string, to?: string): string | null {
+  const cube = getCustomerCube(tenantId, importId, from, to);
+  if (!cube) return null;
+
+  const headers = [
+    'customer_name',
+    'product_service',
+    'category',
+    ...cube.periods,
+    'opening_arr',
+    'closing_arr',
+    'net_change',
+    'movement',
+    'requires_review',
+    'source_invoice_numbers',
+    'source_row_numbers',
+  ];
+  const lines: string[] = [csvRow(headers)];
+
+  for (const row of cube.rows) {
+    const periodMap = Object.fromEntries(row.periods.map(period => [period.period, period.arr]));
+    lines.push(csvRow([
+      row.customerName,
+      row.productService,
+      row.category,
+      ...cube.periods.map(period => periodMap[period] ?? 0),
+      row.openingArr,
+      row.closingArr,
+      row.netChange,
+      row.movement,
+      row.requiresReview ? 'yes' : 'no',
+      row.sourceInvoiceNumbers.join(' | '),
+      row.sourceRowNumbers.join(' | '),
+    ]));
+  }
 
   return lines.join('\n') + '\n';
 }

@@ -5,6 +5,7 @@
 
 import { buildApiPath, getArrSettings } from './settings';
 import {
+  demoCustomerCube,
   demoCustomers,
   demoImports,
   demoMovements,
@@ -315,6 +316,76 @@ export async function downloadArrCsv(importId: string, from?: string, to?: strin
 
 export async function downloadArrMovementsCsv(importId: string, from?: string, to?: string): Promise<void> {
   await downloadBlob(`/imports/${importId}/arr/movements/export.csv${buildQueryString(from, to)}`, `arr-movements-${importId.slice(0, 8)}.csv`);
+}
+
+export interface CustomerCubeRow {
+  customerName: string;
+  productService: string;
+  category: string;
+  sourceInvoiceNumbers: string[];
+  sourceRowNumbers: number[];
+  periods: Array<{ period: string; arr: number }>;
+  openingArr: number;
+  closingArr: number;
+  netChange: number;
+  movement: 'New' | 'Expansion' | 'Contraction' | 'Churn' | 'Flat';
+  requiresReview: boolean;
+}
+
+export interface CustomerCubeResult {
+  importId: string;
+  fromDate: string;
+  toDate: string;
+  periods: string[];
+  summary: {
+    trackedCustomers: number;
+    trackedRows: number;
+    trackedProductServices: number;
+    openingArr: number;
+    closingArr: number;
+    netChange: number;
+  };
+  rows: CustomerCubeRow[];
+}
+
+export async function getCustomerCube(importId: string, from?: string, to?: string): Promise<CustomerCubeResult> {
+  if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
+    return {
+      importId,
+      fromDate: `${demoCustomerCube.periods[0]}-01`,
+      toDate: `${demoCustomerCube.periods[demoCustomerCube.periods.length - 1]}-31`,
+      periods: demoCustomerCube.periods,
+      summary: {
+        trackedCustomers: demoCustomerCube.summary.trackedCustomers,
+        trackedRows: demoCustomerCube.rows.length,
+        trackedProductServices: new Set(demoCustomerCube.rows.flatMap(row => row.productFamilies.map(family => family.family))).size,
+        openingArr: demoCustomerCube.summary.openingArr,
+        closingArr: demoCustomerCube.summary.closingArr,
+        netChange: demoCustomerCube.summary.closingArr - demoCustomerCube.summary.openingArr,
+      },
+      rows: demoCustomerCube.rows.map(row => ({
+        customerName: row.customer,
+        productService: row.productFamilies.map(family => family.family).join(' + '),
+        category: row.segment,
+        sourceInvoiceNumbers: [row.traceability],
+        sourceRowNumbers: [],
+        periods: demoCustomerCube.periods.map((period, idx) => ({
+          period,
+          arr: row.productFamilies.reduce((sum, family) => sum + (family.arr[idx] ?? 0), 0),
+        })),
+        openingArr: row.openingArr,
+        closingArr: row.closingArr,
+        netChange: row.netChange,
+        movement: row.movement === 'Expansion' ? 'Expansion' : 'Flat',
+        requiresReview: false,
+      })),
+    };
+  }
+  return request<CustomerCubeResult>(`/imports/${importId}/customer-cube${buildQueryString(from, to)}`);
+}
+
+export async function downloadCustomerCubeCsv(importId: string, from?: string, to?: string): Promise<void> {
+  await downloadBlob(`/imports/${importId}/customer-cube/export.csv${buildQueryString(from, to)}`, `customer-cube-${importId.slice(0, 8)}.csv`);
 }
 
 // ─── Customers ───────────────────────────────────────────────────────────────

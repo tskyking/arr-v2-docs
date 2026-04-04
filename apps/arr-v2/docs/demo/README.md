@@ -27,3 +27,22 @@ npx tsx services/imports/src/demo.ts ../frontend/public/demo/arr-v2-demo-import.
 ```
 
 Expected result: the workbook parses with 0 review items in the current normalization pipeline.
+
+## Customer Cube foundation
+
+ARR V2 now exposes a first-pass Customer Cube surface for both live imports and the seeded GUI demo:
+
+- API JSON: `GET /imports/:id/customer-cube`
+- API CSV export: `GET /imports/:id/customer-cube/export.csv`
+- UI: `frontend/src/pages/CustomerCubePage.tsx`
+
+Current cube dimensions are deliberately audit-friendly and data-model-native:
+
+- customer
+- product/service
+- recognized category
+- monthly ARR period
+- source invoice numbers
+- source workbook row numbers
+
+This gives Brian a defensible diligence story now without pretending we already have a richer account hierarchy / segment master-data model.

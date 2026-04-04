@@ -15,6 +15,8 @@
  *   POST /imports/:id/review/bulk-resolve      — bulk-resolve open review items
  *   GET  /imports/:id/customers               — customer list with current ARR
  *   GET  /imports/:id/customers/:name         — customer detail: ARR history + review summary
+ *   GET  /imports/:id/customer-cube           — customer x product x category x period ARR cube
+ *   GET  /imports/:id/customer-cube/export.csv — customer cube CSV export
  *   DELETE /imports/:id                       — remove an import
  *   GET  /health                              — health check
  *
@@ -42,8 +44,10 @@ import {
   removeImport,
   getCustomerList,
   getCustomerDetail,
+  getCustomerCube,
   exportArrCsv,
   exportMovementsCsv,
+  exportCustomerCubeCsv,
 } from './importService.js';
 import { ImportError } from '../../imports/src/importErrors.js';
 
@@ -273,6 +277,24 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         const csv = exportMovementsCsv(tenantId, importId, from, to);
         if (!csv) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
         csvResponse(res, `arr-movements-${importId.slice(0, 8)}.csv`, csv);
+        return;
+      }
+
+      if (sub === '/customer-cube' && method === 'GET') {
+        const from = url.searchParams.get('from') ?? undefined;
+        const to = url.searchParams.get('to') ?? undefined;
+        const cube = getCustomerCube(tenantId, importId, from, to);
+        if (!cube) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        json(res, 200, cube);
+        return;
+      }
+
+      if (sub === '/customer-cube/export.csv' && method === 'GET') {
+        const from = url.searchParams.get('from') ?? undefined;
+        const to = url.searchParams.get('to') ?? undefined;
+        const csv = exportCustomerCubeCsv(tenantId, importId, from, to);
+        if (!csv) { err(res, 404, 'NOT_FOUND', 'Import not found'); return; }
+        csvResponse(res, `customer-cube-${importId.slice(0, 8)}.csv`, csv);
         return;
       }
 
