@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 37 — tightened import-preflight checks, clarified customer/detail verification after import, and expanded Customer Cube export guidance)_
+_Last updated: 2026-04-04 (Session 38 — clarified tenant-safe customer verification after import and expanded Customer Cube filtering/export checks)_
 
 ---
 
@@ -215,6 +215,8 @@ A clean import-ready workbook usually has these qualities:
 17. If your deployment exposes a demo workbook download, compare the sheet structure and column naming against your file before troubleshooting deeper.
 18. Before sending results to a teammate, confirm that the import timestamp, visible date range, and customer list all match the workbook you intended to analyze.
 19. If customer-level review matters for your workflow, open one expected customer from the dashboard roster and confirm their history looks chronological and complete.
+20. If your deployment includes Customer Cube, open it after import and confirm the visible month columns match the dashboard date range you intend to analyze or export.
+21. Before sharing any exported customer-level analysis, confirm you are still looking at the intended import and not a previously reopened run.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -338,6 +340,14 @@ If someone says a customer is missing, duplicated, or showing the wrong ARR:
 
 ### Customer Cube Demo View
 
+Use Customer Cube as a second-pass validation surface after import, not as your first signal that the import worked.
+
+A good quick check is:
+1. Confirm the dashboard summary cards look reasonable.
+2. Open one expected customer from the roster.
+3. Then open Customer Cube to confirm the month columns, movement labels, and traceability fields line up with the same import.
+
+
 Some walkthrough or demo environments also expose a **Customer Cube** view from the dashboard.
 
 1. Open the seeded dashboard example or use the Customer Cube link if it appears in your deployment.
@@ -347,6 +357,8 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 5. If the Customer Cube download button is available, export the cube as CSV for offline review, board prep, or stakeholder walkthroughs.
 6. When filtering by date range, confirm the visible month columns still align with the period window you meant to present.
 7. Before sharing the export, verify that the active import and visible month range still match the story you intend to tell.
+8. If a customer appears in another company workspace with the same name, remember that the current cube should still reflect only the active company's import data.
+9. Re-export after any date-range change rather than assuming an older CSV still matches what is on screen.
 
 **What the Customer Cube shows today:**
 - Customer
@@ -632,6 +644,7 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 3. Reopen the expected import from the Import page if needed.
 4. Spot-check one customer row or visible invoice/reference field before exporting.
 5. Export the cube again only after verifying the visible month window matches what you want to share.
+6. If the same customer name exists in another company workspace, treat that as a separate data set — the current cube should not merge or borrow data across workspaces.
 
 ### My dashboard numbers changed while I was viewing the page
 
