@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 34 — clarified import operations checks, customer investigation workflow, and admin review triage guidance)_
+_Last updated: 2026-04-04 (Session 35 — expanded Customer Cube admin notes, tightened post-import validation steps, and clarified dashboard context checks)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -149,16 +149,17 @@ Client data is loaded via the **Import** function within a client's tenant conte
 5. Upload the client's `.xlsx` workbook using file selection, drag-and-drop, or a trusted server-local file path if that deployment flow is enabled.
 6. If you are preparing training material or a stakeholder walkthrough, you may also use the seeded demo panel on the Import page to download the sample workbook or jump into example states. Keep those demo artifacts separate from live client reporting.
 7. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, visible date range, and the import timestamp you expect to be working from.
-8. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
-9. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
-10. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
-11. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
-12. Expect tenant-scoped customer lists to be sorted by current ARR descending so the largest accounts appear first.
-13. Expect customer ARR history to be returned in chronological order for the active import.
-14. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
-15. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
-16. Before reporting results back to a client, confirm whether review items are still open. A clean import summary does not necessarily mean the review workflow is complete.
-17. If a tenant reports a missing customer, verify the active import and dashboard date range before escalating it as a backend defect.
+8. Confirm the dashboard date filter matches the reporting window the client expects before you interpret totals or movement labels.
+9. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
+10. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
+11. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
+12. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
+13. Expect tenant-scoped customer lists to be sorted by current ARR descending so the largest accounts appear first.
+14. Expect customer ARR history to be returned in chronological order for the active import.
+15. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
+16. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
+17. Before reporting results back to a client, confirm whether review items are still open. A clean import summary does not necessarily mean the review workflow is complete.
+18. If a tenant reports a missing customer, verify the active import and dashboard date range before escalating it as a backend defect.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 > 💡 **Tip:** The seeded demo workbook is currently a clean 3-sheet reference example. It is useful for training, screenshots, and validating that a walkthrough environment is behaving as expected before you switch back to live tenant data.
@@ -280,10 +281,11 @@ When using the customer detail view from the dashboard or reviewing a specific c
 After any import, use this short admin verification loop before you report numbers externally:
 
 1. Confirm the tenant, user attribution, and active import in the header.
-2. Confirm the dashboard summary cards roughly match the workbook you expected to upload.
-3. Check **Review Progress** and note whether any Error-level work is still open.
-4. Open the customer roster or top-customer list and spot-check one or two expected accounts.
-5. Export CSV only after confirming the import and date range are correct.
+2. Confirm the dashboard date range matches the window you intend to report.
+3. Confirm the dashboard summary cards roughly match the workbook you expected to upload.
+4. Check **Review Progress** and note whether any Error-level work is still open.
+5. Open the customer roster or top-customer list and spot-check one or two expected accounts.
+6. Export CSV only after confirming the import and date range are correct.
 
 > ⚠️ **Warning:** It is easy in a multi-import tenant to export the wrong run if you skip header verification. Treat import ID and date range as part of every reporting checklist.
 
@@ -340,6 +342,7 @@ Admin usage guidance:
 - JSON: `GET /imports/:id/customer-cube`
 - CSV export: `GET /imports/:id/customer-cube/export.csv`
 - UI: Customer Cube page with a **Download Customer Cube CSV** action
+- Current route coverage also verifies tenant isolation and date-filter alignment for both the JSON and CSV surfaces
 
 > 💡 **Tip:** The Customer Cube is useful for explaining gross retention, net revenue retention, and segment mix to non-operators without dropping immediately into raw import or review detail.
 > 💡 **Tip:** Because the cube retains invoice-number and source-row traceability, it is a stronger diligence artifact than a presentation-only screenshot.

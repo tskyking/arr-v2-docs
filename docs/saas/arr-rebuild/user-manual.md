@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 34 — clarified import-ready workbook expectations, dashboard customer investigation workflow, and review queue triage guidance)_
+_Last updated: 2026-04-04 (Session 35 — documented Customer Cube usage/export guidance, import verification checks, and dashboard context troubleshooting)_
 
 ---
 
@@ -203,11 +203,12 @@ A clean import-ready workbook usually has these qualities:
    - Rows imported
    - Review items needing attention
 10. Check the **Review Progress** section on the dashboard to see how many items are still open, the completion percentage, and which issue types are most common.
-11. Open **Review Queue** to resolve any flagged rows.
-12. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
-13. After the dashboard opens, verify the latest ARR, active customers, rows imported, and review-item count before sharing results with anyone else.
-14. Spot-check one or two expected customers from the customer roster or top-customer list to confirm the import opened the data set you expected.
-15. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
+11. Confirm the dashboard date range is wide enough for the period you expect to analyze.
+12. Open **Review Queue** to resolve any flagged rows.
+13. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
+14. After the dashboard opens, verify the latest ARR, active customers, rows imported, and review-item count before sharing results with anyone else.
+15. Spot-check one or two expected customers from the customer roster or top-customer list to confirm the import opened the data set you expected.
+16. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -347,6 +348,7 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 - Net change and movement label
 - Review-needed indicator
 - Source invoice numbers and workbook row traceability notes
+- Period filtering that stays aligned with the visible dashboard range when available in your deployment
 
 > 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, product, movement, and traceability context in one place.
 > 💡 **Tip:** If you export the Customer Cube, keep it paired with the same active import and date range you used for the dashboard walkthrough.
@@ -537,8 +539,8 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 ### The dashboard shows no data after import
 
-**Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state, the active import in the header is not the one you just uploaded, or live refresh has not yet caught up.
-**Fix:** Refresh the page. Then confirm the active import in the header or reopen the expected import from the Import page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
+**Cause:** The import may have succeeded but the dashboard is still showing a previous (or empty) state, the active import in the header is not the one you just uploaded, the current date range excludes the months you expect to see, or live refresh has not yet caught up.
+**Fix:** Refresh the page. Then confirm the active import in the header, widen the dashboard date range if needed, or reopen the expected import from the Import page. If no import has been completed, go to **Import** and upload an `.xlsx` workbook.
 
 ### My imported customers are not showing in the live customer roster
 
