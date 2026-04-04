@@ -182,10 +182,6 @@ export default function DashboardPage() {
     }
   }
 
-  if (sumLoading) return <div className="loading">Loading summary…</div>;
-  if (sumErr) return <div className="error-banner">Summary error: {sumErr}</div>;
-  if (!summary) return null;
-
   const periods = ts?.periods ?? [];
   const latestPeriod = periods[periods.length - 1];
   const firstPeriod = periods[0];
@@ -273,6 +269,10 @@ export default function DashboardPage() {
       .filter((row) => row.currentArr > 0 || row.priorArr > 0)
       .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   }, [selectedPeriodSnapshot, priorPeriodSnapshot]);
+
+  if (sumLoading) return <div className="loading">Loading summary…</div>;
+  if (sumErr) return <div className="error-banner">Summary error: {sumErr}</div>;
+  if (!summary) return null;
 
   return (
     <div>
