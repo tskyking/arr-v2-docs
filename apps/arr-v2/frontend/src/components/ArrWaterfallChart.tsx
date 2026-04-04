@@ -40,16 +40,6 @@ function LeftAxisTick({ x = 0, y = 0, payload }: AxisTickProps) {
   );
 }
 
-function LeftAxisLine({ x = 0, y1 = 0, y2 = 0 }: { x?: number; y1?: number; y2?: number }) {
-  const zeroY = (y1 + y2) / 2;
-  return (
-    <g>
-      <line x1={x} y1={y1} x2={x} y2={zeroY} stroke="#16a34a" strokeWidth={2} />
-      <line x1={x} y1={zeroY} x2={x} y2={y2} stroke="#dc2626" strokeWidth={2} />
-    </g>
-  );
-}
-
 interface Props {
   movements: ArrMovement[];
   /** Only render this many of the most-recent periods to avoid clutter */
@@ -186,7 +176,7 @@ export default function ArrWaterfallChart({
           domain={[leftMin, leftMax]}
           ticks={leftTicks}
           tick={<LeftAxisTick />}
-          axisLine={<LeftAxisLine />}
+          axisLine={{ stroke: COLORS.leftAxis, strokeWidth: 2 }}
           tickLine={false}
           width={82}
           label={{ value: 'Movements', angle: -90, position: 'insideLeft', fill: COLORS.leftAxis, dx: -2 }}
