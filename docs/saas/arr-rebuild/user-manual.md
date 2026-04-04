@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 35 — documented Customer Cube usage/export guidance, import verification checks, and dashboard context troubleshooting)_
+_Last updated: 2026-04-04 (Session 36 — clarified import verification workflow, expanded Customer Cube guidance, and added date-range/export checks for dashboard investigations)_
 
 ---
 
@@ -209,6 +209,8 @@ A clean import-ready workbook usually has these qualities:
 14. After the dashboard opens, verify the latest ARR, active customers, rows imported, and review-item count before sharing results with anyone else.
 15. Spot-check one or two expected customers from the customer roster or top-customer list to confirm the import opened the data set you expected.
 16. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
+17. If your deployment exposes a demo workbook download, compare the sheet structure and column naming against your file before troubleshooting deeper.
+18. Before sending results to a teammate, confirm that the import timestamp, visible date range, and customer list all match the workbook you intended to analyze.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -339,6 +341,7 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 3. Use it to explain retention, expansion, contraction, and customer mix at a more investor-friendly summary level.
 4. Follow the customer links in the cube when you need to drill back into account-level detail.
 5. If the Customer Cube download button is available, export the cube as CSV for offline review or stakeholder prep.
+6. When filtering by date range, confirm the visible month columns still align with the period window you meant to present.
 
 **What the Customer Cube shows today:**
 - Customer
@@ -614,6 +617,15 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 
 **Cause:** The export reflects the date range currently selected in the dashboard filter, not automatically the full range of your imported data.
 **Fix:** Before clicking Export CSV, make sure the dashboard filter shows the full period you want. The export will match the active dashboard range.
+
+### My Customer Cube export or view looks incomplete
+
+**Cause:** The Customer Cube follows the active import and, where available, the visible dashboard date range. If you changed imports or narrowed the month filter, the cube and its export may look smaller than expected.
+**Fix:**
+1. Confirm the active import in the header.
+2. Recheck the selected date range.
+3. Reopen the expected import from the Import page if needed.
+4. Export the cube again only after verifying the visible month window matches what you want to share.
 
 ### My dashboard numbers changed while I was viewing the page
 
