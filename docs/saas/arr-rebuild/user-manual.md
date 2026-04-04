@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 32 — documented demo workbook access, seeded walkthrough states, and the dashboard Customer Cube demo view)_
+_Last updated: 2026-04-04 (Session 33 — documented Customer Cube export/download flow and clarified that the seeded demo workbook is a clean 3-sheet example)_
 
 ---
 
@@ -55,6 +55,7 @@ Some beta or static-demo deployments include seeded walkthrough content for trai
 4. If shown, download the sample workbook to inspect a clean example of the expected 3-sheet `.xlsx` import structure.
 
 > 💡 **Tip:** The downloadable demo workbook is a real, unprotected `.xlsx` file with the same three core sheets ARR V2 expects in a normal import: Transaction Detail, Product/Service Mapping, and Recognition Assumptions.
+> 💡 **Tip:** In the current seeded demo, that workbook is intentionally clean and can be used as a reference example of a properly structured import file.
 > ⚠️ **Warning:** Demo states are training artifacts. Do not confuse them with your company's live import results.
 
 ### Navigation Overview
@@ -310,12 +311,23 @@ If your deployment has live refresh enabled, the dashboard can update summary ca
 Some walkthrough or demo environments also expose a **Customer Cube** view from the dashboard.
 
 1. Open the seeded dashboard example or use the Customer Cube link if it appears in your deployment.
-2. Review the customer-by-segment-by-product matrix for the displayed period range.
+2. Review the customer-by-product-and-category matrix for the displayed period range.
 3. Use it to explain retention, expansion, contraction, and customer mix at a more investor-friendly summary level.
 4. Follow the customer links in the cube when you need to drill back into account-level detail.
+5. If the Customer Cube download button is available, export the cube as CSV for offline review or stakeholder prep.
 
-> 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, segment, product-family, and movement context in one place.
-> ⚠️ **Warning:** The Customer Cube is currently a demo-oriented view. Treat it as a guided analysis surface rather than a replacement for the standard dashboard and review workflow.
+**What the Customer Cube shows today:**
+- Customer
+- Product / service
+- Recognized category
+- Monthly ARR periods
+- Net change and movement label
+- Review-needed indicator
+- Source invoice numbers and workbook row traceability notes
+
+> 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, product, movement, and traceability context in one place.
+> 💡 **Tip:** If you export the Customer Cube, keep it paired with the same active import and date range you used for the dashboard walkthrough.
+> ⚠️ **Warning:** The Customer Cube is currently an early guided analysis surface. Treat it as a complement to the standard dashboard and review workflow, not a replacement for import validation or review cleanup.
 
 > 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
 > 💡 **Tip:** The customer roster is especially useful when a customer is not in the top-ARR list but still needs operational review because of open flags or recent invoice activity.

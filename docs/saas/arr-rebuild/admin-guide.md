@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 32 — documented seeded demo assets, sample workbook handling, and Customer Cube walkthrough context for SU/admin users)_
+_Last updated: 2026-04-04 (Session 33 — documented Customer Cube export surface, audit-friendly cube dimensions, and the clean demo workbook reference state)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -161,6 +161,7 @@ Client data is loaded via the **Import** function within a client's tenant conte
 17. If a tenant reports a missing customer, verify the active import and dashboard date range before escalating it as a backend defect.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
+> 💡 **Tip:** The seeded demo workbook is currently a clean 3-sheet reference example. It is useful for training, screenshots, and validating that a walkthrough environment is behaving as expected before you switch back to live tenant data.
 
 > 💡 **Tip:** The Import page now exposes recent prior imports, which is useful when you need to reopen an earlier dashboard for comparison without re-uploading the workbook. This reduces accidental duplicate uploads when you only need to inspect a prior run.
 
@@ -309,9 +310,26 @@ Admin usage guidance:
 1. Use the Customer Cube for demos, stakeholder walkthroughs, and product-shaping conversations.
 2. Treat it as a presentation and investigation aid, not as a substitute control surface for tenant operations.
 3. Follow customer links from the cube back into customer detail when you need source-level context.
-4. Keep demo-cube narratives clearly labeled as sample or seeded data unless you are explicitly showing a live tenant implementation of the same concept.
+4. Use the Customer Cube CSV export when you need an offline handoff for diligence prep, investor narrative building, or finance review.
+5. Keep demo-cube narratives clearly labeled as sample or seeded data unless you are explicitly showing a live tenant implementation of the same concept.
+
+**Current cube dimensions and traceability fields:**
+- Customer
+- Product / service
+- Recognized category
+- Monthly ARR period
+- Net change and movement label
+- Source invoice numbers
+- Source workbook row numbers
+- Review-needed indicator
+
+**Current export/API surface:**
+- JSON: `GET /imports/:id/customer-cube`
+- CSV export: `GET /imports/:id/customer-cube/export.csv`
+- UI: Customer Cube page with a **Download Customer Cube CSV** action
 
 > 💡 **Tip:** The Customer Cube is useful for explaining gross retention, net revenue retention, and segment mix to non-operators without dropping immediately into raw import or review detail.
+> 💡 **Tip:** Because the cube retains invoice-number and source-row traceability, it is a stronger diligence artifact than a presentation-only screenshot.
 > ⚠️ **Warning:** Do not present seeded cube data as live customer reporting. Verify the import context and data source before exporting screenshots or sharing findings.
 
 ### Missing Customer in Dashboard Investigation
