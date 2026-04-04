@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 39 — expanded Customer Cube guidance for date-range alignment, export checks, and traceability)_
+_Last updated: 2026-04-04 (Session 40 — clarified Customer Cube JSON/CSV export expectations, tenant scoping, and import/date-range verification before sharing)_
 
 ---
 
@@ -372,6 +372,14 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 - Source invoice numbers and workbook row traceability notes
 - Period filtering that stays aligned with the visible dashboard range when available in your deployment
 - Export behavior that preserves audit-friendly traceability fields for the selected import and date window
+- A CSV export that should mirror the same active import and visible period window you are reviewing on screen
+
+**Before you trust or share a Customer Cube export:**
+1. Confirm the active import in the header.
+2. Confirm the visible date range or month window.
+3. Spot-check one customer row against the on-screen cube.
+4. Confirm traceability fields such as invoice references or source-row context are present if you need audit support.
+5. Re-export after any filter change instead of reusing an older file.
 
 > 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, product, movement, and traceability context in one place.
 > 💡 **Tip:** If you export the Customer Cube, keep it paired with the same active import and date range you used for the dashboard walkthrough.
@@ -649,6 +657,7 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 5. Export the cube again only after verifying the visible month window matches what you want to share.
 6. Confirm the export still includes the traceability fields you expect, such as invoice references or source-row context.
 7. If the same customer name exists in another company workspace, treat that as a separate data set — the current cube should not merge or borrow data across workspaces.
+8. If the export looks right on screen but wrong after download, regenerate it after rechecking the import and month window instead of assuming the file is live-linked.
 
 ### My dashboard numbers changed while I was viewing the page
 
@@ -731,7 +740,7 @@ The parent commercial customer or enterprise entity. A Logo may have multiple Si
 A reviewed exception applied to a flagged item when the imported source data needs a one-off correction or annotation. Overrides are scoped to a specific import.
 
 **CSV Export**  
-A downloadable file containing your calculated ARR or movement data in comma-separated values format, suitable for use in Excel, Google Sheets, or other analysis tools. Two export types are available: ARR timeseries (one row per month, one column per category or customer) and Movement analysis (one row per month plus a TOTAL summary row).
+A downloadable file containing your calculated ARR or movement data in comma-separated values format, suitable for use in Excel, Google Sheets, or other analysis tools. Available exports currently include ARR timeseries (one row per month, one column per category or customer), Movement analysis (one row per month plus a TOTAL summary row), and in some deployments Customer Cube export with traceability columns tied to the active import and visible period window.
 
 **Net Revenue Retention (NRR)**  
 *(Not yet in-product — for reference)* A metric that shows how much ARR you retain from existing customers over time, including expansion and contraction. NRR > 100% means your existing customers are growing faster than they churn.

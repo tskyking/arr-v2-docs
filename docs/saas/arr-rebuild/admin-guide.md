@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 39 — documented Customer Cube export/date-filter validation and traceability expectations)_
+_Last updated: 2026-04-04 (Session 40 — tightened Customer Cube tenant-scope/export checks and clarified admin validation steps before sharing)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -370,7 +370,10 @@ If a tenant says the exported ARR, movements CSV, or Customer Cube output does n
 4. Re-export the file only after verifying those three context values.
 5. If Customer Cube is involved, also confirm the month-column window still matches the intended reporting range after the most recent filter change.
 6. If Customer Cube is involved, confirm the current export still contains the invoice/source-row traceability fields expected for diligence or audit support.
-7. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
+7. Spot-check one customer row in the downloaded file against the on-screen cube before escalating.
+8. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
+
+> 💡 **Tip:** In the current verified behavior, Customer Cube JSON and CSV outputs are tenant-scoped and should stay aligned to the selected import and active date window. Most mismatches are context mistakes, not leakage or cross-tenant mixing.
 
 > 💡 **Tip:** Most export mismatches in the current beta are context mismatches: wrong tenant, wrong import, or wrong date range.
 
@@ -634,6 +637,8 @@ If you ever want to verify isolation for a client:
 1. Note the client's tenant ID.
 2. Attempt to access another tenant's API route using that tenant ID.
 3. The server should return `404 Not Found` for real import IDs that do not belong to that tenant, or `400 INVALID_TENANT_ID` when the tenant ID itself is malformed.
+4. If validating customer-level analysis surfaces, test both the customer-detail routes and any Customer Cube JSON/CSV export using a known valid import from another tenant.
+5. Treat any successful cross-tenant customer lookup or cube export as a critical incident.
 
 > 💡 **Tip:** Periodic spot-checks of isolation are good practice before onboarding sensitive clients. If you ever see data that doesn't belong to the current tenant context in the UI, treat this as a critical security incident and report it immediately.
 
