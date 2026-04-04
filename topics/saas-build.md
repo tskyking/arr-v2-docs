@@ -104,3 +104,22 @@ Hold product, roadmap, architecture, and coordination notes for Todd's SaaS work
   - Data is malformed (bad dates, nulls, unexpected types)
 - Users should never see a raw code error or silent failure on import
 - This is a blocker before any customer-facing demo or release
+
+
+### Theme Support (post-MVP / usability enhancement)
+- Capture request for later, not current MVP scope: add full Light/Dark theme support while keeping the current dark theme as the primary/default look.
+- Theme behavior desired:
+  - default to system preference when available
+  - otherwise default to dark
+  - allow explicit user choice: System / Dark / Light
+  - persist choice in localStorage first; later optionally in account settings
+- Implementation guidance:
+  - use CSS custom properties for all major colors
+  - apply theme with `data-theme` on `html` or top-level app wrapper
+  - instant switch without reload
+  - add quick sun/moon toggle in header plus fuller setting in user settings
+- Accessibility requirement:
+  - WCAG AA contrast for both themes
+  - avoid harsh pure black / pure white backgrounds; prefer softened dark and off-white neutrals
+  - prioritize readability in dense screens such as Review Queue and dashboard tables
+- Product judgment: good later enhancement for usability/readability, but not worth delaying MVP/demo/export/investor-audit foundations. Best handled after MVP or during polish before broader rollout.
