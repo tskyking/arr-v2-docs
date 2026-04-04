@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 33 — documented Customer Cube export surface, audit-friendly cube dimensions, and the clean demo workbook reference state)_
+_Last updated: 2026-04-04 (Session 34 — clarified import operations checks, customer investigation workflow, and admin review triage guidance)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -287,6 +287,19 @@ After any import, use this short admin verification loop before you report numbe
 
 > ⚠️ **Warning:** It is easy in a multi-import tenant to export the wrong run if you skip header verification. Treat import ID and date range as part of every reporting checklist.
 
+### Import-Ready Workbook Expectations for Admins
+
+When a tenant asks whether their workbook is "ready," check these basics before they spend time troubleshooting the UI:
+
+1. The file is a normal `.xlsx` workbook and is not password-protected.
+2. The workbook contains the three expected functional sheets: transaction detail, product/service mapping, and recognition assumptions.
+3. Product/service names are consistent between the transaction data and the mapping sheet.
+4. Recurring items have usable subscription dates whenever possible.
+5. The workbook covers the actual business period the tenant expects to analyze.
+6. Obvious duplicate or summary-only rows have been cleaned out before upload.
+
+> 💡 **Tip:** The seeded demo workbook is currently a clean reference example. It is useful as a quick comparison artifact when a tenant's workbook shape looks suspicious.
+
 ### Dashboard Refresh Behavior
 
 Current beta builds include live dashboard refresh behavior. Admins should expect summary cards, review-progress counts, and some chart data to update automatically after a successful import or after review actions change the state of the active import.
@@ -346,6 +359,18 @@ If a tenant admin reports that a customer is missing from the dashboard roster, 
 8. If the customer detail link works for one tenant but not another, treat that as expected unless the customer is truly present in both tenant-scoped imports.
 
 > 💡 **Tip:** In the current build, "missing customer" reports are more often active-import or date-range misunderstandings than backend data loss.
+
+### Admin Review Queue Triage Pattern
+
+When helping a tenant clean up an import, use this triage order:
+
+1. **Mapping failures** — missing product/service mappings and multiple-category conflicts.
+2. **Recognition rule failures** — missing or unsupported assumptions.
+3. **Parse failures** — invalid dates, invalid numbers, malformed source values.
+4. **Recurring-date warnings** — assess whether fallback assumptions are acceptable.
+5. **Negative amounts and mismatch warnings** — confirm expected credits, refunds, or edge cases.
+
+> ⚠️ **Warning:** If the same issue appears across many rows, stop and correct the workbook or policy instead of producing a long chain of one-off review actions.
 ### Customer Hierarchy: Logos and Sites
 
 ARR V2 uses a two-level customer hierarchy:

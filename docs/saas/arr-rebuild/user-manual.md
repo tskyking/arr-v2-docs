@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 33 — documented Customer Cube export/download flow and clarified that the seeded demo workbook is a clean 3-sheet example)_
+_Last updated: 2026-04-04 (Session 34 — clarified import-ready workbook expectations, dashboard customer investigation workflow, and review queue triage guidance)_
 
 ---
 
@@ -177,6 +177,16 @@ Before uploading, check your file against these criteria:
 - [ ] The product/service mapping sheet covers all products in the transaction sheet
 - [ ] The recognition assumptions sheet has a rule for each product category
 
+A clean import-ready workbook usually has these qualities:
+
+1. **One row per real transaction line** — not subtotal bands or manually combined summary rows.
+2. **Consistent product/service names** — the same item is spelled the same way everywhere.
+3. **Recurring rows clearly distinguish subscription periods** — especially for annual contracts and renewals.
+4. **Negative rows are intentional** — credits and refunds are allowed, but should be easy to explain during review.
+5. **The workbook matches business reality for the period being analyzed** — if you want a 24-month dashboard view, the workbook needs to include that time span.
+
+> 💡 **Tip:** The seeded demo workbook is a useful reference because it is intentionally structured as a clean, complete 3-sheet example. Compare your file against it when you're unsure whether the layout is the problem or the data itself.
+
 ### 3.4 Step-by-Step Import Walkthrough
 
 1. From the main navigation, click **Import**.
@@ -306,6 +316,19 @@ If your deployment has live refresh enabled, the dashboard can update summary ca
 7. If the same customer name exists in another company workspace, remember that this detail view still only shows the active tenant's import data.
 8. If a customer name contains spaces or punctuation, use the in-app link rather than trying to edit the URL manually.
 
+### Investigating a Missing or Unexpected Customer
+
+If someone says a customer is missing, duplicated, or showing the wrong ARR:
+
+1. Confirm the **active import** in the header.
+2. Confirm the **dashboard date range** includes the months where you expect ARR to appear.
+3. Check the broader **Customer roster**, not just the top-customer summary.
+4. Open the customer's detail page and review the chronological ARR history.
+5. Check **Review Queue** for error-level issues tied to that customer.
+6. If the issue started after a re-import, confirm you're not comparing two different imports.
+
+> 💡 **Tip:** Most "missing customer" reports in the current beta are caused by the wrong import or the wrong date range, not by lost data.
+
 ### Customer Cube Demo View
 
 Some walkthrough or demo environments also expose a **Customer Cube** view from the dashboard.
@@ -408,6 +431,18 @@ Rows are flagged for a variety of reasons. Each flag has a code and a plain-lang
 4. Before final sign-off, reopen the dashboard and confirm totals using the same import you just cleaned up.
 
 > 💡 **Tip:** If the dashboard still looks unchanged right after review work, give live refresh a moment or manually reload the page before assuming the review action failed.
+
+### Suggested Triage Order for Common Review Items
+
+Use this order to work faster after a fresh import:
+
+1. **Missing mapping items** — these usually block ARR recognition entirely.
+2. **Missing recognition assumptions** — resolve category-rule gaps before reviewing downstream symptoms.
+3. **Invalid dates or numbers** — these often indicate source-data formatting problems.
+4. **Missing subscription dates for recurring items** — decide whether the fallback one-year assumption is acceptable.
+5. **Negative amounts and invoice mismatches** — confirm whether they are legitimate credits, refunds, or edge cases.
+
+> ⚠️ **Warning:** If many rows share the same problem, fix the workbook and re-import instead of resolving dozens of items manually.
 
 ### Bulk Resolve
 
@@ -678,6 +713,9 @@ A row in your imported data that the system couldn't process with full confidenc
 
 **Review Attention**  
 A customer-level signal shown in dashboard roster/detail views indicating that one or more rows related to that customer still need review in the active import.
+
+**Review Progress**  
+A dashboard summary of how many review items are open, resolved, or overridden for the active import, often including completion percentage and top open issue types.
 
 **Revenue Segment**  
 An internal representation of a single recognized revenue contribution for a specific customer, category, and time period.
