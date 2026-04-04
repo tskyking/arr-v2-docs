@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 36 — clarified import verification workflow, expanded Customer Cube guidance, and added date-range/export checks for dashboard investigations)_
+_Last updated: 2026-04-04 (Session 37 — tightened import-preflight checks, clarified customer/detail verification after import, and expanded Customer Cube export guidance)_
 
 ---
 
@@ -184,8 +184,11 @@ A clean import-ready workbook usually has these qualities:
 3. **Recurring rows clearly distinguish subscription periods** — especially for annual contracts and renewals.
 4. **Negative rows are intentional** — credits and refunds are allowed, but should be easy to explain during review.
 5. **The workbook matches business reality for the period being analyzed** — if you want a 24-month dashboard view, the workbook needs to include that time span.
+6. **Header names are recognizable** — use the accepted column names or close variants instead of custom abbreviations.
+7. **The workbook is not just a partial export** — confirm the source report includes all customers and all expected months before uploading.
 
 > 💡 **Tip:** The seeded demo workbook is a useful reference because it is intentionally structured as a clean, complete 3-sheet example. Compare your file against it when you're unsure whether the layout is the problem or the data itself.
+> 💡 **Tip:** If a customer seems to disappear after import, first confirm the workbook actually covered that customer's active billing period. A technically successful import can still be incomplete if the export window was too narrow.
 
 ### 3.4 Step-by-Step Import Walkthrough
 
@@ -211,6 +214,7 @@ A clean import-ready workbook usually has these qualities:
 16. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 17. If your deployment exposes a demo workbook download, compare the sheet structure and column naming against your file before troubleshooting deeper.
 18. Before sending results to a teammate, confirm that the import timestamp, visible date range, and customer list all match the workbook you intended to analyze.
+19. If customer-level review matters for your workflow, open one expected customer from the dashboard roster and confirm their history looks chronological and complete.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -340,8 +344,9 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 2. Review the customer-by-product-and-category matrix for the displayed period range.
 3. Use it to explain retention, expansion, contraction, and customer mix at a more investor-friendly summary level.
 4. Follow the customer links in the cube when you need to drill back into account-level detail.
-5. If the Customer Cube download button is available, export the cube as CSV for offline review or stakeholder prep.
+5. If the Customer Cube download button is available, export the cube as CSV for offline review, board prep, or stakeholder walkthroughs.
 6. When filtering by date range, confirm the visible month columns still align with the period window you meant to present.
+7. Before sharing the export, verify that the active import and visible month range still match the story you intend to tell.
 
 **What the Customer Cube shows today:**
 - Customer
@@ -625,7 +630,8 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 1. Confirm the active import in the header.
 2. Recheck the selected date range.
 3. Reopen the expected import from the Import page if needed.
-4. Export the cube again only after verifying the visible month window matches what you want to share.
+4. Spot-check one customer row or visible invoice/reference field before exporting.
+5. Export the cube again only after verifying the visible month window matches what you want to share.
 
 ### My dashboard numbers changed while I was viewing the page
 

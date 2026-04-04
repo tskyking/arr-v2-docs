@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 36 — tightened import validation guidance, clarified Customer Cube export/date-range checks, and added admin investigation notes for reporting mismatches)_
+_Last updated: 2026-04-04 (Session 37 — tightened tenant import-preflight checks, expanded post-import customer verification, and clarified Customer Cube export handling)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -160,7 +160,8 @@ Client data is loaded via the **Import** function within a client's tenant conte
 16. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
 17. Before reporting results back to a client, confirm whether review items are still open. A clean import summary does not necessarily mean the review workflow is complete.
 18. If a tenant reports a missing customer, verify the active import and dashboard date range before escalating it as a backend defect.
-19. If you plan to export ARR, movements, or Customer Cube data for a client, verify the visible period window before downloading so the file matches the narrative you are preparing.
+19. Open at least one expected customer from the roster or top-customer list and confirm their history appears chronological and tenant-scoped.
+20. If you plan to export ARR, movements, or Customer Cube data for a client, verify the visible period window before downloading so the file matches the narrative you are preparing.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 > 💡 **Tip:** The seeded demo workbook is currently a clean 3-sheet reference example. It is useful for training, screenshots, and validating that a walkthrough environment is behaving as expected before you switch back to live tenant data.
@@ -300,8 +301,10 @@ When a tenant asks whether their workbook is "ready," check these basics before 
 4. Recurring items have usable subscription dates whenever possible.
 5. The workbook covers the actual business period the tenant expects to analyze.
 6. Obvious duplicate or summary-only rows have been cleaned out before upload.
+7. The expected customer set and reporting months are present in the source export before the tenant uploads it.
 
 > 💡 **Tip:** The seeded demo workbook is currently a clean reference example. It is useful as a quick comparison artifact when a tenant's workbook shape looks suspicious.
+> 💡 **Tip:** If a tenant says “the import worked but the customer isn’t there,” treat incomplete source export coverage as a likely cause before assuming a parsing defect.
 
 ### Dashboard Refresh Behavior
 
@@ -329,6 +332,7 @@ Admin usage guidance:
 4. Use the Customer Cube CSV export when you need an offline handoff for diligence prep, investor narrative building, or finance review.
 5. Keep demo-cube narratives clearly labeled as sample or seeded data unless you are explicitly showing a live tenant implementation of the same concept.
 6. Before exporting the cube, confirm the month columns or date filters shown in the UI still match the reporting window you intend to share.
+7. Spot-check at least one visible customer row or traceability field before sending the export externally so you know the file reflects the intended import context.
 
 **Current cube dimensions and traceability fields:**
 - Customer
