@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 38 — clarified tenant-safe customer verification after import and expanded Customer Cube filtering/export checks)_
+_Last updated: 2026-04-04 (Session 39 — expanded Customer Cube guidance for date-range alignment, export checks, and traceability)_
 
 ---
 
@@ -359,6 +359,8 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 7. Before sharing the export, verify that the active import and visible month range still match the story you intend to tell.
 8. If a customer appears in another company workspace with the same name, remember that the current cube should still reflect only the active company's import data.
 9. Re-export after any date-range change rather than assuming an older CSV still matches what is on screen.
+10. Before trusting the export, spot-check at least one visible invoice number or source-row traceability field against what you see on screen.
+11. Treat the export as a snapshot of the current import and visible month window, not as a live-updating report.
 
 **What the Customer Cube shows today:**
 - Customer
@@ -369,6 +371,7 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 - Review-needed indicator
 - Source invoice numbers and workbook row traceability notes
 - Period filtering that stays aligned with the visible dashboard range when available in your deployment
+- Export behavior that preserves audit-friendly traceability fields for the selected import and date window
 
 > 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, product, movement, and traceability context in one place.
 > 💡 **Tip:** If you export the Customer Cube, keep it paired with the same active import and date range you used for the dashboard walkthrough.
@@ -644,7 +647,8 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 3. Reopen the expected import from the Import page if needed.
 4. Spot-check one customer row or visible invoice/reference field before exporting.
 5. Export the cube again only after verifying the visible month window matches what you want to share.
-6. If the same customer name exists in another company workspace, treat that as a separate data set — the current cube should not merge or borrow data across workspaces.
+6. Confirm the export still includes the traceability fields you expect, such as invoice references or source-row context.
+7. If the same customer name exists in another company workspace, treat that as a separate data set — the current cube should not merge or borrow data across workspaces.
 
 ### My dashboard numbers changed while I was viewing the page
 

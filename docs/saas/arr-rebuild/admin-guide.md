@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 38 — expanded tenant-scoped customer verification and tightened Customer Cube export/context checks)_
+_Last updated: 2026-04-04 (Session 39 — documented Customer Cube export/date-filter validation and traceability expectations)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -335,6 +335,8 @@ Admin usage guidance:
 5. Keep demo-cube narratives clearly labeled as sample or seeded data unless you are explicitly showing a live tenant implementation of the same concept.
 6. Before exporting the cube, confirm the month columns or date filters shown in the UI still match the reporting window you intend to share.
 7. Spot-check at least one visible customer row or traceability field before sending the export externally so you know the file reflects the intended import context.
+8. Re-export after any date-filter change; do not assume an older cube CSV still matches the on-screen window.
+9. If you are using the cube for audit or diligence support, verify that invoice and source-row traceability fields are still present in the current response/export.
 
 **Current cube dimensions and traceability fields:**
 - Customer
@@ -352,6 +354,7 @@ Admin usage guidance:
 - UI: Customer Cube page with a **Download Customer Cube CSV** action
 - Current route coverage also verifies tenant isolation and date-filter alignment for both the JSON and CSV surfaces
 - Current seeded-demo coverage also confirms audit-friendly traceability fields remain present in the JSON response and exported CSV
+- Treat both exports as point-in-time snapshots of the active tenant/import/date window, not as reusable rolling reports after filters change
 
 > 💡 **Tip:** The Customer Cube is useful for explaining gross retention, net revenue retention, and segment mix to non-operators without dropping immediately into raw import or review detail.
 > 💡 **Tip:** Because the cube retains invoice-number and source-row traceability, it is a stronger diligence artifact than a presentation-only screenshot.
@@ -366,7 +369,8 @@ If a tenant says the exported ARR, movements CSV, or Customer Cube output does n
 3. Confirm the dashboard date range or cube month filter is set correctly.
 4. Re-export the file only after verifying those three context values.
 5. If Customer Cube is involved, also confirm the month-column window still matches the intended reporting range after the most recent filter change.
-6. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
+6. If Customer Cube is involved, confirm the current export still contains the invoice/source-row traceability fields expected for diligence or audit support.
+7. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
 
 > 💡 **Tip:** Most export mismatches in the current beta are context mismatches: wrong tenant, wrong import, or wrong date range.
 
