@@ -141,14 +141,16 @@ export default function DashboardPage() {
     }
   }, [searchParams]);
 
+  const movementEntries = movements?.movements ?? [];
+
   useEffect(() => {
-    const latestPeriod = movements?.movements[movements.movements.length - 1]?.period ?? null;
+    const latestMovementPeriod = movementEntries[movementEntries.length - 1]?.period ?? null;
     setSelectedMovementPeriod((current) => {
-      if (!latestPeriod) return null;
-      if (!current) return latestPeriod;
-      return movements?.movements.some((movement) => movement.period === current) ? current : latestPeriod;
+      if (!latestMovementPeriod) return null;
+      if (!current) return latestMovementPeriod;
+      return movementEntries.some((movement) => movement.period === current) ? current : latestMovementPeriod;
     });
-  }, [movements]);
+  }, [movementEntries]);
 
   function handleRefreshNow() {
     refetchSummary();
@@ -204,8 +206,8 @@ export default function DashboardPage() {
     : null;
 
   const cube = importId && isDemoImportId(importId) ? demoCustomerCube : null;
-  const selectedMovement = movements?.movements.find((movement) => movement.period === selectedMovementPeriod)
-    ?? movements?.movements[movements.movements.length - 1]
+  const selectedMovement = movementEntries.find((movement) => movement.period === selectedMovementPeriod)
+    ?? movementEntries[movementEntries.length - 1]
     ?? null;
   const customers = customerList?.customers ?? [];
   const customersWithReview = customers.filter(customer => customer.requiresReview);
@@ -467,7 +469,7 @@ export default function DashboardPage() {
             <span>Expansion: <strong style={{ color: '#86efac' }}>+{formatArr(movements.totalExpansionArr)}</strong></span>
             <span>Contraction: <strong style={{ color: '#f97316' }}>−{formatArr(movements.totalContractionArr)}</strong></span>
             <span>Churn: <strong style={{ color: '#ef4444' }}>−{formatArr(movements.totalChurnArr)}</strong></span>
-            <span>Closing ARR: <strong style={{ color: '#6d28d9' }}>{formatArr(movements.movements[movements.movements.length - 1]?.closingArr ?? 0)}</strong></span>
+            <span>Closing ARR: <strong style={{ color: '#6d28d9' }}>{formatArr(movementEntries[movementEntries.length - 1]?.closingArr ?? 0)}</strong></span>
           </div>
           <ArrWaterfallChart
             movements={movements.movements}
