@@ -18,16 +18,24 @@
  *  6. POST /imports — 413 response has PAYLOAD_TOO_LARGE error code
  *  7. POST /imports multipart — respects Content-Type boundary param (no 415)
  *  8. POST /imports multipart — accepts real minimal XLSX bytes (from AdmZip) → 422 (invalid structure, not 415/500)
+ *  9. POST /imports application/octet-stream — real sample XLSX succeeds with 200 and expected shape
  *
  * Note: The multipart branch in server.ts buffers the entire body and saves it to a temp file.
- * We don't need to produce a structurally valid XLSX for these tests — we just need to verify
- * the HTTP routing and error handling is correct. A garbage payload correctly returns 422
- * (FILE_UNREADABLE or similar ImportError) rather than 415 or 500.
+ * Most tests here only need to verify HTTP routing and error handling. A garbage payload should
+ * return 422 (FILE_UNREADABLE or similar ImportError) rather than 415 or 500.
  */
 
 import http from 'node:http';
+import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import AdmZip from 'adm-zip';
+
+const WORKSPACE = '/Users/sky/.openclaw/workspace';
+const REAL_INTERNAL_XLSX = path.join(
+  WORKSPACE,
+  'docs/saas/arr-rebuild/reference/source-examples/csv/Sample Data for TSOT import internal).xlsx',
+);
 
 const FAKE_XLSX_BYTES = Buffer.from('PK\x03\x04this is not a valid xlsx file but has zip magic'); // fake zip magic
 const GARBAGE_BYTES = Buffer.from('this is definitely not any kind of workbook');
@@ -199,6 +207,25 @@ describe('POST /imports — minimal real XLSX bytes', () => {
     // Not a 500 — all errors should be wrapped as ImportError
     expect(res.status).not.toBe(500);
   });
+
+  it('9. real sample XLSX uploads successfully end-to-end over HTTP', async () => {
+    const xlsxBytes = readFileSync(REAL_INTERNAL_XLSX);
+
+    const res = await request('POST', '/imports', xlsxBytes, {
+      'Content-Type': 'application/octet-stream',
+    });
+    const body = res.json as Record<string, unknown>;
+
+    expect(res.status).toBe(200);
+    expect(body.tenantId).toBe('default');
+    expect(typeof body.importId).toBe('string');
+    expect(body.status).toBe('complete');
+    expect(typeof body.totalRows).toBe('number');
+    expect(typeof body.reviewItems).toBe('number');
+    expect(typeof body.segments).toBe('number');
+    expect((body.totalRows as number)).toBeGreaterThan(0);
+    expect((body.segments as number)).toBeGreaterThan(0);
+  }, 20_000);
 });
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

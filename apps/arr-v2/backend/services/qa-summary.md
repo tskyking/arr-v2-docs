@@ -2,14 +2,14 @@
 
 ## Test Run Status
 
-**32 test files | 646 tests | 0 failures**  
-_(Updated: 2026-04-02 — Build Session 8)_
+**37 test files | 747 tests | 0 failures**  
+_(Re-verified: 2026-04-03 around 6:00 AM PT via fresh `npx vitest run`)_
 
-Pre-session baseline: 30 files | 622 tests | 0 failing  
-This session added: 24 new tests across 2 new test files + 1 server source change  
+Pre-session baseline: 34 files | 696 tests | 0 failing  
+Current tracked delta vs that baseline: +51 tests across 3 additional test files, and the current tree verifies clean.  
 
 Test breakdown:
-- 646 passing
+- 747 passing
 - 0 failing
 
 ---
@@ -43,8 +43,8 @@ Test breakdown:
 ### HTTP Server Layer Tests (new — session 5)
 | File | Tests | Notes |
 |------|-------|-------|
-| `services/api/src/__tests__/server.test.ts` | 30 | HTTP route handler tests: /health CORS, 404s for unknown ids, PATCH/POST validation (400/415), OPTIONS preflight, POST /imports error paths (422/400), unknown route handling. Bug #8/Bug #7 HTTP-layer impact documented with it.fails(). |
-| `services/api/src/__tests__/server-upload.test.ts` | 8 | **New (Session 8)** Upload path tests: multipart/form-data accepted + graceful 422, application/octet-stream accepted + graceful 422, 413 PAYLOAD_TOO_LARGE enforcement (Content-Length fast path + streaming drain path), minimal real ZIP via AdmZip returns 422 not 500. |
+| `services/api/src/__tests__/server.test.ts` | 27 | HTTP route handler tests: /health CORS, 404s for unknown ids, PATCH/POST validation (400/415), OPTIONS preflight, POST /imports error paths (422/400), unknown route handling. |
+| `services/api/src/__tests__/server-upload.test.ts` | 9 | **New (Sessions 8–10)** Upload path tests: multipart/form-data accepted + graceful 422, application/octet-stream accepted + graceful 422, 413 PAYLOAD_TOO_LARGE enforcement (Content-Length fast path + streaming drain path), minimal real ZIP via AdmZip returns 422 not 500, and a real sample XLSX now succeeds end to end over HTTP with 200 response shape assertions. |
 
 ### ARR Movements Service Tests (new — session 5)
 | File | Tests | Notes |
@@ -56,10 +56,27 @@ Test breakdown:
 |------|-------|-------|
 | `services/api/src/__tests__/store-roundtrip.test.ts` | 16 | **New (Session 8)** saveImport/loadAllImports round-trip: field fidelity (importId, importedAt, tenantId, fromDate, toDate), snapshots Map serialization (empty/normal/120-month), bundle + segments + skippedRows preservation, deleteImport, multiple imports, overwrite semantics. Addresses 'Not Yet Covered' item from QA doc. |
 
+### Session 9 (2026-04-02) — New Tests
+| File | Tests | Notes |
+|------|-------|-------|
+| `services/api/src/__tests__/session9-tenant-routes.test.ts` | 23 | **New (Session 9)** Tenant-scoped HTTP routes: `/tenants/:tenantId/imports` returns 200 with tenantId, `INVALID_TENANT_ID` for special chars/spaces/dots, valid hyphens/underscores/digits accepted, all 404 sub-routes via tenant prefix, 400/415/422 error paths via tenant prefix, tenant isolation (two tenants have independent stores), real import IDs do not cross tenant boundaries, legacy `/imports` defaults to `default` tenantId |
+| `services/imports/src/__tests__/session9-import-pipeline-csv.test.ts` | 19 | **New (Session 9)** CSV export unit tests: `exportArrCsv` null for unknown id, header correctness, category/customer columns sorted alphabetically, no NaN/undefined in data cells, period YYYY-MM format; `exportMovementsCsv` null for unknown id, TOTAL row is always last, period format, header columns, opening_arr numeric, net_movement invariant (closing − opening = net); CSV escaping round-trip via parseCsv helper (comma-in-cell, double-quote RFC4180, empty cells) |
+
+### Session 10 (2026-04-03) — New Tests
+| File | Tests | Notes |
+|------|-------|-------|
+| `services/api/src/__tests__/session10-customer-routes.test.ts` | 6 | **New (Session 10)** Real-workbook customer route integration coverage: tenant-scoped `/customers` list returns shape/totals, customer list is sorted by current ARR descending, URL-encoded customer detail works, `arrHistory` stays chronological, and both list/detail endpoints remain tenant-isolated even when the importId and customer name are otherwise valid. |
+
+### Session 11 (2026-04-04) — New Tests
+| File | Tests | Notes |
+|------|-------|-------|
+| `services/api/src/__tests__/session11-customer-cube-routes.test.ts` | 5 | **New (Session 11)** Customer Cube integration coverage using the seeded public demo workbook: tenant-scoped `/customer-cube` returns audit-friendly structure and traceability fields, `from/to` date filtering keeps period columns aligned, `/customer-cube/export.csv` returns expected traceability headers, and both JSON/CSV endpoints remain tenant-isolated. |
+
 ### API Service Tests (new — session 4)
 | File | Tests | Notes |
 |------|-------|-------|
-| `services/api/src/__tests__/importService.test.ts` | 35 | importService.ts: null returns for unknown ids, listImports, getImportSummary (categoryBreakdown sort/sum), getArrTimeseries (range filter, period order), getReviewQueue (status filter, count invariants), patchReviewItem (resolve/override/unknown-id), getCustomerList (sort/fields), getCustomerDetail (arrHistory order, peakArr), removeImport |
+| `services/api/src/__tests__/importService.test.ts` | 42 | importService.ts: null returns for unknown ids, listImports, getImportSummary (categoryBreakdown sort/sum), getArrTimeseries (range filter, period order), getReviewQueue (status filter, count invariants), patchReviewItem (resolve/override/unknown-id), bulkResolveReview behavior, override persistence to disk, getCustomerList (sort/fields), getCustomerDetail (arrHistory order, peakArr), removeImport |
+| `services/api/src/__tests__/exports-and-stats.test.ts` | 20 | ARR export + review stats coverage: CSV endpoints return 200/404 appropriately, header/content-disposition checks, TOTAL row behavior, stats invariants, and direct null-guard unit tests for `exportArrCsv`, `exportMovementsCsv`, and `getReviewStats` |
 
 **Edge cases covered:**
 - Credits/refunds (negative amounts) — `SUSPICIOUS_NEGATIVE_AMOUNT` flagged, row still processed
@@ -95,7 +112,7 @@ Improved path normalization to strip multiple leading `../` segments and any lea
 ### Bug #8: GET /imports returns HTTP 500 (HTTP-layer impact of Bug #7) — ALREADY FIXED
 **File:** `services/api/src/server.ts` (triggered via `importService.ts:listImports`)
 
-Fixed in a prior session by filtering `.overrides.json` files in `store.ts`. All 542 tests pass.
+Fixed in a prior session by filtering `.overrides.json` files in `store.ts`. Current verification run passes all 747 tests.
 
 ---
 
@@ -115,23 +132,13 @@ Trailing `};` should have been `});` — closing the `describe(` call. OXC parse
 
 ## Previously Documented Bugs
 
-### Bug #6 (HIGH SEVERITY): External workbook cannot be processed end-to-end
+### Bug #6 (HIGH SEVERITY): External workbook cannot be processed end-to-end — FIXED
 
 **File:** `services/imports/src/sheetDetection.ts`
 
-**Issue:** The external (anonymized) workbook's transaction detail sheet is named `'Sales by Cust Detail External'`. `detectWorkbookSheets` explicitly rejects sheets containing "external" in the name (to prefer internal over external). As a result, `workbookToImportBundle` throws `"Could not detect transaction detail sheet."` for the external workbook, making it **completely unprocessable** by the pipeline.
+**Previous issue:** The external (anonymized) workbook's transaction detail sheet is named `'Sales by Cust Detail External'`. Earlier logic rejected sheets containing "external" in the name, which made that workbook unprocessable end to end.
 
-The `xlsxXmlReader.test.ts` tests for the external workbook pass because they only check that the sheet *exists* (`sheet.name.includes('sales by cust')`), not that it can be detected by `sheetDetection`.
-
-**Suggested Fix (Build Agent):**  
-In `sheetDetection.ts`, the external detection logic should be updated so that if NO internal transaction detail sheet exists, it falls back to accepting the "external" variant. Currently it uses an exclusion heuristic that hard-blocks the external workbook.
-
-```ts
-// Current: hard-rejects 'external' suffix sheets as transactionDetail
-// Proposed: only reject if an internal sheet was also found
-```
-
-See `pipeline.integration.test.ts` — Bug #6 tests lock in current behavior.
+**Current status:** Fixed in source and verified in the current test run. `services/imports/src/readers/xlsxXmlReader.test.ts` now includes passing checks that both internal and external workbooks process successfully and produce comparable row counts.
 
 ---
 
@@ -144,15 +151,15 @@ See `pipeline.integration.test.ts` — Bug #6 tests lock in current behavior.
 | 3 | `RECURRING_CATEGORY_HINTS` trailing `?` in category name | Medium | **Fixed (Session 6)** — `isRecurringCategory()` added; case-insensitive, trims before `?` strip; both variants match |
 | 4 | `addMonths` end-of-month overflow | Medium | Fixed in source — clamping logic added; tests pass |
 | 5 | `xlsxXmlReader` doesn't handle `../xl/` sheet paths | Low | **Improved (Session 6)** — strips all leading `../` prefixes; tested with 4 synthetic XLSX unit tests |
-| 6 | External workbook unprocessable (sheetDetection hard-rejects) | **HIGH** | **NEW — confirmed by pipeline integration test** |
+| 6 | External workbook unprocessable (sheetDetection hard-rejects) | **HIGH** | **Fixed in source and covered by passing tests** |
 
 ---
 
 ## Not Yet Covered
 
-1. **`normalizeCategoryName` with trailing whitespace before `?`** — `'Category?  '` returns `'Category?'` not `'Category'` because the `?` is not the last character. Minor but could confuse callers. Bug is documented in constants.test.ts.
+1. ~~**`normalizeCategoryName` with trailing whitespace before `?`**~~ — **Fixed (Session 6)**. `normalizeCategoryName` now trims whitespace before stripping `?`, and the updated tests cover the corrected behavior.
 
-2. **`xlsxXmlReader` unit tests with synthetic XLSX** — Unit-level tests for the XML parsing logic itself (requires building a minimal XLSX zip with AdmZip). Currently only integration tests against real files.
+2. ~~**`xlsxXmlReader` unit tests with synthetic XLSX**~~ — **Done (Session 6)** — synthetic XLSX coverage was added for sheet-path normalization.
 
 3. **Duplicate invoice number detection** — No deduplication logic exists. Needs product clarification.
 
@@ -160,13 +167,21 @@ See `pipeline.integration.test.ts` — Bug #6 tests lock in current behavior.
 
 5. ~~**`server.ts` POST /imports multipart upload path**~~ — **Done (Session 8)** — 8 tests in `server-upload.test.ts`.
 
-6. **`server.ts` POST /imports real end-to-end upload** — Tests currently use garbage or minimal ZIP bytes. No test uploads a real valid XLSX and verifies a 200 response with correct shape. Medium priority.
+6. ~~**`server.ts` POST /imports real end-to-end upload**~~ — **Done (Session 10)** — `server-upload.test.ts` now uploads the real sample XLSX over HTTP and asserts a 200 response plus expected response shape.
+
+7. ~~**Tenant-scoped HTTP routes `/tenants/:tenantId/...`**~~ — **Done (Session 9)** — 23 tests in `session9-tenant-routes.test.ts`.
+
+8. ~~**CSV export structural/escaping unit tests**~~ — **Done (Session 9)** — 19 tests in `session9-import-pipeline-csv.test.ts`.
+
+9. **`GET /imports/:id` (GET with no sub-path)** — Currently returns 404. Whether this should return a summary or basic metadata is unspecified. Needs product decision.
+
+10. **Multi-tenant data isolation under concurrent writes** — Not tested: two simultaneous imports to different tenants do not cross-contaminate each other. Low risk given current single-process architecture, but worth testing if concurrency increases.
 
 ---
 
 ## Test Setup Notes
 
-- Runner: **vitest v4.1.2** (installed as devDependency)
+- Runner: **vitest v4.1.2** (verified via `npx vitest run`)
 - Config: `vitest.config.ts` at `apps/arr-v2/backend/`
-- Test script: `"test": "vitest run"` in `package.json`
-- All tests are pure unit/integration — some integration tests read real XLSX files from `docs/saas/arr-rebuild/reference/source-examples/csv/`
+- Package metadata is currently stale: `package.json` does **not** define a `test` script even though the Vitest config and runnable test tree exist
+- All tests are pure unit/integration — some integration tests read real workbook fixtures from the repo

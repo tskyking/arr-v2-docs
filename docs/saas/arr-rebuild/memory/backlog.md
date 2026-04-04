@@ -14,9 +14,9 @@
 - [x] Produce technical foundation package
 - [x] Create clean V2 app skeleton
 - [ ] Review and refine the consolidated working plan with Todd and Brian
-- [ ] Gather sample source files for ingestion testing
-- [ ] Distill MVP-required canonical schema fields
-- [ ] Inventory key legacy calculation modules and endpoints
+- [x] Gather sample source files for ingestion testing
+- [x] Distill MVP-required canonical schema fields
+- [x] Inventory key legacy calculation modules and endpoints
 
 ## Next
 - [x] Backend API layer (import, ARR timeseries, review queue endpoints)
@@ -33,3 +33,4 @@
 - [ ] CRM + accounting reconciliation design
 - [ ] Staging/hosting plan
 - [ ] Hardening, auth, audit, and permissions design
+- [ ] Fix backend package metadata drift (`package.json` test script / declared test tooling) so repo setup matches the working Vitest suite

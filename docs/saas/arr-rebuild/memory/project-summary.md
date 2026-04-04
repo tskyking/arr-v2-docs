@@ -19,12 +19,12 @@ Two-layer direction:
 2. ARR / reporting application
 
 ## Technical Direction
-Current likely stack direction:
-- TypeScript frontend
-- Python-backed calculation/data-processing core
-- PostgreSQL database
+Current implemented prototype direction:
+- TypeScript frontend (React + Vite)
+- TypeScript backend/services for import parsing, ARR calculations, review workflow, tenant-aware API routes, and CSV exports
+- File-backed tenant-scoped persistence for the current prototype
 
-The exact implementation can evolve, but the priorities are maintainability, flexibility, polish, performance, and supportability.
+The exact production architecture can still evolve, but the repo is no longer just a planning artifact. Current priorities remain maintainability, flexibility, polish, performance, and supportability.
 
 ## Product Principles
 - Hosted product is preferred over fragile local/manual workflows
@@ -39,5 +39,17 @@ The exact implementation can evolve, but the priorities are maintainability, fle
 - Clear separation between messy source normalization and ARR analytics
 
 ## Current Phase
-Phase 1 complete enough to proceed: discovery and alignment.
-Moving toward structured planning and MVP scoping.
+Past pure discovery. The repo now contains a working prototype with:
+- XLSX ingestion and normalization
+- ARR snapshot and movement calculations
+- tenant-scoped API routes and CSV exports
+- review queue workflows and override persistence
+- verified HTTP-level real-XLSX upload success path
+- frontend pages for import, dashboard, and review
+- customer roster/detail endpoints and UI support in the active prototype direction
+
+Fresh verification on 2026-04-03 confirms:
+- backend tests pass at **37 files / 747 tests / 0 failures** via `npx vitest run`
+- frontend production build passes via `npm run build`
+
+Known repo/documentation gap: some older summary docs still describe the project as planning-only or Python-core-oriented, which is no longer accurate for the current codebase.

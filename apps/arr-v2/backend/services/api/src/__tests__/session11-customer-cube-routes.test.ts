@@ -160,6 +160,35 @@ describe('GET /tenants/:tenantId/imports/:id/customer-cube', () => {
     }
   });
 
+  it('returns an empty cube when the requested date window has no overlapping periods', async () => {
+    const res = await request('GET', `/tenants/${TEST_TENANT}/imports/${importId}/customer-cube?from=2030-01&to=2030-03`);
+    expect(res.status).toBe(200);
+
+    const body = res.json as {
+      periods: string[];
+      summary: {
+        trackedCustomers: number;
+        trackedRows: number;
+        trackedProductServices: number;
+        openingArr: number;
+        closingArr: number;
+        netChange: number;
+      };
+      rows: Array<{ periods: Array<{ period: string; arr: number }> }>;
+    };
+
+    expect(body.periods).toEqual([]);
+    expect(body.rows).toEqual([]);
+    expect(body.summary).toEqual({
+      trackedCustomers: 0,
+      trackedRows: 0,
+      trackedProductServices: 0,
+      openingArr: 0,
+      closingArr: 0,
+      netChange: 0,
+    });
+  });
+
   it('is tenant-isolated', async () => {
     const res = await request('GET', `/tenants/${OTHER_TENANT}/imports/${importId}/customer-cube`);
     expect(res.status).toBe(404);

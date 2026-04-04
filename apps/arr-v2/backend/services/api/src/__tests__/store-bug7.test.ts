@@ -24,11 +24,22 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { mkdirSync, writeFileSync, unlinkSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { loadAllImports, loadOverrides, saveOverrides, deleteOverrides } from '../store.js';
 import { listImports } from '../importService.js';
 
 const TEST_TENANT = 'default';
+const CORRUPT_TENANT = `corrupt-${randomUUID().slice(0, 8)}`;
+
+function tenantImportsDir(tenantId: string): string {
+  return join(
+    resolve(new URL('.', import.meta.url).pathname, '../../../data/tenants'),
+    tenantId,
+    'imports',
+  );
+}
 
 // ─── 1–3. loadAllImports regression ──────────────────────────────────────────
 // NOTE: These tests currently FAIL because BUG #7 is not yet fixed.
@@ -79,6 +90,20 @@ describe('listImports — BUG #7 regression: should not crash with TypeError', (
       expect(typeof entry.importedAt).toBe('string');
       expect(typeof entry.totalRows).toBe('number');
     }
+  });
+
+  it('corrupt persisted import JSON is skipped instead of crashing load/list', () => {
+    const dir = tenantImportsDir(CORRUPT_TENANT);
+    mkdirSync(dir, { recursive: true });
+    const corruptFile = join(dir, 'broken.json');
+    writeFileSync(corruptFile, '{ not valid json', 'utf8');
+
+    expect(() => loadAllImports(CORRUPT_TENANT)).not.toThrow();
+    expect(loadAllImports(CORRUPT_TENANT).size).toBe(0);
+    expect(() => listImports(CORRUPT_TENANT)).not.toThrow();
+    expect(listImports(CORRUPT_TENANT)).toEqual([]);
+
+    unlinkSync(corruptFile);
   });
 });
 

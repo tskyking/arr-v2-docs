@@ -594,11 +594,15 @@ export function getCustomerCube(tenantId: string, importId: string, from?: strin
       requiresReview: false,
     };
 
+    let hasOverlap = false;
     for (const period of periods) {
       if (period >= periodStart && period <= periodEnd) {
+        hasOverlap = true;
         entry.periods.set(period, (entry.periods.get(period) ?? 0) + segment.arrContribution);
       }
     }
+    if (!hasOverlap) continue;
+
     if (row?.sourceInvoiceNumber) entry.sourceInvoiceNumbers.add(row.sourceInvoiceNumber);
     entry.sourceRowNumbers.add(segment.sourceRowNumber);
     entry.requiresReview = entry.requiresReview || !!row?.requiresReview || !!segment.requiresReview;

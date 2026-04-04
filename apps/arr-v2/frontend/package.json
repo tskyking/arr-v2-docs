@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:demo": "python3 ../tools/generate_demo_workbook.py && tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
