@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-03 (Session 31 — clarified import prerequisites, dashboard/customer investigation flow, and current beta navigation for end users)_
+_Last updated: 2026-04-04 (Session 32 — documented demo workbook access, seeded walkthrough states, and the dashboard Customer Cube demo view)_
 
 ---
 
@@ -44,6 +44,18 @@ _Last updated: 2026-04-03 (Session 31 — clarified import prerequisites, dashbo
 1. Open the ARR V2 application in your browser.
 2. Sign in with the credentials provided by your administrator.
 3. You will land on the **Dashboard** page.
+
+### Demo and Walkthrough States
+
+Some beta or static-demo deployments include seeded walkthrough content for training, screenshots, or stakeholder review.
+
+1. Open **Import**.
+2. Look for the walkthrough/demo panel.
+3. Use the available cards to jump into sample import history, dashboard metrics, review queue examples, or an expanded detail state.
+4. If shown, download the sample workbook to inspect a clean example of the expected 3-sheet `.xlsx` import structure.
+
+> 💡 **Tip:** The downloadable demo workbook is a real, unprotected `.xlsx` file with the same three core sheets ARR V2 expects in a normal import: Transaction Detail, Product/Service Mapping, and Recognition Assumptions.
+> ⚠️ **Warning:** Demo states are training artifacts. Do not confuse them with your company's live import results.
 
 ### Navigation Overview
 
@@ -171,19 +183,20 @@ Before uploading, check your file against these criteria:
 3. Confirm the **Tenant** shown in the app header is correct before uploading.
 4. Confirm the **User** shown in the header is your identity before uploading or resolving review items.
 5. Click inside the upload area to browse for a file, drag and drop your `.xlsx` workbook onto the page, or enter a local file path if your deployment supports server-side path import.
-6. Wait while the system processes the file. This usually takes a few seconds.
-7. If the import succeeds, the app opens the new import in **Dashboard** automatically.
-8. Review the dashboard summary cards for:
+6. If your deployment includes a walkthrough panel, you can optionally download the sample import workbook first to compare its structure against your own file.
+7. Wait while the system processes the file. This usually takes a few seconds.
+8. If the import succeeds, the app opens the new import in **Dashboard** automatically.
+9. Review the dashboard summary cards for:
    - Latest ARR
    - Active customers
    - Rows imported
    - Review items needing attention
-9. Check the **Review Progress** section on the dashboard to see how many items are still open, the completion percentage, and which issue types are most common.
-10. Open **Review Queue** to resolve any flagged rows.
-11. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
-12. After the dashboard opens, verify the latest ARR, active customers, rows imported, and review-item count before sharing results with anyone else.
-13. Spot-check one or two expected customers from the customer roster or top-customer list to confirm the import opened the data set you expected.
-14. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
+10. Check the **Review Progress** section on the dashboard to see how many items are still open, the completion percentage, and which issue types are most common.
+11. Open **Review Queue** to resolve any flagged rows.
+12. If you need to revisit an earlier run, use the **Previous Imports** list on the Import page or the import selector in the header.
+13. After the dashboard opens, verify the latest ARR, active customers, rows imported, and review-item count before sharing results with anyone else.
+14. Spot-check one or two expected customers from the customer roster or top-customer list to confirm the import opened the data set you expected.
+15. If the upload fails before processing starts, check whether the workbook may be too large or still password-protected.
 
 > 💡 **Tip:** The Import page shows recent prior imports so you can reopen an earlier dashboard view if you need to compare runs without uploading the file again.
 
@@ -291,6 +304,18 @@ If your deployment has live refresh enabled, the dashboard can update summary ca
 6. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
 7. If the same customer name exists in another company workspace, remember that this detail view still only shows the active tenant's import data.
 8. If a customer name contains spaces or punctuation, use the in-app link rather than trying to edit the URL manually.
+
+### Customer Cube Demo View
+
+Some walkthrough or demo environments also expose a **Customer Cube** view from the dashboard.
+
+1. Open the seeded dashboard example or use the Customer Cube link if it appears in your deployment.
+2. Review the customer-by-segment-by-product matrix for the displayed period range.
+3. Use it to explain retention, expansion, contraction, and customer mix at a more investor-friendly summary level.
+4. Follow the customer links in the cube when you need to drill back into account-level detail.
+
+> 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, segment, product-family, and movement context in one place.
+> ⚠️ **Warning:** The Customer Cube is currently a demo-oriented view. Treat it as a guided analysis surface rather than a replacement for the standard dashboard and review workflow.
 
 > 💡 **Tip:** Customer detail is tied to the currently selected import. If a customer looks missing or the history seems incomplete, first confirm you're viewing the correct import.
 > 💡 **Tip:** The customer roster is especially useful when a customer is not in the top-ARR list but still needs operational review because of open flags or recent invoice activity.

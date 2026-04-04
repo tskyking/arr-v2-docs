@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-03 (Session 31 — tightened SU/admin operating guidance around import validation, tenant-scoped customer investigation, and beta attribution controls)_
+_Last updated: 2026-04-04 (Session 32 — documented seeded demo assets, sample workbook handling, and Customer Cube walkthrough context for SU/admin users)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -147,17 +147,18 @@ Client data is loaded via the **Import** function within a client's tenant conte
 3. Verify the tenant and user identity shown in the header.
 4. Confirm the user identity is the correct attributable operator before uploading, resolving review items, or applying overrides.
 5. Upload the client's `.xlsx` workbook using file selection, drag-and-drop, or a trusted server-local file path if that deployment flow is enabled.
-6. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, visible date range, and the import timestamp you expect to be working from.
-7. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
-8. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
-9. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
-10. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
-11. Expect tenant-scoped customer lists to be sorted by current ARR descending so the largest accounts appear first.
-12. Expect customer ARR history to be returned in chronological order for the active import.
-13. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
-14. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
-15. Before reporting results back to a client, confirm whether review items are still open. A clean import summary does not necessarily mean the review workflow is complete.
-16. If a tenant reports a missing customer, verify the active import and dashboard date range before escalating it as a backend defect.
+6. If you are preparing training material or a stakeholder walkthrough, you may also use the seeded demo panel on the Import page to download the sample workbook or jump into example states. Keep those demo artifacts separate from live client reporting.
+7. Verify the import result in the dashboard summary cards - row count, flagged items, active customers, visible date range, and the import timestamp you expect to be working from.
+8. Review the dashboard's **Review Progress** section to see completion percentage, open issue counts, top open reason codes, and customers with open issues.
+9. If needed, use the **Previous Imports** list on the Import page to reopen an earlier import for comparison without creating a new upload.
+10. Use the import selector in the header when you need to switch the active dashboard/review context between existing imports.
+11. Use dashboard customer links or the customer roster to open customer-level ARR detail when you need to investigate a specific account's history, peak ARR, invoice recency, or review attention within that import.
+12. Expect tenant-scoped customer lists to be sorted by current ARR descending so the largest accounts appear first.
+13. Expect customer ARR history to be returned in chronological order for the active import.
+14. If the client says a customer is missing, first verify the active import and dashboard date range before assuming the import is incomplete.
+15. If the customer name is valid but belongs to another tenant, the current tenant context must still not resolve that customer's detail.
+16. Before reporting results back to a client, confirm whether review items are still open. A clean import summary does not necessarily mean the review workflow is complete.
+17. If a tenant reports a missing customer, verify the active import and dashboard date range before escalating it as a backend defect.
 
 > 💡 **Tip:** Always confirm with the client or Tenant Admin that the workbook you are uploading is the correct, current version before importing.
 
@@ -298,6 +299,20 @@ Operational guidance:
 5. If exported CSV does not match what you expected, re-check the date range and active import, then export again.
 
 > ⚠️ **Warning:** Auto-refresh improves feedback, but it is not a security or attribution boundary. Header tenant/user context still determines which tenant-scoped data and actions you are seeing.
+
+### Customer Cube Walkthrough Surface
+
+Some demo or walkthrough environments now expose a **Customer Cube** from the seeded dashboard experience. This is an investor-friendly matrix that combines customer, segment, product family, period values, movement classification, and traceability notes.
+
+Admin usage guidance:
+
+1. Use the Customer Cube for demos, stakeholder walkthroughs, and product-shaping conversations.
+2. Treat it as a presentation and investigation aid, not as a substitute control surface for tenant operations.
+3. Follow customer links from the cube back into customer detail when you need source-level context.
+4. Keep demo-cube narratives clearly labeled as sample or seeded data unless you are explicitly showing a live tenant implementation of the same concept.
+
+> 💡 **Tip:** The Customer Cube is useful for explaining gross retention, net revenue retention, and segment mix to non-operators without dropping immediately into raw import or review detail.
+> ⚠️ **Warning:** Do not present seeded cube data as live customer reporting. Verify the import context and data source before exporting screenshots or sharing findings.
 
 ### Missing Customer in Dashboard Investigation
 
@@ -850,6 +865,9 @@ The current QA summary still lists several post-MVP or hardening items that admi
 4. Production authentication, MFA, and session enforcement are not finalized.
 5. Browser-side Tenant/User context controls still need to be replaced by hardened server-backed auth and role enforcement for production use.
 6. UI polish work is still ongoing; for example, very long labels in beta dashboard/review views may still wrap differently across screen sizes even after recent frontend fixes.
+7. Full **System / Dark / Light** theme support has been captured as a post-MVP usability enhancement, but it is not part of the current MVP control set.
+
+> 💡 **Tip:** Theme support is a later polish item. The current dark-first presentation remains the primary supported experience until formal theme switching is built and tested.
 
 > ⚠️ **Warning:** The current build has clean automated coverage for real workbook upload success paths, tenant-scoped routes, and CSV exports, but it is still suitable for guided beta use rather than a fully hardened production rollout until auth, MFA, and concurrency validation are completed.
 
