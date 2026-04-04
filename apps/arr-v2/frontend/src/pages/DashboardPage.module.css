@@ -251,6 +251,22 @@
   padding: 18px;
 }
 
+.movementEvidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.compactTable {
+  width: 100%;
+}
+
+.compactTable th,
+.compactTable td {
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
 .movementHighlightList {
   display: flex;
   flex-wrap: wrap;
@@ -354,6 +370,10 @@
   }
 
   .movementDrilldownGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .movementEvidenceGrid {
     grid-template-columns: 1fr;
   }
 

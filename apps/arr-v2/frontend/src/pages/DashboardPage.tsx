@@ -30,6 +30,14 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
+function buildDeltaMap(entries: Array<{ customer: string; arr: number }> | undefined): Map<string, number> {
+  return new Map((entries ?? []).map((entry) => [entry.customer, entry.arr]));
+}
+
+function buildCategoryDeltaMap(entries: Array<{ category: string; arr: number }> | undefined): Map<string, number> {
+  return new Map((entries ?? []).map((entry) => [entry.category, entry.arr]));
+}
+
 // ─── Date range preset helpers ─────────────────────────────────────────────
 
 type Preset = 'all' | '1y' | '2y' | 'custom';
@@ -214,6 +222,57 @@ export default function DashboardPage() {
     (selectedMovement.contractionArr + selectedMovement.churnArr) > 40_000 ? `Meaningful downside to inspect (${formatArr(selectedMovement.contractionArr + selectedMovement.churnArr)})` : null,
     selectedMovement.churnArr > 0 ? `${selectedMovement.churnedCustomers} churned customer${selectedMovement.churnedCustomers === 1 ? '' : 's'}` : null,
   ].filter(Boolean) as string[] : [];
+
+  const selectedPeriodIndex = periods.findIndex((period) => period.period === selectedMovement?.period);
+  const selectedPeriodSnapshot = selectedPeriodIndex >= 0 ? periods[selectedPeriodIndex] : null;
+  const priorPeriodSnapshot = selectedPeriodIndex > 0 ? periods[selectedPeriodIndex - 1] : null;
+
+  const customerMovementDrilldown = useMemo(() => {
+    if (!selectedPeriodSnapshot) return [];
+    const currentMap = buildDeltaMap(selectedPeriodSnapshot.byCustomer);
+    const priorMap = buildDeltaMap(priorPeriodSnapshot?.byCustomer);
+    const names = new Set([...currentMap.keys(), ...priorMap.keys()]);
+
+    return [...names]
+      .map((customer) => {
+        const currentArr = currentMap.get(customer) ?? 0;
+        const priorArr = priorMap.get(customer) ?? 0;
+        const delta = currentArr - priorArr;
+        const direction = currentArr > 0 && priorArr === 0
+          ? 'new'
+          : currentArr === 0 && priorArr > 0
+            ? 'churn'
+            : delta > 0
+              ? 'expansion'
+              : delta < 0
+                ? 'contraction'
+                : 'flat';
+        return { customer, currentArr, priorArr, delta, direction };
+      })
+      .filter((row) => row.currentArr > 0 || row.priorArr > 0)
+      .sort((a, b) => {
+        if (Math.abs(b.delta) !== Math.abs(a.delta)) return Math.abs(b.delta) - Math.abs(a.delta);
+        return b.currentArr - a.currentArr;
+      })
+      .slice(0, 8);
+  }, [selectedPeriodSnapshot, priorPeriodSnapshot]);
+
+  const categoryMovementDrilldown = useMemo(() => {
+    if (!selectedPeriodSnapshot) return [];
+    const currentMap = buildCategoryDeltaMap(selectedPeriodSnapshot.byCategory);
+    const priorMap = buildCategoryDeltaMap(priorPeriodSnapshot?.byCategory);
+    const categories = new Set([...currentMap.keys(), ...priorMap.keys()]);
+
+    return [...categories]
+      .map((category) => {
+        const currentArr = currentMap.get(category) ?? 0;
+        const priorArr = priorMap.get(category) ?? 0;
+        const delta = currentArr - priorArr;
+        return { category, currentArr, priorArr, delta };
+      })
+      .filter((row) => row.currentArr > 0 || row.priorArr > 0)
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  }, [selectedPeriodSnapshot, priorPeriodSnapshot]);
 
   return (
     <div>
@@ -455,7 +514,7 @@ export default function DashboardPage() {
                     <StatCard label="Contraction + Churn" value={formatArr(selectedMovement.contractionArr + selectedMovement.churnArr)} sub={`${selectedMovement.contractedCustomers} contracted · ${selectedMovement.churnedCustomers} churned`} />
                   </div>
 
-                  <div className={styles.reviewPanels} style={{ marginBottom: 0 }}>
+                  <div className={styles.reviewPanels} style={{ marginBottom: 16 }}>
                     <div className={`card ${styles.reviewPanel}`}>
                       <h4 className={styles.panelTitle}>Positive movement</h4>
                       <div className={styles.issueList}>
@@ -471,6 +530,77 @@ export default function DashboardPage() {
                         <div className={styles.issueRow}><span className={styles.issueLabel}>Churn ARR</span><span className={styles.issueCount}>−{formatArr(selectedMovement.churnArr)}</span></div>
                         <div className={styles.issueRow}><span className={styles.issueLabel}>Customer losses</span><span className={styles.issueCount}>{selectedMovement.contractedCustomers + selectedMovement.churnedCustomers}</span></div>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.movementEvidenceGrid}>
+                    <div className={`card ${styles.reviewPanel}`}>
+                      <h4 className={styles.panelTitle}>Top customer deltas</h4>
+                      <div className={styles.rangeInfo} style={{ margin: '0 0 12px 0' }}>
+                        Stable month-over-month comparison so evaluators can inspect spikes and downside without chasing hover targets.
+                      </div>
+                      {customerMovementDrilldown.length === 0 ? (
+                        <div className={styles.emptyState}>Customer-level delta detail is not available for this month.</div>
+                      ) : (
+                        <table className={styles.compactTable}>
+                          <thead>
+                            <tr>
+                              <th>Customer</th>
+                              <th style={{ textAlign: 'right' }}>Prior</th>
+                              <th style={{ textAlign: 'right' }}>Current</th>
+                              <th style={{ textAlign: 'right' }}>Δ</th>
+                              <th>Type</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {customerMovementDrilldown.map((row) => (
+                              <tr key={row.customer}>
+                                <td>
+                                  <Link to={`/customers/${importId}/${encodeURIComponent(row.customer)}`} className={styles.inlineLink}>
+                                    {row.customer}
+                                  </Link>
+                                </td>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.priorArr)}</td>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.currentArr)}</td>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: row.delta >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                  {row.delta >= 0 ? '+' : ''}{formatArr(row.delta)}
+                                </td>
+                                <td style={{ textTransform: 'capitalize' }}>{row.direction}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+
+                    <div className={`card ${styles.reviewPanel}`}>
+                      <h4 className={styles.panelTitle}>Category bridge</h4>
+                      {categoryMovementDrilldown.length === 0 ? (
+                        <div className={styles.emptyState}>Category-level bridge unavailable for this month.</div>
+                      ) : (
+                        <table className={styles.compactTable}>
+                          <thead>
+                            <tr>
+                              <th>Category</th>
+                              <th style={{ textAlign: 'right' }}>Prior</th>
+                              <th style={{ textAlign: 'right' }}>Current</th>
+                              <th style={{ textAlign: 'right' }}>Δ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {categoryMovementDrilldown.map((row) => (
+                              <tr key={row.category}>
+                                <td>{row.category}</td>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.priorArr)}</td>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.currentArr)}</td>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: row.delta >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                  {row.delta >= 0 ? '+' : ''}{formatArr(row.delta)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   </div>
                 </div>
