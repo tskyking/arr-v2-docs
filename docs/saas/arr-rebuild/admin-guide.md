@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 41 — expanded Customer Cube date-window validation, reinforced active-import checks, and clarified export timing after filter changes)_
+_Last updated: 2026-04-04 (Session 42 — documented movement month drilldown behavior, added admin validation guidance for selected periods, and tightened export timing checks)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -311,7 +311,7 @@ When a tenant asks whether their workbook is "ready," check these basics before 
 
 ### Dashboard Refresh Behavior
 
-Current beta builds include live dashboard refresh behavior. Admins should expect summary cards, review-progress counts, and some chart data to update automatically after a successful import or after review actions change the state of the active import.
+Current beta builds include live dashboard refresh behavior. Admins should expect summary cards, review-progress counts, and some chart data to update automatically after a successful import or after review actions change the state of the active import. The dashboard now also supports month-level drilldown on the ARR movement chart so admins can inspect one period in more detail without depending on hover state.
 
 Operational guidance:
 
@@ -319,7 +319,8 @@ Operational guidance:
 2. Wait briefly for the dashboard to refresh before assuming data is missing.
 3. If counts still look stale, manually refresh the browser.
 4. If teammates are actively resolving review items, expect counts and charts to shift during that cleanup window.
-5. If exported CSV does not match what you expected, re-check the date range and active import, then export again.
+5. If the movement drilldown is in use, confirm which month is currently selected before interpreting the detail cards or capturing screenshots.
+6. If exported CSV does not match what you expected, re-check the date range, active import, and selected month context, then export again.
 
 > ⚠️ **Warning:** Auto-refresh improves feedback, but it is not a security or attribution boundary. Header tenant/user context still determines which tenant-scoped data and actions you are seeing.
 
@@ -369,12 +370,13 @@ If a tenant says the exported ARR, movements CSV, or Customer Cube output does n
 1. Confirm the tenant context in the header.
 2. Confirm the active import ID in the header import selector.
 3. Confirm the dashboard date range or cube month filter is set correctly.
-4. Re-export the file only after verifying those three context values.
-5. If Customer Cube is involved, also confirm the month-column window still matches the intended reporting range after the most recent filter change.
-6. If Customer Cube is involved, confirm the on-screen month columns have finished updating before exporting or comparing screenshots.
-7. If Customer Cube is involved, confirm the current export still contains the invoice/source-row traceability fields expected for diligence or audit support.
-8. Spot-check one customer row in the downloaded file against the on-screen cube before escalating.
-9. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
+4. If the issue involves movement drilldown, confirm which month is currently selected on the chart or month chips.
+5. Re-export the file only after verifying those context values.
+6. If Customer Cube is involved, also confirm the month-column window still matches the intended reporting range after the most recent filter change.
+7. If Customer Cube is involved, confirm the on-screen month columns have finished updating before exporting or comparing screenshots.
+8. If Customer Cube is involved, confirm the current export still contains the invoice/source-row traceability fields expected for diligence or audit support.
+9. Spot-check one customer row in the downloaded file against the on-screen cube before escalating.
+10. If the mismatch persists, compare the exported file against the on-screen cards or cube columns before escalating it as a backend defect.
 
 > 💡 **Tip:** In the current verified behavior, Customer Cube JSON and CSV outputs are tenant-scoped and should stay aligned to the selected import and active date window. Most mismatches are context mistakes, not leakage or cross-tenant mixing.
 

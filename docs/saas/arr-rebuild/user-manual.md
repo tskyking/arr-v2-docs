@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 41 — added Customer Cube date-window/export checks, clarified month alignment after filtering, and tightened guidance for validating the active import before sharing)_
+_Last updated: 2026-04-04 (Session 42 — documented dashboard month drilldown for ARR movements, clarified period-selection behavior, and tightened export guidance around the active month window)_
 
 ---
 
@@ -517,6 +517,23 @@ Each period (month) in the chart shows five components:
 
 The relationship always holds: `Closing ARR = Opening ARR + New + Expansion − Contraction − Churn`
 
+### Month Drilldown
+
+Current dashboard builds let you inspect one month at a time directly from the movement chart.
+
+1. Open the **ARR Movements + ARR Over Time** section on the dashboard.
+2. Click a waterfall bar for the month you want to inspect, or use the month chips shown below the chart.
+3. Review the month drilldown cards for:
+   - Opening ARR
+   - Net movement
+   - Gross New + Expansion
+   - Contraction + Churn
+4. Check the positive and downside detail panels to understand what drove the change.
+5. Review the evaluator notes for quick signals such as unusually strong new ARR or notable downside.
+
+> 💡 **Tip:** The month drilldown is useful when a single month looks surprising in the chart and you want a stable readout without relying on hover tooltips.
+> ⚠️ **Warning:** The selected month affects how you interpret the movement detail cards. Reconfirm the highlighted month before screenshotting or discussing the numbers with someone else.
+
 ### Summary Totals
 
 Below the chart, you'll see totals across your entire selected date range:
@@ -534,9 +551,10 @@ Below the chart, you'll see totals across your entire selected date range:
 The movement analysis can be exported as a CSV file for offline analysis or sharing with stakeholders.
 
 1. Set your desired date range from the dashboard filter.
-2. Click **Export CSV** for the movement analysis view when that control is available in your deployment.
-3. A `.csv` file will download to your computer.
-4. Review the last row carefully — it is a summary TOTAL row rather than another monthly period.
+2. Confirm the dashboard date range and the month window you want to discuss.
+3. Click **Export CSV** for the movement analysis view when that control is available in your deployment.
+4. A `.csv` file will download to your computer.
+5. Review the last row carefully — it is a summary TOTAL row rather than another monthly period.
 
 **What the movements export contains:**
 - One row per period (month), in `YYYY-MM` format
@@ -671,6 +689,15 @@ ARR V2 uses a three-tier role model for end users. Each user is assigned exactly
 3. Review the Review Progress card for updated open/resolved counts.
 4. If the page was open during active review work, give the dashboard a moment to finish refreshing before comparing totals.
 5. Re-export CSV if you need a file that matches the newest visible totals exactly.
+
+### The movement detail cards are showing the wrong month
+
+**Cause:** A different month may still be selected in the dashboard movement drilldown.
+**Fix:**
+1. Look for the highlighted month chip or the chart's selected month marker.
+2. Click the month you actually want to inspect.
+3. Recheck the Opening ARR, Net Movement, and downside cards after switching.
+4. Re-export if you need a file or screenshot that matches the newly selected month context.
 
 ### The CSV export file opens with garbled text
 
