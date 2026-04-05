@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-05 (Session 45 — refreshed admin post-import validation guidance, tightened dashboard/customer verification steps, and clarified Customer Cube export checks for stakeholder use)_
+_Last updated: 2026-04-05 (Session 46 — refreshed release-prep/admin validation guidance, aligned current-status notes with the latest project dashboard, and clarified remaining rollout gaps for operators)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -774,7 +774,7 @@ The policy is defined in the tenant's **Recognition Assumptions sheet** (in the 
 
 ### Current UI Status
 
-As of 2026-04-03, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards, issue summaries, live customer roster links, live refresh behavior, and active CSV exports so admins can assess cleanup status and jump into account-level investigation before entering the Review Queue.
+As of 2026-04-05, the frontend is wired to tenant-aware API paths and surfaces tenant and user identity directly in the UI header. The import and review screens have active workflow controls in place, including drag-and-drop upload, prior-import navigation, import switching from the header, severity/status review filters, row expansion for item details, required override notes, and bulk review resolution. The dashboard also now surfaces review-progress cards, issue summaries, live customer roster links, live refresh behavior, and active CSV exports so admins can assess cleanup status and jump into account-level investigation before entering the Review Queue. The project is now in release-prep / product-signoff mode: core workflows are present, while remaining gaps are concentrated in repo/package hygiene, a few open product decisions, staging/hosting choice, and extra hardening coverage rather than missing primary user flows.
 
 > ⚠️ **Warning:** The current Tenant and User fields in the header are browser-side beta controls, not a hardened authentication boundary. They are useful for workflow testing and attribution in the current build, but production auth and role enforcement still need hardening.
 

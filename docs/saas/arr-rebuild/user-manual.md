@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-05 (Session 45 — refreshed dashboard walkthrough guidance, tightened customer-level validation checks, and clarified how to verify Customer Cube exports before sharing them)_
+_Last updated: 2026-04-05 (Session 46 — refreshed release-prep guidance, clarified current workflow stability expectations, and kept import/dashboard validation steps aligned with the latest project status)_
 
 ---
 
@@ -254,6 +254,7 @@ If you see "An unexpected error occurred while reading the workbook," please try
 - **Duplicate invoice numbers:** The system does not currently deduplicate rows with the same invoice number. If your export contains duplicate rows, they will both be imported. Review the source data to remove duplicates before uploading.
 - **One import at a time (per session):** For best results, import one complete workbook at a time. Multiple imports remain in the system and the dashboard shows the most recent one by default.
 - **Guided demo surfaces are still evolving:** Customer Cube and month-drilldown views are now available in current walkthrough builds, but layout and button placement may continue to shift slightly as the product is polished.
+- **Release-prep caveat:** The product is in late MVP / release-prep status. Core import, dashboard, review, and export workflows are present, but some final hardening and product decisions are still being closed before broader rollout.
 
 > 💡 **Tip:** If a route or chart view briefly behaves unexpectedly after a new build, refresh the page and confirm the active import before assuming your data changed. Recent work has focused on stabilizing these dashboard and drilldown paths.
 
