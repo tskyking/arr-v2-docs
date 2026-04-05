@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-04 (Session 43 — clarified current import entry paths, documented live refresh and manual refresh controls, and added Customer Cube export validation guidance for end users)_
+_Last updated: 2026-04-05 (Session 44 — tightened import validation guidance, clarified dashboard/customer drilldown checks, and documented the stabilized Customer Cube demo/export workflow for end users)_
 
 ---
 
@@ -253,6 +253,9 @@ If you see "An unexpected error occurred while reading the workbook," please try
 - **Sheet name detection:** The system identifies sheets by their content and column structure. Sheet names are flexible — including names containing words like "External" (e.g., "Sales by Cust Detail External") are supported.
 - **Duplicate invoice numbers:** The system does not currently deduplicate rows with the same invoice number. If your export contains duplicate rows, they will both be imported. Review the source data to remove duplicates before uploading.
 - **One import at a time (per session):** For best results, import one complete workbook at a time. Multiple imports remain in the system and the dashboard shows the most recent one by default.
+- **Guided demo surfaces are still evolving:** Customer Cube and month-drilldown views are now available in current walkthrough builds, but layout and button placement may continue to shift slightly as the product is polished.
+
+> 💡 **Tip:** If a route or chart view briefly behaves unexpectedly after a new build, refresh the page and confirm the active import before assuming your data changed. Recent work has focused on stabilizing these dashboard and drilldown paths.
 
 ---
 
@@ -333,6 +336,8 @@ If your deployment has live refresh enabled, the dashboard can update summary ca
 6. If the customer shows review attention, go to **Review Queue** for the active import and investigate the related flagged rows.
 7. If the same customer name exists in another company workspace, remember that this detail view still only shows the active tenant's import data.
 8. If a customer name contains spaces or punctuation, use the in-app link rather than trying to edit the URL manually.
+9. If the customer detail view was opened from a chart drilldown or demo cube workflow, confirm the header still shows the import you intended before sharing screenshots or exporting anything.
+10. If the page appears blank after navigation, refresh once and reopen the customer from the dashboard roster rather than assuming the customer was removed.
 
 ### Investigating a Missing or Unexpected Customer
 
@@ -348,6 +353,8 @@ If someone says a customer is missing, duplicated, or showing the wrong ARR:
 > 💡 **Tip:** Most "missing customer" reports in the current beta are caused by the wrong import or the wrong date range, not by lost data.
 
 ### Customer Cube Demo View
+
+> 💡 **Tip:** Recent dashboard builds improved the stability of Customer Cube navigation and related drilldown routes. If you are using a fresh build, expect fewer blank-screen interruptions when moving between the dashboard, month drilldown, and cube views.
 
 Use Customer Cube as a second-pass validation surface after import, not as your first signal that the import worked.
 

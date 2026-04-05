@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-04 (Session 43 — clarified current import entry paths, documented live refresh and manual refresh controls, and tightened Customer Cube export validation for admins)_
+_Last updated: 2026-04-05 (Session 44 — tightened import validation and post-import checks, added dashboard/drilldown stability guidance, and documented the stabilized Customer Cube demo/export workflow for admins)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -322,6 +322,8 @@ When a tenant asks whether their workbook is "ready," check these basics before 
 
 Current beta builds include live dashboard refresh behavior. Admins should expect summary cards, review-progress counts, and some chart data to update automatically after a successful import or after review actions change the state of the active import. The dashboard now also supports month-level drilldown on the ARR movement chart so admins can inspect one period in more detail without depending on hover state. The header currently shows both **Live refresh every 30s** status and a **Refresh now** control.
 
+Recent implementation work also focused on stabilizing dashboard, drilldown, and demo analysis routes. If a client reports a temporary blank screen during dashboard-to-drilldown navigation, verify the current build, refresh the page once, and retry from the intended import before escalating it as a data-integrity problem.
+
 Operational guidance:
 
 1. Confirm the active tenant and import shown in the header.
@@ -375,6 +377,8 @@ Admin usage guidance:
 > ⚠️ **Warning:** Do not present seeded cube data as live customer reporting. Verify the import context and data source before exporting screenshots or sharing findings.
 
 ### Reporting Mismatch Investigation
+
+> 💡 **Tip:** With the recent route-stability fixes, a mismatch report is even more likely to be a context problem than a navigation failure. Check tenant, import, date range, and selected month before filing a bug.
 
 If a tenant says the exported ARR, movements CSV, or Customer Cube output does not match what they expected:
 
