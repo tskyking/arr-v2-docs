@@ -78,8 +78,8 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Release Prep + Handoff Decisions</span>
-        <span class="badge todo">Target: lock repo/package hygiene, close product-signoff decisions, choose staging/hosting, and add final isolation coverage</span>
+        <span class="badge active">Current Phase: Release Prep + Product Signoff</span>
+        <span class="badge todo">Target: lock repo/package hygiene, close open product decisions, choose staging/hosting, and add final isolation coverage</span>
       </div>
     </div>
 
@@ -87,13 +87,13 @@
       <div class="card col-4">
         <h3>Overall Progress</h3>
         <div class="metric">83%</div>
-        <div class="sub">Backlog completion remains 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. Backend QA is still healthy at 747 passing tests across 37 files (re-verified on 2026-04-03 around 6:00 AM PT via fresh <code>npx vitest run</code>). The last 10 commits still show forward motion rather than failure churn: the newest window includes the Doc Agent manual/admin-guide update, the latest coordinator dashboard refresh, and three targeted demo/dashboard crash fixes on top of the month-drilldown/customer-cube delivery work — with no revert loop, repeated failed-commit pattern, or obvious same-file spin. The repo remains comfortably past the MVP milestone: import, dashboard, review workflow, tenant-aware routing, customer detail, customer cube export flow, CSV exports, ARR movement logic, the HTTP-level real-XLSX upload success path, docs/manual handoff work, and demo/workbook polish are all present in code/tests. No unresolved HIGH or CRITICAL QA bugs are currently documented as open; the prior HIGH external-workbook issue is explicitly marked fixed and covered by passing tests. Remaining release-prep gaps are now concentrated in repo/product signoff work: backend <code>package.json</code> metadata drift (<code>test</code> script / declared Vitest tooling), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, concurrency/isolation hardening beyond current tests, the Todd/Brian plan review item, and staging/hosting planning.</div>
+        <div class="sub">Backlog completion remains 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. Backend QA is still healthy at 747 passing tests across 37 files (re-verified on 2026-04-03 around 6:00 AM PT via fresh <code>npx vitest run</code>). The latest 10-commit window reviewed on 2026-04-04 / 2026-04-05 still shows forward motion rather than failure churn: Doc Agent manual/admin-guide updates alternate with coordinator dashboard refreshes, and just before that the repo landed three targeted demo/dashboard crash fixes on top of the customer-cube and drilldown work — with no revert loop, repeated failed-commit pattern, or obvious same-file spin. The repo remains comfortably past the MVP milestone: import, dashboard, review workflow, tenant-aware routing, customer detail, customer cube export flow, CSV exports, ARR movement logic, the HTTP-level real-XLSX upload success path, docs/manual handoff work, and demo/workbook polish are all present in code/tests. No unresolved HIGH or CRITICAL QA bugs are currently documented as open; the prior HIGH external-workbook issue is explicitly marked fixed and covered by passing tests. Remaining release-prep gaps are now concentrated in repo/product signoff work: backend <code>package.json</code> metadata drift (<code>test</code> script / declared Vitest tooling), duplicate-invoice behavior, the unresolved product decision for <code>GET /imports/:id</code>, concurrency/isolation hardening beyond current tests, the Todd/Brian plan review item, and staging/hosting planning.</div>
         <div style="margin-top:12px" class="progress"><div style="width:83%"></div></div>
       </div>
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>The MVP is effectively built, and the latest commit window still shows forward motion: after the month-drilldown/customer-cube push and the demo/dashboard crash-fix run, the newest repo work includes coordinator/dashboard maintenance plus Doc Agent manual/admin-guide updates rather than churn. Import, dashboard, review workflow, tenant-aware routing, customer detail, customer cube export, ARR/movement exports, the real XLSX upload happy path, and the manual/admin handoff pass are all in place, and the project remains above the 80% milestone threshold. The current objective is release prep and product signoff: align repo metadata with the working test suite, close the remaining backlog planning/product-decision items, lock staging/hosting direction, and add the last useful isolation/concurrency coverage before deployment.</p>
+        <p>The MVP is effectively built, and the latest commit window still shows forward motion: after the customer-cube/drilldown push and the demo/dashboard crash-fix run, the newest repo work continues to be coordinator dashboard maintenance plus Doc Agent manual/admin-guide updates rather than churn. Import, dashboard, review workflow, tenant-aware routing, customer detail, customer cube export, ARR/movement exports, the real XLSX upload happy path, and the manual/admin handoff pass are all in place, and the project remains above the 80% milestone threshold. The current objective is release prep and product signoff: align repo metadata with the working test suite, close the remaining backlog planning/product-decision items, lock staging/hosting direction, and add the last useful isolation/concurrency coverage before deployment.</p>
       </div>
 
       <div class="card col-4">
@@ -137,7 +137,7 @@
             <p>Major QA coverage is in place and the current QA summary is green at 747 passing tests; the project has cleared the MVP-complete threshold.</p>
           </div>
           <div class="step active">
-            <strong>8. Release Prep / Handoff Decisions</strong>
+            <strong>8. Release Prep / Product Signoff</strong>
             <p>Lock repo/package hygiene, settle the remaining product decisions, choose staging/hosting, and tighten lower-priority concurrency/isolation coverage before deployment.</p>
           </div>
         </div>
@@ -162,7 +162,7 @@
           <li><strong>Backend QA regression suite:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Real upload 200-path coverage:</strong> <span class="pill pill-done">done</span></li>
           <li><strong>Repo/package hygiene:</strong> <span class="pill pill-next">next</span></li>
-          <li><strong>Review Todd/Brian final plan:</strong> <span class="pill pill-next">next</span></li>
+          <li><strong>Todd/Brian final signoff:</strong> <span class="pill pill-next">next</span></li>
           <li><strong>Staging / hosting plan:</strong> <span class="pill pill-next">next</span></li>
         </ul>
       </div>
