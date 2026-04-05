@@ -1,6 +1,6 @@
 # ARR V2 - Admin & Super User Guide
 
-_Last updated: 2026-04-05 (Session 44 — tightened import validation and post-import checks, added dashboard/drilldown stability guidance, and documented the stabilized Customer Cube demo/export workflow for admins)_
+_Last updated: 2026-04-05 (Session 45 — refreshed admin post-import validation guidance, tightened dashboard/customer verification steps, and clarified Customer Cube export checks for stakeholder use)_
 
 > ⚠️ **This document is for Super Users and Administrators only.** It covers elevated capabilities that are not visible to standard users (Viewers and Analysts). Do not share this guide with standard users.
 
@@ -299,7 +299,8 @@ After any import, use this short admin verification loop before you report numbe
 3. Confirm the dashboard summary cards roughly match the workbook you expected to upload.
 4. Check **Review Progress** and note whether any Error-level work is still open.
 5. Open the customer roster or top-customer list and spot-check one or two expected accounts.
-6. Export CSV only after confirming the import and date range are correct.
+6. If Customer Cube will be used in the walkthrough, confirm its visible month columns and traceability fields match the same import/date context.
+7. Export CSV only after confirming the import and date range are correct.
 
 > ⚠️ **Warning:** It is easy in a multi-import tenant to export the wrong run if you skip header verification. Treat import ID and date range as part of every reporting checklist.
 
@@ -353,6 +354,7 @@ Admin usage guidance:
 10. If you are using the cube for audit or diligence support, verify that invoice and source-row traceability fields are still present in the current response/export.
 11. If the dashboard has been open during review activity, use **Refresh now** before exporting so the cube reflects the latest tenant-scoped state.
 12. If you switched imports from the header selector, verify that the cube export is tied to the intended import before sharing it with a client or stakeholder.
+13. If you are preparing a board, investor, or diligence handoff, verify that the dashboard summary cards and the exported cube agree on the same reporting window before you distribute the file.
 
 **Current cube dimensions and traceability fields:**
 - Customer

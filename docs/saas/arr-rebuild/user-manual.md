@@ -1,6 +1,6 @@
 # ARR V2 — User Manual
 
-_Last updated: 2026-04-05 (Session 44 — tightened import validation guidance, clarified dashboard/customer drilldown checks, and documented the stabilized Customer Cube demo/export workflow for end users)_
+_Last updated: 2026-04-05 (Session 45 — refreshed dashboard walkthrough guidance, tightened customer-level validation checks, and clarified how to verify Customer Cube exports before sharing them)_
 
 ---
 
@@ -404,6 +404,7 @@ Some walkthrough or demo environments also expose a **Customer Cube** view from 
 6. Re-export after any filter change instead of reusing an older file.
 7. If the dashboard has been open for a while, use **Refresh now** before exporting so the cube and dashboard context reflect the latest import/review state.
 8. If you reopened an older import from the header selector, verify that you are exporting from that older run on purpose and not by accident.
+9. If you plan to use the export in a stakeholder walkthrough, verify that the latest ARR card, the selected month window, and the exported cube all tell the same story before sending the file.
 
 > 💡 **Tip:** The Customer Cube is especially useful for board or investor walkthroughs because it combines customer, product, movement, and traceability context in one place.
 > 💡 **Tip:** If you export the Customer Cube, keep it paired with the same active import and date range you used for the dashboard walkthrough.
