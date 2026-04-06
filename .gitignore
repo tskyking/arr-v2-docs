@@ -14,3 +14,24 @@ node_modules/
 
 # OpenClaw internal
 .openclaw/
+
+# Local OpenClaw/personal workspace files not meant for SaaS git tracking
+/AGENTS.md
+/BOOTSTRAP.md
+/HEARTBEAT.md
+/TOOLS.md
+/IDENTITY.md
+/SOUL.md
+/USER.md
+/MEMORY.md
+/memory/
+/topics/
+/docs/health-family/
+/docs/life-ops/
+/docs/travel/
+/docs/inbox/
+/docs/reference/
+/arr-dashboard-check.png
+/local-dashboard-fixed.png
+/published-dashboard-after-push.png
+/published-dashboard.png
