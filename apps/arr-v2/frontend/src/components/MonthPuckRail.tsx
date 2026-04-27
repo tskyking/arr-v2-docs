@@ -17,6 +17,12 @@ type Props = {
   hoveredValue?: string | null;
   onSelect: (value: string) => void;
   onHoverChange?: (value: string | null) => void;
+  /**
+   * When true, hovering/focusing pucks previews that period. Keep false for
+   * click reliability: if the rail recenters on puck hover, the target can move
+   * under the pointer before mouseup and the click may not commit.
+   */
+  previewOnPuckHover?: boolean;
   puckWidth?: number;
   puckGap?: number;
   animationDurationMs?: number;
@@ -35,6 +41,7 @@ export default function MonthPuckRail({
   hoveredValue = null,
   onSelect,
   onHoverChange,
+  previewOnPuckHover = false,
   puckWidth = 66,
   puckGap = 12,
   animationDurationMs = 180,
@@ -80,6 +87,13 @@ export default function MonthPuckRail({
     onHoverChange?.(null);
     onSelect(next.value);
     requestAnimationFrame(() => puckRefs.current[next.index]?.focus());
+  }
+
+  function handleSelect(value: string) {
+    // Clear transient chart hover before committing selection so the drilldown,
+    // rail center, and reference line all settle on the clicked month.
+    onHoverChange?.(null);
+    onSelect(value);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -155,14 +169,12 @@ export default function MonthPuckRail({
                   isSelected ? styles.selected : '',
                   distanceClass,
                 ].filter(Boolean).join(' ')}
-                onClick={() => {
-                  onHoverChange?.(null);
-                  onSelect(month.value);
-                }}
-                onMouseEnter={() => onHoverChange?.(month.value)}
-                onMouseLeave={() => onHoverChange?.(null)}
-                onFocus={() => onHoverChange?.(month.value)}
-                onBlur={() => onHoverChange?.(null)}
+                onPointerDown={() => handleSelect(month.value)}
+                onClick={() => handleSelect(month.value)}
+                onMouseEnter={() => { if (previewOnPuckHover) onHoverChange?.(month.value); }}
+                onMouseLeave={() => { if (previewOnPuckHover) onHoverChange?.(null); }}
+                onFocus={() => { if (previewOnPuckHover) onHoverChange?.(month.value); }}
+                onBlur={() => { if (previewOnPuckHover) onHoverChange?.(null); }}
               >
                 <span className={styles.label}>{month.label}</span>
                 {month.metaLabel && <span className={styles.meta}>{month.metaLabel}</span>}

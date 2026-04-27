@@ -511,6 +511,7 @@ export default function DashboardPage() {
                 hoveredValue={hoveredMovementPeriod}
                 onSelect={setSelectedMovementPeriod}
                 onHoverChange={setHoveredMovementPeriod}
+                showCenterMarker={false}
               />
 
               <div className={styles.movementDrilldownGrid}>
