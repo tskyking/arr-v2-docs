@@ -1,0 +1,9 @@
+{
+  "date": "2026-04-27",
+  "timezone": "America/Los_Angeles",
+  "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
+  "goal": "Coordinate ARR-V2 git content toward DigitalOcean deployability and maintain dashboard-view readiness notes.",
+  "pushBlocker": "GitHub HTTPS push from this Mac is blocked: not authenticated to GitHub. Local commits/changes can be prepared, but publishing to GitHub Pages requires auth or a user-provided token/session.",
+  "localCommit": "14a003e Add chart-synced month puck rail demo",
+  "runs": []
+}
