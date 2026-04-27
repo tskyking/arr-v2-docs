@@ -3,7 +3,152 @@
   "timezone": "America/Los_Angeles",
   "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
   "goal": "Coordinate ARR-V2 git content toward DigitalOcean deployability and maintain dashboard-view readiness notes.",
-  "pushBlocker": "GitHub HTTPS push from this Mac is blocked: not authenticated to GitHub. Local commits/changes can be prepared, but publishing to GitHub Pages requires auth or a user-provided token/session.",
+  "pushBlocker": "GitHub HTTPS push from this Mac is blocked/unauthenticated for publishing; local deployability changes are prepared but not pushed.",
   "localCommit": "14a003e Add chart-synced month puck rail demo",
-  "runs": []
+  "runs": [
+    {
+      "time": "2026-04-27T01:00:00-07:00",
+      "agent": "qa",
+      "report": "docs/saas/arr-rebuild/nightly/qa-2026-04-27-0100.md",
+      "summary": "Frontend typecheck and build:demo passed; backend clean-install verification blocked/failing; DigitalOcean deploy config absent; month-puck compiles but has accessibility follow-ups.",
+      "checks": {
+        "frontendTypecheck": "pass",
+        "frontendBuildDemo": "pass_with_large_chunk_warning",
+        "frontendPreviewHttp": "pass",
+        "backendNpmCi": "pass_with_moderate_audit_warning",
+        "backendTypecheckCleanInstall": "fail_missing_dev_type_metadata",
+        "backendVitestCleanInstall": "fail_missing_vitest_metadata",
+        "backendTypecheckWithTempDeps": "fail_test_type_errors",
+        "backendVitestWithTempDeps": "fail_33_passed_files_5_failed_files_710_passed_34_failed_12_skipped"
+      },
+      "blockers": [
+        "GitHub HTTPS push/auth remains blocked for publishing.",
+        "Backend package metadata does not support reproducible clean-install test/typecheck.",
+        "Backend tests hardcode /Users/sky fixture paths and fail on current workspace path.",
+        "DigitalOcean deploy packaging/spec/scripts are missing."
+      ],
+      "nextRecommendedOwner": "dev-0200"
+    },
+    {
+      "time": "2026-04-27T02:00:00-07:00",
+      "agent": "dev",
+      "report": "docs/saas/arr-rebuild/nightly/dev-2026-04-27-0200.md",
+      "summary": "Added backend deploy/build/start scripts and explicit dev deps, added production build config and bundled Node entrypoint, made API prefix/base paths configurable for DigitalOcean, drafted DO deploy notes/spec, and validated backend build/start plus frontend typecheck/root build.",
+      "checks": {
+        "backendNpmInstallDevDeps": "pass_with_moderate_audit_warning",
+        "backendBuild": "pass",
+        "backendStartHealthWithApiPrefix": "pass",
+        "backendTypecheck": "fail_preexisting_test_type_errors",
+        "frontendTypecheck": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning"
+      },
+      "changes": [
+        "apps/arr-v2/backend/package.json and package-lock.json now include build/start/test/typecheck scripts plus vitest, node/adm-zip types, and esbuild dev metadata.",
+        "apps/arr-v2/backend/tsconfig.build.json excludes tests for production compilation.",
+        "apps/arr-v2/backend/services/api/src/server.ts supports API_PREFIX such as /api.",
+        "apps/arr-v2/frontend/vite.config.ts supports VITE_BASE_PATH while preserving the existing GitHub Pages default.",
+        "apps/arr-v2/frontend/src/lib/settings.ts supports VITE_API_BASE_URL or VITE_API_BASE_PATH.",
+        "apps/arr-v2/deploy/README.md and deploy/digitalocean-app.yaml capture a draft DigitalOcean App Platform path."
+      ],
+      "blockers": [
+        "GitHub HTTPS push/auth remains blocked for publishing or remote deploy visibility.",
+        "Backend full typecheck still fails on existing test-only issues: arrMovements tests use old non-tenant signatures and store-roundtrip has a bad relative type import.",
+        "Backend fixture tests still contain /Users/sky workspace paths and need repo-relative cleanup before CI can be trusted.",
+        "File-backed DATA_DIR persistence needs a production persistence decision before customer use."
+      ],
+      "nextRecommendedOwner": "coordinator-0300"
+    },
+    {
+      "time": "2026-04-27T03:00:00-07:00",
+      "agent": "coordinator",
+      "report": "docs/saas/arr-rebuild/nightly/coordinator-2026-04-27-0300.md",
+      "summary": "Reviewed QA/Dev overnight notes, refreshed dashboard-view status/readiness notes, and left changes local because GitHub HTTPS publishing remains unauthenticated.",
+      "checks": {
+        "dashboardHtmlUpdated": "pass_local",
+        "staticHtmlParse": "pass",
+        "publish": "blocked_github_https_auth"
+      },
+      "blockers": [
+        "GitHub HTTPS push/auth remains blocked.",
+        "Backend full typecheck/tests still need test cleanup and portable fixtures.",
+        "Production persistence for DATA_DIR remains undecided."
+      ],
+      "nextRecommendedOwner": "dev/qa cleanup before authenticated publish"
+    },
+    {
+      "time": "2026-04-27T04:00:00-07:00",
+      "agent": "qa",
+      "report": "docs/saas/arr-rebuild/nightly/qa-2026-04-27-0400.md",
+      "summary": "Re-ran safe deployability validation: frontend typecheck/root build pass, backend production build/start with API_PREFIX=/api passes, dashboard-view is locally readiness-aligned, but backend full typecheck/tests remain red from test-only signature/import issues and non-portable /Users/sky workbook fixtures.",
+      "checks": {
+        "frontendTypecheck": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning_662kb_js",
+        "backendBuild": "pass",
+        "backendStartHealthWithApiPrefix": "pass",
+        "backendTypecheck": "fail_test_type_errors",
+        "backendVitest": "fail_33_passed_files_5_failed_files_710_passed_34_failed_12_skipped",
+        "dashboardViewReview": "pass_local",
+        "digitalOceanSpecReview": "draft_not_apply_ready"
+      },
+      "blockers": [
+        "GitHub HTTPS push/auth remains blocked for publishing and DigitalOcean deploy-on-push visibility.",
+        "Backend full typecheck fails on arrMovements old tenant signatures and store-roundtrip bad type import.",
+        "Backend tests still use /Users/sky workbook fixture paths and fail on this workspace.",
+        "DigitalOcean spec still has placeholder GitHub repo values and needs a production persistence decision for DATA_DIR."
+      ],
+      "nextRecommendedOwner": "dev-0500 backend test portability/signature cleanup before deploy validation"
+    },
+    {
+      "time": "2026-04-27T05:00:00-07:00",
+      "agent": "dev",
+      "report": "docs/saas/arr-rebuild/nightly/dev-2026-04-27-0500.md",
+      "summary": "Resolved the previously reported backend CI blockers locally: backend typecheck is green, all backend tests pass, workbook fixture paths are portable from this workspace, runtime test data is ignored/isolated, production build/start with API_PREFIX=/api passes, and frontend typecheck/root build remains green.",
+      "checks": {
+        "backendBuild": "pass",
+        "backendStartHealthWithApiPrefix": "pass",
+        "backendTypecheck": "pass",
+        "backendVitest": "pass_38_files_756_tests",
+        "frontendTypecheck": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning_662kb_js",
+        "localRuntimeDataCleanup": "pass_backend_data_removed_and_ignored"
+      },
+      "changes": [
+        "Fixture/test path cleanup in the working tree now uses repo-relative workspace resolution instead of /Users/sky paths.",
+        "store-roundtrip type import resolves correctly from the API test path.",
+        "vitest.config.ts sets DATA_DIR to a temp path so test persistence does not create backend/data runtime artifacts.",
+        ".gitignore excludes apps/arr-v2/backend/data/ to prevent accidental commits of file-backed runtime/import state.",
+        "apps/arr-v2/deploy/README.md now reflects the 05:00 green local validation and remaining DigitalOcean caveats."
+      ],
+      "blockers": [
+        "GitHub HTTPS push/auth remains blocked for publishing and DigitalOcean deploy-on-push visibility.",
+        "DigitalOcean spec still has placeholder GitHub repo values and needs target account/repo confirmation.",
+        "Production persistence for DATA_DIR remains undecided; current file-backed JSON is prototype-only unless durable storage/database is chosen.",
+        "Frontend has a large bundle warning; not a deploy blocker but should be optimized before customer-scale use."
+      ],
+      "nextRecommendedOwner": "coordinator-0600 prepare publish/deploy handoff; do not apply DO spec until auth/repo/persistence are confirmed"
+    },
+    {
+      "time": "2026-04-27T06:00:00-07:00",
+      "agent": "coordinator",
+      "report": "docs/saas/arr-rebuild/nightly/coordinator-2026-04-27-0600.md",
+      "summary": "Reviewed all overnight Dev/QA notes, re-ran safe validation, confirmed backend CI/build/smoke and frontend typecheck/root build are green locally, refreshed dashboard-view for 06:00 readiness, and prepared the 07:00 QA handoff.",
+      "checks": {
+        "backendTypecheck": "pass",
+        "backendVitest": "pass_38_files_756_tests",
+        "backendBuild": "pass",
+        "backendStartHealthWithApiPrefix": "pass",
+        "frontendTypecheck": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning_662kb_js",
+        "nightlyStatusJson": "pass",
+        "publish": "blocked_github_https_auth"
+      },
+      "blockers": [
+        "GitHub HTTPS push/auth remains blocked for publishing and DigitalOcean deploy-on-push visibility.",
+        "DigitalOcean spec still has REPLACE_WITH_GITHUB_OWNER_REPO placeholders and needs actual repo/account values before use.",
+        "Production persistence for DATA_DIR remains undecided; file-backed JSON is prototype-only unless durable storage/database is chosen.",
+        "Frontend bundle-size warning remains a performance follow-up, not a deploy blocker."
+      ],
+      "nextRecommendedOwner": "qa-0700 hard-stop final verification of green local state, dashboard/readiness notes, and publish/auth blocker"
+    }
+  ]
 }
