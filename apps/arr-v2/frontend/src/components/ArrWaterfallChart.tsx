@@ -49,6 +49,16 @@ interface Props {
   onHoverPeriod?: (period: string | null) => void;
 }
 
+function chartStatePeriod(state: any): string | null {
+  if (typeof state?.activeLabel === 'string') return state.activeLabel;
+
+  const payloadPeriod = state?.activePayload?.find?.((item: any) => typeof item?.payload?.period === 'string')?.payload?.period;
+  if (typeof payloadPeriod === 'string') return payloadPeriod;
+
+  const directPeriod = state?.payload?.period ?? state?.period;
+  return typeof directPeriod === 'string' ? directPeriod : null;
+}
+
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) return null;
 
@@ -162,16 +172,23 @@ export default function ArrWaterfallChart({
   const minimumFloor = minClosing - Math.max(3_000_000, closingSpan * 2.0);
   const rightMin = Math.min(computedRightMin, minimumFloor);
 
+  const commitChartPeriod = (period: string | null) => {
+    if (!period || !chartData.some((entry) => entry.period === period)) return;
+    onHoverPeriod?.(null);
+    onSelectPeriod?.(period);
+  };
+
   return (
     <ResponsiveContainer width="100%" height={360}>
       <ComposedChart
         data={chartData}
         margin={{ top: 10, right: 28, left: 10, bottom: 5 }}
+        onClick={(state: any) => commitChartPeriod(chartStatePeriod(state))}
         onMouseMove={(state: any) => {
-          const period = typeof state?.activeLabel === 'string' ? state.activeLabel : null;
-          onHoverPeriod?.(period);
+          onHoverPeriod?.(chartStatePeriod(state));
         }}
         onMouseLeave={() => onHoverPeriod?.(null)}
+        style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis
@@ -226,10 +243,10 @@ export default function ArrWaterfallChart({
             return labels[value] ?? value;
           }}
         />
-        <Bar yAxisId="left" dataKey="new" stackId="pos" fill={COLORS.new} radius={[2, 2, 0, 0]} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="expansion" stackId="pos" fill={COLORS.expansion} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="contraction" stackId="neg" fill={COLORS.contraction} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="churn" stackId="neg" fill={COLORS.churn} radius={[0, 0, 2, 2]} onClick={(data) => onSelectPeriod?.(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="new" stackId="pos" fill={COLORS.new} radius={[2, 2, 0, 0]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="expansion" stackId="pos" fill={COLORS.expansion} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="contraction" stackId="neg" fill={COLORS.contraction} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="churn" stackId="neg" fill={COLORS.churn} radius={[0, 0, 2, 2]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
         <Line
           yAxisId="right"
           type="monotone"
