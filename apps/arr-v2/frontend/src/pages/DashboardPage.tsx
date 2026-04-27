@@ -10,6 +10,8 @@ import {
 import { downloadArrCsv, downloadArrMovementsCsv } from '@/lib/api';
 import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, useCustomerList } from '@/lib/hooks';
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
+import MonthPuckRail from '@/components/MonthPuckRail';
+import type { MonthPuckItem } from '@/components/MonthPuckRail';
 import { demoCustomerCube, isDemoImportId } from '@/lib/demoData';
 import { useArrSettings } from '@/lib/settings';
 import styles from './DashboardPage.module.css';
@@ -52,6 +54,14 @@ function toMonthStr(s: string): string {
   return s.slice(0, 7);
 }
 
+function formatMonthPuckLabel(period: string, previousPeriod?: string): string {
+  const [year, month] = period.split('-').map(Number);
+  const date = new Date(Date.UTC(year, (month || 1) - 1, 1));
+  const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(date);
+  const previousYear = previousPeriod ? Number(previousPeriod.slice(0, 4)) : null;
+  return previousYear !== null && previousYear !== year ? `${monthLabel} '${String(year).slice(2)}` : monthLabel;
+}
+
 const LIVE_POLL_MS = 30_000;
 
 export default function DashboardPage() {
@@ -68,6 +78,7 @@ export default function DashboardPage() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [selectedMovementPeriod, setSelectedMovementPeriod] = useState<string | null>(null);
+  const [hoveredMovementPeriod, setHoveredMovementPeriod] = useState<string | null>(null);
 
   const {
     data: summary,
@@ -142,6 +153,14 @@ export default function DashboardPage() {
   }, [searchParams]);
 
   const movementEntries = movements?.movements ?? [];
+  const movementPucks = useMemo<MonthPuckItem[]>(() => movementEntries.map((movement, index) => ({
+    id: movement.period,
+    value: movement.period,
+    label: formatMonthPuckLabel(movement.period, movementEntries[index - 1]?.period),
+    fullLabel: movement.period,
+    metaLabel: `${movement.netMovement >= 0 ? '+' : ''}${formatArr(movement.netMovement)}`,
+    index,
+  })), [movementEntries]);
 
   useEffect(() => {
     const latestMovementPeriod = movementEntries[movementEntries.length - 1]?.period ?? null;
@@ -150,6 +169,9 @@ export default function DashboardPage() {
       if (!current) return latestMovementPeriod;
       return movementEntries.some((movement) => movement.period === current) ? current : latestMovementPeriod;
     });
+    setHoveredMovementPeriod((current) => (
+      current && movementEntries.some((movement) => movement.period === current) ? current : null
+    ));
   }, [movementEntries]);
 
   function handleRefreshNow() {
@@ -473,32 +495,23 @@ export default function DashboardPage() {
           </div>
           <ArrWaterfallChart
             movements={movements.movements}
-            selectedPeriod={selectedMovement?.period ?? null}
-            onSelectPeriod={setSelectedMovementPeriod}
+            selectedPeriod={hoveredMovementPeriod ?? selectedMovement?.period ?? null}
+            onSelectPeriod={(period) => {
+              setHoveredMovementPeriod(null);
+              setSelectedMovementPeriod(period);
+            }}
+            onHoverPeriod={setHoveredMovementPeriod}
           />
 
           {selectedMovement && (
             <>
-              <div className={styles.movementSelectorRow}>
-                {movements.movements.map((movement) => {
-                  const riskAmount = movement.contractionArr + movement.churnArr;
-                  const variant = riskAmount >= 40_000 ? 'risk' : movement.newArr >= 75_000 ? 'positive' : 'neutral';
-                  return (
-                    <button
-                      key={movement.period}
-                      type="button"
-                      className={selectedMovement.period === movement.period ? styles.movementChipActive : styles.movementChip}
-                      onClick={() => setSelectedMovementPeriod(movement.period)}
-                    >
-                      <span>{movement.period}</span>
-                      <strong>{movement.netMovement >= 0 ? '+' : ''}{formatArr(movement.netMovement)}</strong>
-                      <em className={variant === 'risk' ? styles.movementChipRisk : variant === 'positive' ? styles.movementChipPositive : undefined}>
-                        {riskAmount >= 40_000 ? 'watch downside' : movement.newArr >= 75_000 ? 'new ARR spike' : 'normal'}
-                      </em>
-                    </button>
-                  );
-                })}
-              </div>
+              <MonthPuckRail
+                months={movementPucks}
+                selectedValue={selectedMovement.period}
+                hoveredValue={hoveredMovementPeriod}
+                onSelect={setSelectedMovementPeriod}
+                onHoverChange={setHoveredMovementPeriod}
+              />
 
               <div className={styles.movementDrilldownGrid}>
                 <div className={`card ${styles.movementDetailCard}`}>

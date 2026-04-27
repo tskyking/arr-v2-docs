@@ -46,6 +46,7 @@ interface Props {
   maxPeriods?: number;
   selectedPeriod?: string | null;
   onSelectPeriod?: (period: string) => void;
+  onHoverPeriod?: (period: string | null) => void;
 }
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -118,6 +119,7 @@ export default function ArrWaterfallChart({
   maxPeriods = 24,
   selectedPeriod,
   onSelectPeriod,
+  onHoverPeriod,
 }: Props) {
   const visible = movements.slice(-maxPeriods);
 
@@ -162,7 +164,15 @@ export default function ArrWaterfallChart({
 
   return (
     <ResponsiveContainer width="100%" height={360}>
-      <ComposedChart data={chartData} margin={{ top: 10, right: 28, left: 10, bottom: 5 }}>
+      <ComposedChart
+        data={chartData}
+        margin={{ top: 10, right: 28, left: 10, bottom: 5 }}
+        onMouseMove={(state: any) => {
+          const period = typeof state?.activeLabel === 'string' ? state.activeLabel : null;
+          onHoverPeriod?.(period);
+        }}
+        onMouseLeave={() => onHoverPeriod?.(null)}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis
           dataKey="period"
