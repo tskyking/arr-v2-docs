@@ -9,6 +9,9 @@
 # Node modules
 node_modules/
 
+# Local app/runtime data
+/apps/arr-v2/backend/data/
+
 # OS files
 .DS_Store
 

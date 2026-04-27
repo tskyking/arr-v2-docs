@@ -27,7 +27,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, it, expect, afterEach } from 'vitest';
 import { saveImport, loadAllImports, deleteImport } from '../store.js';
 import type { ImportResult } from '../importService.js';
-import type { ArrSnapshot } from '../../arr/src/types.js';
+import type { ArrSnapshot } from '../../../arr/src/types.js';
 
 const TEST_TENANT = `roundtrip-${randomUUID().slice(0, 8)}`;
 

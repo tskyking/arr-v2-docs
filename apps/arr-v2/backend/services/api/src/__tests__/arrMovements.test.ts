@@ -25,7 +25,7 @@ import { processImport, getArrMovements } from '../importService.js';
 
 const FAKE_ID = '00000000-0000-0000-0000-000000000077';
 
-const WORKSPACE = '/Users/sky/.openclaw/workspace';
+const WORKSPACE = path.resolve(process.cwd(), '../../..');
 const INTERNAL_XLSX = path.join(
   WORKSPACE,
   'docs/saas/arr-rebuild/reference/source-examples/csv/Sample Data for TSOT import internal).xlsx',

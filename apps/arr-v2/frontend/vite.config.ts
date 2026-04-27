@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
+const defaultPagesBase = '/arr-v2-docs/saas/arr-rebuild/gui-demo/';
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/arr-v2-docs/saas/arr-rebuild/gui-demo/',
+  base: process.env.VITE_BASE_PATH ?? defaultPagesBase,
   plugins: [react()],
   resolve: {
     alias: {

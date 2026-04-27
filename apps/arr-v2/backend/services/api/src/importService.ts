@@ -64,6 +64,8 @@ function normalizeResolvedBy(userEmail?: string): string {
 
 type ReviewOverride = PersistedOverride;
 
+const DEFAULT_TENANT_ID = 'default';
+
 const tenantStores = new Map<string, Map<string, ImportResult>>();
 const tenantOverrides = new Map<string, Map<string, ReviewOverride>>();
 const overridesByImport = new Map<string, Map<string, ReviewOverride>>();
@@ -97,7 +99,11 @@ function makeItemId(importId: string, sourceRowNumber: number, idx: number): str
   return `${importId}-${sourceRowNumber}-${idx}`;
 }
 
-export function processImport(tenantId: string, filePath: string): ImportResult {
+export function processImport(filePath: string): ImportResult;
+export function processImport(tenantId: string, filePath: string): ImportResult;
+export function processImport(tenantIdOrFilePath: string, filePathMaybe?: string): ImportResult {
+  const tenantId = filePathMaybe === undefined ? DEFAULT_TENANT_ID : tenantIdOrFilePath;
+  const filePath = filePathMaybe === undefined ? tenantIdOrFilePath : filePathMaybe;
   const importId = randomUUID();
   const importedAt = new Date().toISOString();
 
@@ -186,17 +192,26 @@ export function getImportSummary(tenantId: string, importId: string): ImportSumm
   };
 }
 
+export function getArrMovements(importId: string): ArrMovementsResult | null;
+export function getArrMovements(importId: string, from: string, to: string): ArrMovementsResult | null;
+export function getArrMovements(tenantId: string, importId: string, from?: string, to?: string): ArrMovementsResult | null;
 export function getArrMovements(
-  tenantId: string,
-  importId: string,
-  from?: string,
+  tenantIdOrImportId: string,
+  importIdOrFrom?: string,
+  fromOrTo?: string,
   to?: string,
 ): ArrMovementsResult | null {
+  const usingDefaultTenant = importIdOrFrom === undefined || (fromOrTo !== undefined && to === undefined);
+  const tenantId = usingDefaultTenant ? DEFAULT_TENANT_ID : tenantIdOrImportId;
+  const importId = usingDefaultTenant ? tenantIdOrImportId : importIdOrFrom!;
+  const from = usingDefaultTenant ? importIdOrFrom : fromOrTo;
+  const toDateArg = usingDefaultTenant ? fromOrTo : to;
+
   const result = getTenantStore(tenantId).get(importId);
   if (!result) return null;
 
   const fromDate = from ?? result.fromDate;
-  const toDate = to ?? result.toDate;
+  const toDate = toDateArg ?? result.toDate;
   return buildArrMovements(result.snapshots, fromDate, toDate);
 }
 

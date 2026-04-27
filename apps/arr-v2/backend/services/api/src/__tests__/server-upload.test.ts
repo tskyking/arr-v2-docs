@@ -31,7 +31,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import AdmZip from 'adm-zip';
 
-const WORKSPACE = '/Users/sky/.openclaw/workspace';
+const WORKSPACE = path.resolve(process.cwd(), '../../..');
 const REAL_INTERNAL_XLSX = path.join(
   WORKSPACE,
   'docs/saas/arr-rebuild/reference/source-examples/csv/Sample Data for TSOT import internal).xlsx',

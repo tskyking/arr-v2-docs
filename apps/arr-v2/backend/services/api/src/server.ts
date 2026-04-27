@@ -52,6 +52,20 @@ import {
 import { ImportError } from '../../imports/src/importErrors.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
+const API_PREFIX = normalizeApiPrefix(process.env.API_PREFIX ?? '');
+
+function normalizeApiPrefix(prefix: string): string {
+  const trimmed = prefix.trim();
+  if (!trimmed || trimmed === '/') return '';
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function stripApiPrefix(path: string): string {
+  if (!API_PREFIX) return path;
+  if (path === API_PREFIX) return '/';
+  if (path.startsWith(`${API_PREFIX}/`)) return path.slice(API_PREFIX.length) || '/';
+  return path;
+}
 
 /**
  * Maximum allowed request body size in bytes (default 50 MB).
@@ -146,7 +160,8 @@ async function parseBody(req: http.IncomingMessage): Promise<Buffer> {
 
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
-  const path = url.pathname.replace(/\/$/, '') || '/';
+  const rawPath = url.pathname.replace(/\/$/, '') || '/';
+  const path = stripApiPrefix(rawPath).replace(/\/$/, '') || '/';
   const method = req.method ?? 'GET';
 
   // OPTIONS preflight
@@ -409,7 +424,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
 const server = http.createServer(handleRequest);
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`ARR V2 API running on http://0.0.0.0:${PORT}`);
+  const prefixLabel = API_PREFIX ? ` with API_PREFIX=${API_PREFIX}` : '';
+  console.log(`ARR V2 API running on http://0.0.0.0:${PORT}${prefixLabel}`);
 });
 
 export default server;

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "sourceMap": true
+  },
+  "exclude": [
+    "services/**/*.test.ts",
+    "services/**/__tests__/**"
+  ]
+}

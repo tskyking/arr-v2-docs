@@ -74,9 +74,18 @@ export function saveArrSettings(next: Partial<ArrSettings>): ArrSettings {
   return normalized;
 }
 
+function normalizePrefix(prefix: string | undefined): string {
+  const trimmed = prefix?.trim() ?? '';
+  if (!trimmed || trimmed === '/') return '';
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
 export function buildApiPath(path: string, tenantId = getArrSettings().tenantId): string {
-  const base = `/api/tenants/${encodeURIComponent(tenantId)}`;
-  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+  const apiOrigin = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/g, '');
+  const apiPrefix = normalizePrefix(import.meta.env.VITE_API_BASE_PATH as string | undefined) || '/api';
+  const tenantPath = `/tenants/${encodeURIComponent(tenantId)}`;
+  const resourcePath = path.startsWith('/') ? path : `/${path}`;
+  return `${apiOrigin ?? apiPrefix}${tenantPath}${resourcePath}`;
 }
 
 export function useArrSettings() {

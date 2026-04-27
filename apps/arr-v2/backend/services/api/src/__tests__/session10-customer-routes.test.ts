@@ -12,7 +12,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-const WORKSPACE = '/Users/sky/.openclaw/workspace';
+const WORKSPACE = path.resolve(process.cwd(), '../../..');
 const REAL_INTERNAL_XLSX = path.join(
   WORKSPACE,
   'docs/saas/arr-rebuild/reference/source-examples/csv/Sample Data for TSOT import internal).xlsx',

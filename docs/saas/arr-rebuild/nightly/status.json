@@ -3,8 +3,8 @@
   "timezone": "America/Los_Angeles",
   "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
   "goal": "Coordinate ARR-V2 git content toward DigitalOcean deployability and maintain dashboard-view readiness notes.",
-  "pushBlocker": "GitHub HTTPS push from this Mac is blocked/unauthenticated for publishing; local deployability changes are prepared but not pushed.",
-  "localCommit": "14a003e Add chart-synced month puck rail demo",
+  "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available for tskyking and dry-run push reaches origin. Remaining publish gate is review/commit/approval of local changes before external push.",
+  "localCommit": "3c49c2a Add ARR-V2 6am coordinator handoff (HEAD/origin); current deployability/dashboard changes remain uncommitted pending review.",
   "runs": [
     {
       "time": "2026-04-27T01:00:00-07:00",
@@ -149,6 +149,57 @@
         "Frontend bundle-size warning remains a performance follow-up, not a deploy blocker."
       ],
       "nextRecommendedOwner": "qa-0700 hard-stop final verification of green local state, dashboard/readiness notes, and publish/auth blocker"
+    },
+    {
+      "time": "2026-04-27T07:00:00-07:00",
+      "agent": "qa-final",
+      "report": "docs/saas/arr-rebuild/nightly/qa-2026-04-27-0700-final.md",
+      "summary": "Final hard-stop QA re-ran deployability gates and confirmed backend typecheck, 38-file/756-test suite, backend build/API-prefix health smoke, frontend typecheck/root build, status JSON, dashboard local/live match, and backend runtime-data hygiene are green locally.",
+      "checks": {
+        "backendTypecheck": "pass",
+        "backendVitest": "pass_38_files_756_tests",
+        "backendBuild": "pass",
+        "backendStartHealthWithApiPrefix": "pass",
+        "frontendTypecheck": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning_662kb_js_186kb_gzip",
+        "nightlyStatusJson": "pass",
+        "dashboardLocalLiveMatch": "pass",
+        "backendRuntimeDataArtifacts": "pass_none_found",
+        "publish": "not_attempted_hard_stop_github_auth_still_blocking"
+      },
+      "blockers": [
+        "GitHub HTTPS push/auth remains the publishing and deploy-on-push blocker for future changes from this Mac.",
+        "DigitalOcean spec still has placeholder repo/account values and must not be applied as-is.",
+        "Production persistence for DATA_DIR remains undecided; file-backed JSON is prototype-only unless durable storage/database is chosen.",
+        "Frontend large bundle warning remains a performance follow-up, not a prototype deploy blocker."
+      ],
+      "nextRecommendedOwner": "manual product/ops/dev handoff only; no further scheduled overnight runs after 07:00 hard stop"
+    },
+    {
+      "time": "2026-04-27T08:59:53-07:00",
+      "agent": "manual-sky-coordinator",
+      "report": "docs/saas/arr-rebuild/nightly/manual-2026-04-27-0900-coordinator.md",
+      "summary": "Manual coordinator run confirmed GitHub HTTPS auth is restored, local backend/frontend deployability gates remain green, and next ops path is reviewed commit/push followed by DigitalOcean app setup and ARRWEB.com DNS wiring.",
+      "checks": {
+        "githubHttpsAuth": "pass_gh_logged_in_tskyking",
+        "gitPushDryRun": "pass_everything_up_to_date_for_committed_head",
+        "backendTypecheck": "pass",
+        "backendVitest": "pass_38_files_756_tests",
+        "backendBuild": "pass",
+        "frontendTypecheck": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning_662kb_js_186kb_gzip",
+        "dashboardUpdated": "pass_local",
+        "deployNotesUpdated": "pass_local"
+      },
+      "blockers": [
+        "Local working-tree changes need review/commit before push; no external publish performed in this manual pass.",
+        "DigitalOcean spec still needs real repo/account/app values after Todd signs up.",
+        "ARRWEB.com DNS should be pointed only after DigitalOcean provides custom-domain records/target.",
+        "Production persistence for DATA_DIR remains undecided; file-backed JSON is prototype-only unless durable storage/database is chosen.",
+        "Frontend large bundle warning remains a performance follow-up, not a prototype deploy blocker."
+      ],
+      "nextRecommendedOwner": "Todd/Sky: DigitalOcean signup + reviewed commit/push + staging deploy smoke"
     }
-  ]
+  ],
+  "targetDomain": "ARRWEB.com via GoDaddy DNS, to be pointed after DigitalOcean app/custom-domain target exists."
 }

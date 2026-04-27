@@ -78,8 +78,8 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Prototype Deploy Smoke Ready + Product/Ops Signoff</span>
-        <span class="badge todo">Target: confirm GitHub auth, fill DigitalOcean repo/account values, decide DATA_DIR persistence, and complete 07:00 QA signoff</span>
+        <span class="badge active">Current Phase: Prototype Deploy Smoke Ready + DigitalOcean/ARRWEB Prep</span>
+        <span class="badge todo">Target: commit/push local deployability changes, fill DigitalOcean repo/account values, connect ARRWEB.com, and decide DATA_DIR persistence</span>
       </div>
     </div>
 
@@ -87,21 +87,21 @@
       <div class="card col-4">
         <h3>Overall Progress</h3>
         <div class="metric">83%</div>
-        <div class="sub">Backlog completion remains 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. The 2026-04-27 overnight cycle moved ARR-V2 from “deploy config absent” to local prototype deploy-smoke readiness: backend <code>build</code>/<code>start</code>/<code>test</code>/<code>typecheck</code> metadata exists, production sources bundle to <code>dist/server.js</code>, <code>API_PREFIX=/api</code> health routing is verified, frontend root builds can use <code>VITE_BASE_PATH=/</code>, and draft deploy docs/spec were added. The 05:00 Dev pass cleared the backend CI/test blockers, and the 06:00 Coordinator validation confirmed backend typecheck, 38-file/756-test suite, production build, API-prefix health smoke, frontend typecheck, and root/API build all pass locally. Publishing remains blocked by unauthenticated GitHub HTTPS on this Mac, the DigitalOcean spec still needs real repo/account values, and production readiness still needs a durable persistence decision for <code>DATA_DIR</code>.</div>
+        <div class="sub">Backlog completion remains 24/29 items (83%) based on the checked items currently in <code>memory/backlog.md</code>. The 2026-04-27 overnight cycle moved ARR-V2 from “deploy config absent” to local prototype deploy-smoke readiness: backend <code>build</code>/<code>start</code>/<code>test</code>/<code>typecheck</code> metadata exists, production sources bundle to <code>dist/server.js</code>, <code>API_PREFIX=/api</code> health routing is verified, frontend root builds can use <code>VITE_BASE_PATH=/</code>, and draft deploy docs/spec were added. The 05:00 Dev pass cleared the backend CI/test blockers, and the 06:00 Coordinator validation confirmed backend typecheck, 38-file/756-test suite, production build, API-prefix health smoke, frontend typecheck, and root/API build all pass locally. GitHub HTTPS auth is now restored for <code>tskyking</code> and a dry-run push reports the remote is reachable; publishing is no longer blocked by auth, but the deployability/status changes still need a reviewed commit before they are pushed. The DigitalOcean spec still needs real repo/account values, ARRWEB.com DNS can be pointed after the DO app/domain target exists, and production readiness still needs a durable persistence decision for <code>DATA_DIR</code>.</div>
         <div style="margin-top:12px" class="progress"><div style="width:83%"></div></div>
       </div>
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>The MVP remains functionally past the 80% threshold, and this overnight pass turned the deployability story from red to locally green for prototype smoke. QA found backend metadata/fixture/deploy gaps; Dev added scripts, build config, API prefix handling, frontend env controls, draft DO deploy docs/spec, then fixed test portability and runtime data hygiene. The current objective is now final QA confirmation, validated DigitalOcean repo/account settings, a production persistence decision, and restored GitHub publishing.</p>
+        <p>The MVP remains functionally past the 80% threshold, and the manual 2026-04-27 morning pass confirms the deployability story is locally green for prototype smoke. Backend typecheck, 38-file/756-test suite, backend production build, frontend typecheck, and frontend root build pass locally. The current objective is now reviewed commit/push, validated DigitalOcean repo/account settings, ARRWEB.com domain wiring, and a production persistence decision.</p>
       </div>
 
       <div class="card col-4">
         <h3>Next 3 Actions</h3>
         <ul>
-          <li>07:00 QA: re-run backend/frontend gates and confirm dashboard/nightly handoff consistency</li>
-          <li>Validate the draft DigitalOcean App Platform spec with real GitHub/account settings and decide durable persistence for <code>DATA_DIR</code></li>
-          <li>Fix GitHub HTTPS auth/publishing, then push the local dashboard/deployability changes for remote visibility</li>
+          <li>Review and commit the local deployability/dashboard changes, then push once Todd approves external publishing</li>
+          <li>Create/confirm the DigitalOcean account/app, replace draft spec placeholders with the real GitHub repo/account values, and run a staging smoke deploy</li>
+          <li>Point ARRWEB.com DNS from GoDaddy to the DigitalOcean app after DO provides the canonical app/domain target; decide durable <code>DATA_DIR</code> persistence before customer use</li>
         </ul>
       </div>
 
@@ -134,11 +134,11 @@
           </div>
           <div class="step done">
             <strong>7. Controlled Testing</strong>
-            <p>Frontend typecheck/build paths are green; backend typecheck, full test suite, production build, and API-prefix smoke are green locally as of 06:00.</p>
+            <p>Frontend typecheck/build paths are green; backend typecheck, full test suite, production build, and API-prefix smoke are green locally as of the 09:00 manual coordinator pass.</p>
           </div>
           <div class="step active">
             <strong>8. Release Prep / Product Signoff</strong>
-            <p>Repo/package hygiene and backend CI are green locally; release prep now depends on 07:00 QA confirmation, validated DigitalOcean settings, production persistence direction, and publish auth.</p>
+            <p>Repo/package hygiene, backend CI, frontend build, and GitHub HTTPS auth are green locally; release prep now depends on reviewed commit/push, validated DigitalOcean settings, ARRWEB.com DNS wiring, and production persistence direction.</p>
           </div>
         </div>
       </div>
@@ -239,14 +239,15 @@
 
 
       <div class="card col-12">
-        <h2>Overnight Coordination — 2026-04-27 06:00 PT</h2>
+        <h2>Manual Coordination — 2026-04-27 08:59 PT</h2>
         <ul>
           <li><strong>QA 01:00:</strong> frontend typecheck, demo build, and static preview passed; backend clean-install test/typecheck failed from missing metadata, old test assumptions, and hardcoded fixture paths.</li>
           <li><strong>Dev 02:00:</strong> added backend build/start/test/typecheck scripts, explicit dev deps, production build bundling, <code>API_PREFIX</code>, frontend base/API env controls, and draft DigitalOcean deploy docs/spec.</li>
           <li><strong>QA 04:00:</strong> confirmed deploy packaging progress but found backend typecheck/tests still red from old signatures/imports and non-portable workbook paths.</li>
           <li><strong>Dev 05:00:</strong> cleared backend CI blockers locally: typecheck passed, 38 files / 756 tests passed, fixture paths are portable, and test <code>DATA_DIR</code> is temp/ignored.</li>
           <li><strong>Coordinator 06:00:</strong> re-ran safe validation; backend typecheck/tests/build/API-prefix smoke and frontend typecheck/root build all pass locally.</li>
-          <li><strong>Open blockers:</strong> GitHub HTTPS push auth is unavailable; DigitalOcean spec needs real repo/account values; production persistence for file-backed <code>DATA_DIR</code> is undecided; frontend bundle warning remains a performance follow-up.</li>
+          <li><strong>Manual 09:00 pass:</strong> GitHub HTTPS auth now works for <code>tskyking</code>; backend typecheck, backend tests (38 files / 756 tests), backend production build, frontend typecheck, and frontend root build all pass locally.</li>
+          <li><strong>Open blockers:</strong> local deployability/dashboard changes need review/commit before external push; DigitalOcean spec needs real repo/account values; ARRWEB.com DNS waits on the DO app/domain target; production persistence for file-backed <code>DATA_DIR</code> is undecided; frontend bundle warning remains a performance follow-up.</li>
         </ul>
       </div>
 

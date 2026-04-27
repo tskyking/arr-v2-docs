@@ -13,7 +13,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-const WORKSPACE = '/Users/sky/.openclaw/workspace';
+const WORKSPACE = path.resolve(process.cwd(), '../../..');
 const DEMO_WORKBOOK = path.join(
   WORKSPACE,
   'apps/arr-v2/frontend/public/demo/arr-v2-demo-import.xlsx',

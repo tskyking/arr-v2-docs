@@ -38,7 +38,7 @@ import {
   exportMovementsCsv,
 } from '../../../api/src/importService.js';
 
-const WORKSPACE = '/Users/sky/.openclaw/workspace';
+const WORKSPACE = path.resolve(process.cwd(), '../../..');
 const INTERNAL_XLSX = path.join(
   WORKSPACE,
   'docs/saas/arr-rebuild/reference/source-examples/csv/Sample Data for TSOT import internal).xlsx',

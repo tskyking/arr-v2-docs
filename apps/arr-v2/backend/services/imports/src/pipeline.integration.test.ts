@@ -18,7 +18,7 @@ import { normalizeImportBundle } from './normalizers.js';
 import { recognizeAll } from '../../arr/src/recognition.js';
 import { buildMonthlySnapshots } from '../../arr/src/snapshots.js';
 
-const WORKSPACE = '/Users/sky/.openclaw/workspace';
+const WORKSPACE = path.resolve(process.cwd(), '../../..');
 
 const INTERNAL_XLSX = path.join(
   WORKSPACE,
