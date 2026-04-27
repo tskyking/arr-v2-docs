@@ -24,6 +24,9 @@ transaction_rows = [
     ['Northstar Health','2026-02-10','Invoice','INV-1238','Implementation Services','Hospital network onboarding support','1','18000','18000','','','Services Revenue','Healthcare','0'],
     ['Harbor Logistics','2026-03-05','Invoice','INV-1289','Usage Overage Pack','Peak season transaction overage','1','14700','14700','','','Usage Revenue','Logistics','0'],
     ['Apex Retail Group','2026-03-20','Invoice','INV-1304','Advanced Benchmarking Add-On','Quarter-end benchmarking expansion','12','6500','78000','2026-03-20','2027-03-19','Recurring Revenue','Retail','0'],
+    ['Cascade BioLabs','2026-04-01','Invoice','INV-1320','Life Sciences Analytics Cloud','New life-sciences platform subscription','12','24500','294000','2026-04-01','2027-03-31','Recurring Revenue','Life Sciences','0'],
+    ['Harbor Logistics','2026-04-15','Invoice','INV-1327','Route Optimization Add-On','New route optimization expansion','12','8500','102000','2026-04-15','2027-04-14','Recurring Revenue','Logistics','0'],
+    ['Northstar Health','2026-04-20','Invoice','INV-1331','Care Quality Benchmarking','New care-quality benchmarking expansion','12','9200','110400','2026-04-20','2027-04-19','Recurring Revenue','Healthcare','0'],
 ]
 
 mapping_rows = [
@@ -44,6 +47,9 @@ mapping_rows = [
     ['Implementation Services','','','Yes',''],
     ['Usage Overage Pack','','','','Yes'],
     ['Advanced Benchmarking Add-On','Yes','','',''],
+    ['Life Sciences Analytics Cloud','Yes','','',''],
+    ['Route Optimization Add-On','Yes','','',''],
+    ['Care Quality Benchmarking','Yes','','',''],
 ]
 
 assumption_rows = [

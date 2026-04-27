@@ -228,6 +228,19 @@ export default function DashboardPage() {
     : null;
 
   const cube = importId && isDemoImportId(importId) ? demoCustomerCube : null;
+  const cubeSegmentTotals = useMemo(() => {
+    if (!cube) return [];
+    const totals = new Map<string, { segment: string; arr: number; customers: Set<string> }>();
+    for (const row of cube.rows) {
+      const item = totals.get(row.category) ?? { segment: row.category, arr: 0, customers: new Set<string>() };
+      item.arr += row.closingArr;
+      item.customers.add(row.customerName);
+      totals.set(row.category, item);
+    }
+    return [...totals.values()]
+      .map(item => ({ segment: item.segment, arr: item.arr, customers: item.customers.size }))
+      .sort((a, b) => b.arr - a.arr);
+  }, [cube]);
   const selectedMovement = movementEntries.find((movement) => movement.period === selectedMovementPeriod)
     ?? movementEntries[movementEntries.length - 1]
     ?? null;
@@ -729,18 +742,18 @@ export default function DashboardPage() {
           </div>
 
           <div className={styles.statGrid}>
-            <StatCard label="Gross Retention" value={`${cube.summary.grossRetentionPct.toFixed(1)}%`} sub="Excludes expansion; period-over-period logo durability" />
-            <StatCard label="Net Revenue Retention" value={`${cube.summary.netRevenueRetentionPct.toFixed(1)}%`} sub="Expansion / contraction / churn roll-forward" />
-            <StatCard label="Tracked Customers" value={cube.summary.trackedCustomers.toLocaleString()} sub="Customer x segment x product families in the seed cube" />
-            <StatCard label="Quarter Net Change" value={formatArr(cube.summary.closingArr - cube.summary.openingArr)} sub={`${formatArr(cube.summary.openingArr)} → ${formatArr(cube.summary.closingArr)}`} />
+            <StatCard label="Tracked Customers" value={cube.summary.trackedCustomers.toLocaleString()} sub="Customer x product/service rows in the generated cube" />
+            <StatCard label="Cube Rows" value={cube.summary.trackedRows.toLocaleString()} sub={`${cube.summary.trackedProductServices} product/service lines`} />
+            <StatCard label="Opening ARR" value={formatArr(cube.summary.openingArr)} sub={cube.periods[0] ?? 'Start period'} />
+            <StatCard label="Net Change" value={`${cube.summary.netChange >= 0 ? '+' : ''}${formatArr(cube.summary.netChange)}`} sub={`${formatArr(cube.summary.openingArr)} → ${formatArr(cube.summary.closingArr)}`} />
           </div>
 
           <div className={styles.cubeNarrativeGrid}>
             <div className={`card ${styles.cubeNarrativePanel}`}>
               <h3 className={styles.panelTitle}>Why it matters</h3>
               <div className={styles.issueList}>
-                <div className={styles.issueRow}><span className={styles.issueLabel}>Retention / expansion story</span><span className={styles.issueCount}>NRR {cube.summary.netRevenueRetentionPct.toFixed(1)}%</span></div>
-                <div className={styles.issueRow}><span className={styles.issueLabel}>Segment rollups</span><span className={styles.issueCount}>{cube.segmentTotals.length}</span></div>
+                <div className={styles.issueRow}><span className={styles.issueLabel}>Generated from demo XLSX import</span><span className={styles.issueCount}>Yes</span></div>
+                <div className={styles.issueRow}><span className={styles.issueLabel}>Segment rollups</span><span className={styles.issueCount}>{cubeSegmentTotals.length}</span></div>
                 <div className={styles.issueRow}><span className={styles.issueLabel}>Traceable to invoice + mapping inputs</span><span className={styles.issueCount}>Yes</span></div>
               </div>
             </div>
@@ -758,7 +771,7 @@ export default function DashboardPage() {
           </div>
 
           <div className={styles.cubeSegmentStrip}>
-            {cube.segmentTotals.map(segment => (
+            {cubeSegmentTotals.map(segment => (
               <div key={segment.segment} className={styles.cubeSegmentPill}>
                 <strong>{segment.segment}</strong>
                 <span>{formatArr(segment.arr)} · {segment.customers} cust.</span>
@@ -770,8 +783,8 @@ export default function DashboardPage() {
             <thead>
               <tr>
                 <th>Customer</th>
-                <th>Segment</th>
-                <th>Product Families</th>
+                <th>Category</th>
+                <th>Product / Service</th>
                 {cube.periods.map(period => <th key={period} style={{ textAlign: 'right' }}>{period}</th>)}
                 <th style={{ textAlign: 'right' }}>Net Δ</th>
                 <th>Movement</th>
@@ -779,27 +792,24 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {cube.rows.map(row => {
-                const totals = cube.periods.map((_, idx) => row.productFamilies.reduce((sum, family) => sum + (family.arr[idx] ?? 0), 0));
-                return (
-                  <tr key={row.customer}>
-                    <td>
-                      <Link to={`/customers/${importId}/${encodeURIComponent(row.customer)}`} className={styles.inlineLink}>{row.customer}</Link>
-                      <div className={styles.cubeMeta}>{row.logoId}</div>
-                    </td>
-                    <td>{row.segment}</td>
-                    <td>
-                      <div className={styles.cubeFamilyList}>
-                        {row.productFamilies.map(family => <span key={family.family}>{family.family}</span>)}
-                      </div>
-                    </td>
-                    {totals.map((value, idx) => <td key={`${row.customer}-${cube.periods[idx]}`} style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(value)}</td>)}
-                    <td style={{ textAlign: 'right', color: row.netChange >= 0 ? 'var(--success)' : 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>{row.netChange >= 0 ? '+' : ''}{formatArr(row.netChange)}</td>
-                    <td>{row.movement}</td>
-                    <td className={styles.cubeTrace}>{row.traceability}</td>
-                  </tr>
-                );
-              })}
+              {cube.rows.map(row => (
+                <tr key={`${row.customerName}-${row.productService}-${row.category}`}>
+                  <td>
+                    <Link to={`/customers/${importId}/${encodeURIComponent(row.customerName)}`} className={styles.inlineLink}>{row.customerName}</Link>
+                    {row.requiresReview && <div className={styles.cubeMeta}>Needs review</div>}
+                  </td>
+                  <td>{row.category}</td>
+                  <td>
+                    <div className={styles.cubeFamilyList}>
+                      <span>{row.productService}</span>
+                    </div>
+                  </td>
+                  {row.periods.map(period => <td key={`${row.customerName}-${row.productService}-${period.period}`} style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(period.arr)}</td>)}
+                  <td style={{ textAlign: 'right', color: row.netChange >= 0 ? 'var(--success)' : 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>{row.netChange >= 0 ? '+' : ''}{formatArr(row.netChange)}</td>
+                  <td>{row.movement}</td>
+                  <td className={styles.cubeTrace}>{row.sourceInvoiceNumbers.length > 0 ? `Invoices: ${row.sourceInvoiceNumbers.join(', ')}` : `Rows: ${row.sourceRowNumbers.join(', ')}`}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

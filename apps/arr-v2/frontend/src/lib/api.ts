@@ -350,36 +350,7 @@ export interface CustomerCubeResult {
 
 export async function getCustomerCube(importId: string, from?: string, to?: string): Promise<CustomerCubeResult> {
   if (isStaticDemoEnvironment() || isDemoImportId(importId)) {
-    return {
-      importId,
-      fromDate: `${demoCustomerCube.periods[0]}-01`,
-      toDate: `${demoCustomerCube.periods[demoCustomerCube.periods.length - 1]}-31`,
-      periods: demoCustomerCube.periods,
-      summary: {
-        trackedCustomers: demoCustomerCube.summary.trackedCustomers,
-        trackedRows: demoCustomerCube.rows.length,
-        trackedProductServices: new Set(demoCustomerCube.rows.flatMap(row => row.productFamilies.map(family => family.family))).size,
-        openingArr: demoCustomerCube.summary.openingArr,
-        closingArr: demoCustomerCube.summary.closingArr,
-        netChange: demoCustomerCube.summary.closingArr - demoCustomerCube.summary.openingArr,
-      },
-      rows: demoCustomerCube.rows.map(row => ({
-        customerName: row.customer,
-        productService: row.productFamilies.map(family => family.family).join(' + '),
-        category: row.segment,
-        sourceInvoiceNumbers: [row.traceability],
-        sourceRowNumbers: [],
-        periods: demoCustomerCube.periods.map((period, idx) => ({
-          period,
-          arr: row.productFamilies.reduce((sum, family) => sum + (family.arr[idx] ?? 0), 0),
-        })),
-        openingArr: row.openingArr,
-        closingArr: row.closingArr,
-        netChange: row.netChange,
-        movement: row.movement === 'Expansion' ? 'Expansion' : 'Flat',
-        requiresReview: false,
-      })),
-    };
+    return demoCustomerCube;
   }
   return request<CustomerCubeResult>(`/imports/${importId}/customer-cube${buildQueryString(from, to)}`);
 }
