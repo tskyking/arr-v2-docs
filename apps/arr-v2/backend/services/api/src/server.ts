@@ -102,6 +102,23 @@ function err(res: http.ServerResponse, status: number, code: string, message: st
   json(res, status, { code, message });
 }
 
+function redirect(res: http.ServerResponse, location: string) {
+  res.writeHead(302, {
+    Location: location,
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.end(`Redirecting to ${location}`);
+}
+
+function getSpaHashRedirect(path: string, search: string): string | undefined {
+  const spaRoutePrefixes = ['/import', '/dashboard', '/review', '/customers', '/customer-cube'];
+  if (!spaRoutePrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+    return undefined;
+  }
+  return `/#${path}${search}`;
+}
+
 function getUserEmail(req: http.IncomingMessage): string | undefined {
   const header = req.headers['x-user-email'];
   if (Array.isArray(header)) return header[0];
@@ -174,6 +191,17 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     });
     res.end();
     return;
+  }
+
+  // DigitalOcean static-site catchall has proven environment-sensitive. If a direct
+  // SPA URL is routed to the API service, turn it into the hash route the frontend
+  // actually owns instead of returning the API's JSON 404.
+  if (method === 'GET') {
+    const hashRedirect = getSpaHashRedirect(path, url.search);
+    if (hashRedirect) {
+      redirect(res, hashRedirect);
+      return;
+    }
   }
 
   try {

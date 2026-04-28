@@ -141,6 +141,22 @@ describe('GET /health/storage', () => {
   });
 });
 
+// ─── 1c. Direct SPA URLs ─────────────────────────────────────────────────────
+
+describe('GET direct SPA URLs', () => {
+  it('redirects /dashboard/:id to the frontend hash route instead of API 404', async () => {
+    const res = await request('GET', `/dashboard/${FAKE_ID}`);
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(`/#/dashboard/${FAKE_ID}`);
+  });
+
+  it('preserves query strings when redirecting direct SPA URLs', async () => {
+    const res = await request('GET', `/review/${FAKE_ID}?status=open`);
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(`/#/review/${FAKE_ID}?status=open`);
+  });
+});
+
 // ─── 2. GET /imports ──────────────────────────────────────────────────────────
 
 describe('GET /imports', () => {

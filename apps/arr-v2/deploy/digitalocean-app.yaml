@@ -18,6 +18,13 @@ services:
     instance_size_slug: basic-xxs
     routes:
       - path: /api
+      # Direct SPA URLs can bypass the static-site catchall on staging. Route the
+      # app's pretty URLs to the API, which redirects them to the supported hash URL.
+      - path: /import
+      - path: /dashboard
+      - path: /review
+      - path: /customers
+      - path: /customer-cube
     envs:
       - key: API_PREFIX
         value: /api
