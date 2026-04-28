@@ -3,8 +3,8 @@
   "timezone": "America/Los_Angeles",
   "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
   "goal": "Coordinate ARR-V2 git content toward DigitalOcean deployability and maintain dashboard-view readiness notes.",
-  "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available for tskyking and dry-run push reaches origin. Remaining publish gate is review/commit/approval of local changes before external push.",
-  "localCommit": "3c49c2a Add ARR-V2 6am coordinator handoff (HEAD/origin); current deployability/dashboard changes remain uncommitted pending review.",
+  "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available and origin/main is reachable. Current remaining publish gate is review/commit/push of docs/status updates from the DO staging coordinator run.",
+  "localCommit": "4aa7dea Add DO staging QA notes (HEAD/origin at start of 22:30 coordinator run); docs/status coordinator updates pending commit.",
   "runs": [
     {
       "time": "2026-04-27T01:00:00-07:00",
@@ -199,7 +199,42 @@
         "Frontend large bundle warning remains a performance follow-up, not a prototype deploy blocker."
       ],
       "nextRecommendedOwner": "Todd/Sky: DigitalOcean signup + reviewed commit/push + staging deploy smoke"
+    },
+    {
+      "time": "2026-04-27T22:30:00-07:00",
+      "agent": "coordinator",
+      "report": "docs/saas/arr-rebuild/nightly/do-staging-2026-04-27-2230-coordinator.md",
+      "summary": "Reconciled latest repo/DO-staging state: live health and frontend root are green, local deployability gates remain green, 21:30 QA upload/API/dashboard parity stands, but live imports are now empty after the QA upload, making staging persistence a priority. Prioritized persistence, dashboard as-of semantics, SPA fallback/hash routing, and Brian Contract Detail adapter work.",
+      "checks": {
+        "liveApiHealth": "pass_http_200",
+        "liveImportsList": "empty_after_prior_qa_upload",
+        "frontendRoot": "pass_http_200",
+        "directDashboardPath": "fail_http_404",
+        "backendTypecheck": "pass",
+        "frontendTypecheck": "pass",
+        "backendVitest": "pass_38_files_756_tests",
+        "backendBuild": "pass",
+        "backendStartHealthWithApiPrefix": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning_669kb_js_186kb_gzip"
+      },
+      "blockers": [
+        "DO staging import persistence is not durable enough yet; /api/imports returned empty after the 21:30 QA upload.",
+        "Dashboard headline/currentArr semantics use final imported period, which can confuse current ARR review.",
+        "Subscription end-date inclusive/exclusive convention needs product decision to match Brian workbook expectations.",
+        "Direct path dashboard URLs 404; hash routes work or SPA fallback needs configuration.",
+        "Brian generic contract schedule needs a Contract Detail adapter/import mode; private workbook should not be uploaded externally or committed without Todd approval.",
+        "Frontend large bundle warning remains a performance follow-up, not a staging blocker."
+      ],
+      "nextRecommendedOwner": "dev: persistence + as-of semantics + Contract Detail adapter; qa: restart/persistence and business-semantics fixtures; Todd: approve private workbook staging use and decide metric/date semantics"
     }
   ],
-  "targetDomain": "ARRWEB.com via GoDaddy DNS, to be pointed after DigitalOcean app/custom-domain target exists."
+  "targetDomain": "ARRWEB.com via GoDaddy DNS, to be pointed after DigitalOcean app/custom-domain target exists.",
+  "liveStaging": {
+    "url": "https://arrweb-staging-zzyg7.ondigitalocean.app/",
+    "lastCoordinatorCheck": "2026-04-27T22:30:28-07:00",
+    "health": "pass_http_200_api_health",
+    "importsList": "empty_after_2130_qa_upload_indicates_ephemeral_or_reset_data_dir",
+    "frontendRoot": "pass_http_200",
+    "directDashboardPath": "fail_http_404_hash_routes_required_or_spa_fallback_missing"
+  }
 }
