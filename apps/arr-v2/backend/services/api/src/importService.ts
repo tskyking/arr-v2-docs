@@ -201,7 +201,7 @@ export function getArrMovements(
   fromOrTo?: string,
   to?: string,
 ): ArrMovementsResult | null {
-  const usingDefaultTenant = importIdOrFrom === undefined || (fromOrTo !== undefined && to === undefined);
+  const usingDefaultTenant = arguments.length <= 3;
   const tenantId = usingDefaultTenant ? DEFAULT_TENANT_ID : tenantIdOrImportId;
   const importId = usingDefaultTenant ? tenantIdOrImportId : importIdOrFrom!;
   const from = usingDefaultTenant ? importIdOrFrom : fromOrTo;

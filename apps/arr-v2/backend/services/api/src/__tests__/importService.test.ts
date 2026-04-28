@@ -47,6 +47,7 @@ import {
   getCustomerDetail,
   removeImport,
   processImport,
+  getArrMovements,
 } from '../importService.js';
 import { loadOverrides, saveOverrides, deleteOverrides } from '../store.js';
 
@@ -255,6 +256,19 @@ describe('importService — full pipeline integration', () => {
       expect(typeof p.activeCustomers).toBe('number');
       expect(Array.isArray(p.byCategory)).toBe(true);
       expect(Array.isArray(p.byCustomer)).toBe(true);
+    }
+  });
+
+  it('getArrMovements supports tenant-scoped from-only filters', () => {
+    if (importId === FAKE_ID) return;
+    const full = getArrTimeseries(TEST_TENANT, importId);
+    if (!full || full.periods.length < 3) return;
+    const midPeriod = full.periods[Math.floor(full.periods.length / 2)].period;
+    const filtered = getArrMovements(TEST_TENANT, importId, midPeriod, undefined);
+    expect(filtered).not.toBeNull();
+    expect(filtered!.movements.length).toBeGreaterThan(0);
+    for (const movement of filtered!.movements) {
+      expect(movement.period >= midPeriod).toBe(true);
     }
   });
 
