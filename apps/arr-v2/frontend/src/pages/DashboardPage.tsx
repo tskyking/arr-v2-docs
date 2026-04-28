@@ -582,9 +582,9 @@ export default function DashboardPage() {
                           <thead>
                             <tr>
                               <th>Customer</th>
-                              <th style={{ textAlign: 'right' }}>Prior</th>
-                              <th style={{ textAlign: 'right' }}>Current</th>
-                              <th style={{ textAlign: 'right' }}>Δ</th>
+                              <th className={styles.compactTableNumeric}>Prior</th>
+                              <th className={styles.compactTableNumeric}>Current</th>
+                              <th className={`${styles.compactTableNumeric} ${styles.compactTableDelta}`}>Δ</th>
                               <th>Type</th>
                             </tr>
                           </thead>
@@ -596,9 +596,9 @@ export default function DashboardPage() {
                                     {row.customer}
                                   </Link>
                                 </td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.priorArr)}</td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.currentArr)}</td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: row.delta >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                <td className={styles.compactTableNumeric}>{formatArr(row.priorArr)}</td>
+                                <td className={styles.compactTableNumeric}>{formatArr(row.currentArr)}</td>
+                                <td className={`${styles.compactTableNumeric} ${styles.compactTableDelta}`} style={{ color: row.delta >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                                   {row.delta >= 0 ? '+' : ''}{formatArr(row.delta)}
                                 </td>
                                 <td style={{ textTransform: 'capitalize' }}>{row.direction}</td>
@@ -618,18 +618,18 @@ export default function DashboardPage() {
                           <thead>
                             <tr>
                               <th>Category</th>
-                              <th style={{ textAlign: 'right' }}>Prior</th>
-                              <th style={{ textAlign: 'right' }}>Current</th>
-                              <th style={{ textAlign: 'right' }}>Δ</th>
+                              <th className={styles.compactTableNumeric}>Prior</th>
+                              <th className={styles.compactTableNumeric}>Current</th>
+                              <th className={`${styles.compactTableNumeric} ${styles.compactTableDelta}`}>Δ</th>
                             </tr>
                           </thead>
                           <tbody>
                             {categoryMovementDrilldown.map((row) => (
                               <tr key={row.category}>
                                 <td>{row.category}</td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.priorArr)}</td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatArr(row.currentArr)}</td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: row.delta >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                <td className={styles.compactTableNumeric}>{formatArr(row.priorArr)}</td>
+                                <td className={styles.compactTableNumeric}>{formatArr(row.currentArr)}</td>
+                                <td className={`${styles.compactTableNumeric} ${styles.compactTableDelta}`} style={{ color: row.delta >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                                   {row.delta >= 0 ? '+' : ''}{formatArr(row.delta)}
                                 </td>
                               </tr>

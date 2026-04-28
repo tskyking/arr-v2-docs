@@ -359,12 +359,41 @@
 
 .compactTable {
   width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
 }
 
 .compactTable th,
 .compactTable td {
   font-size: 12px;
   padding: 8px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compactTable th:first-child,
+.compactTable td:first-child {
+  padding-left: 0;
+}
+
+.compactTable th:last-child,
+.compactTable td:last-child {
+  padding-right: 0;
+}
+
+.compactTable td:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.compactTableNumeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.compactTableDelta {
+  width: 72px;
 }
 
 .movementHighlightList {
