@@ -22,6 +22,8 @@ services:
       - key: API_PREFIX
         value: /api
         scope: RUN_TIME
+      # App Platform local filesystems are ephemeral; keep DATA_DIR only for prototype uploads.
+      # Use Managed Databases or Spaces before relying on durable dashboard/review links.
       - key: DATA_DIR
         value: /workspace/data
         scope: RUN_TIME
@@ -38,5 +40,6 @@ static_sites:
     source_dir: apps/arr-v2/frontend
     build_command: npm ci && VITE_BASE_PATH=/ VITE_API_BASE_PATH=/api npm run build
     output_dir: dist
+    catchall_document: index.html
     routes:
       - path: /

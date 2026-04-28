@@ -12,6 +12,7 @@
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import type { ArrSnapshot } from '../../arr/src/types.js';
 import type { ImportResult } from './importService.js';
 
@@ -30,6 +31,62 @@ function tenantDir(tenantId: string): string {
 
 function ensureDir(dir: string): void {
   mkdirSync(dir, { recursive: true });
+}
+
+// ─── Storage diagnostics ─────────────────────────────────────────────────────
+
+export interface StorageDiagnostics {
+  kind: 'file';
+  dataDirConfigured: boolean;
+  writable: boolean;
+  importCount: number;
+  durability: 'ephemeral-risk' | 'configured-file-storage';
+  warning?: string;
+}
+
+function dataDirLooksEphemeral(): boolean {
+  if (!process.env.DATA_DIR) return true;
+  const configured = resolve(process.env.DATA_DIR);
+  return configured.startsWith('/tmp/')
+    || configured === '/tmp'
+    || configured.startsWith('/workspace/')
+    || configured === '/workspace';
+}
+
+export function getStorageDiagnostics(tenantId = 'default'): StorageDiagnostics {
+  const dir = tenantDir(tenantId);
+  let writable = false;
+  let importCount = 0;
+
+  try {
+    ensureDir(dir);
+    const probePath = join(dir, `.write-probe-${randomUUID()}`);
+    writeFileSync(probePath, 'ok', 'utf8');
+    unlinkSync(probePath);
+    writable = true;
+  } catch {
+    writable = false;
+  }
+
+  try {
+    importCount = readdirSync(dir).filter(
+      f => f.endsWith('.json') && !f.endsWith('.overrides.json'),
+    ).length;
+  } catch {
+    importCount = 0;
+  }
+
+  const durability = dataDirLooksEphemeral() ? 'ephemeral-risk' : 'configured-file-storage';
+  return {
+    kind: 'file',
+    dataDirConfigured: Boolean(process.env.DATA_DIR),
+    writable,
+    importCount,
+    durability,
+    ...(durability === 'ephemeral-risk'
+      ? { warning: 'Import persistence is file-backed on a local/runtime filesystem. Use managed durable storage before relying on shared dashboard links.' }
+      : {}),
+  };
 }
 
 // ─── Serialization helpers ───────────────────────────────────────────────────

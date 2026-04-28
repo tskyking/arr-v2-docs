@@ -50,6 +50,7 @@ import {
   exportCustomerCubeCsv,
 } from './importService.js';
 import { ImportError } from '../../imports/src/importErrors.js';
+import { getStorageDiagnostics } from './store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const API_PREFIX = normalizeApiPrefix(process.env.API_PREFIX ?? '');
@@ -178,7 +179,16 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   try {
     // Health
     if (path === '/health' && method === 'GET') {
-      json(res, 200, { status: 'ok', ts: new Date().toISOString() });
+      json(res, 200, {
+        status: 'ok',
+        ts: new Date().toISOString(),
+        storage: getStorageDiagnostics(),
+      });
+      return;
+    }
+
+    if (path === '/health/storage' && method === 'GET') {
+      json(res, 200, getStorageDiagnostics());
       return;
     }
 
@@ -199,6 +209,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       }
       tenantId = rawTenantId;
       routePath = tenantMatch[2]; // strip /tenants/:tenantId prefix
+    }
+
+    if (routePath === '/health/storage' && method === 'GET') {
+      json(res, 200, { tenantId, ...getStorageDiagnostics(tenantId) });
+      return;
     }
 
     // List imports

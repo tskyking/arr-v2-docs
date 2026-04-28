@@ -12,7 +12,7 @@ import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, us
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
 import MonthPuckRail from '@/components/MonthPuckRail';
 import type { MonthPuckItem } from '@/components/MonthPuckRail';
-import { demoCustomerCube, isDemoImportId } from '@/lib/demoData';
+import { DEMO_IMPORT_ID, demoCustomerCube, isDemoImportId } from '@/lib/demoData';
 import { useArrSettings } from '@/lib/settings';
 import styles from './DashboardPage.module.css';
 
@@ -307,7 +307,24 @@ export default function DashboardPage() {
   }, [selectedPeriodSnapshot, priorPeriodSnapshot]);
 
   if (sumLoading) return <div className="loading">Loading summary…</div>;
-  if (sumErr) return <div className="error-banner">Summary error: {sumErr}</div>;
+  if (sumErr) {
+    return (
+      <div className={styles.missingImportCard}>
+        <div className={styles.missingEyebrow}>Import unavailable</div>
+        <h1 className={styles.missingTitle}>This dashboard link can’t find its import data.</h1>
+        <p className={styles.missingCopy}>
+          The backend returned: <strong>{sumErr}</strong>. On staging, uploaded workbooks are file-backed and may disappear after a deploy, restart, or cold start until durable storage is configured.
+        </p>
+        <div className={styles.missingActions}>
+          <Link to="/import"><button className="primary">Re-upload workbook</button></Link>
+          <Link to={`/dashboard/${DEMO_IMPORT_ID}`}><button className="ghost">Open sample dashboard</button></Link>
+        </div>
+        <p className={styles.missingHint}>
+          Demo/share links should use the hash-route form (<span className={styles.mono}>/#/dashboard/…</span>) and need a fresh upload unless persistence has been verified.
+        </p>
+      </div>
+    );
+  }
   if (!summary) return null;
 
   return (

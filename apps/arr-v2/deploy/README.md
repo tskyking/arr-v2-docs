@@ -11,7 +11,7 @@ This folder captures the current deployment shape for ARR-V2. Treat it as a loca
   - Optional env vars:
     - `API_PREFIX=/api` — lets the backend serve `/api/health`, `/api/tenants/...` without a separate path-rewrite proxy.
     - `MAX_BODY_BYTES=52428800` — upload/body size limit; defaults to 50 MB.
-    - `DATA_DIR=/workspace/data` — file-backed import persistence location. This needs a real persistence decision before production use because plain App Platform instances may be ephemeral unless a supported persistent disk/storage design is attached.
+    - `DATA_DIR=/workspace/data` — prototype file-backed import persistence location. DigitalOcean App Platform local filesystems are not a durable persistence layer for shared dashboard/review links; use a managed database or Spaces-backed design before customer demos depend on reopen-after-restart behavior.
 
 - **Frontend static site**: React/Vite app in `apps/arr-v2/frontend`.
   - Build for DigitalOcean/root hosting: `VITE_BASE_PATH=/ VITE_API_BASE_PATH=/api npm ci && npm run build`
@@ -31,7 +31,7 @@ Green locally from `/Users/tylerking/.openclaw/workspace/arr-v2-docs-work`:
 
 ## Current deployment caveats
 
-1. This is still prototype persistence: imports and review overrides are JSON files under `DATA_DIR`. Use a managed database/object-storage plan before production customer use.
+1. This is still prototype persistence: imports and review overrides are JSON files under `DATA_DIR`. App Platform runtime storage should be treated as ephemeral for ARR-V2 demo links; use a managed database/object-storage plan before production customer use. The backend now exposes `/api/health` and `/api/health/storage` diagnostics so QA can see whether the active runtime is only file-backed/writable rather than assuming durability.
 2. GitHub HTTPS auth now works for `tskyking` and a dry-run push can reach the remote. Remote DigitalOcean deploy surfaces still will not see local-only changes until the working tree is reviewed, committed, and pushed.
 3. `digitalocean-app.yaml` still contains placeholder GitHub repo values and should not be applied until owner/repo/branch and the target DO account/app are confirmed.
 4. The frontend production build is green but emits a large-chunk warning (~662 kB minified / ~186 kB gzip); code splitting is a performance follow-up, not a deploy blocker.
@@ -39,7 +39,7 @@ Green locally from `/Users/tylerking/.openclaw/workspace/arr-v2-docs-work`:
 
 ## Files
 
-- `digitalocean-app.yaml` — draft App Platform spec with placeholder GitHub repo fields. Do not apply as-is without replacing placeholders and confirming persistence.
+- `digitalocean-app.yaml` — draft App Platform spec with placeholder GitHub repo fields. Do not apply as-is without replacing placeholders and confirming persistence. The static site now includes `catchall_document: index.html` in the draft spec so direct dashboard/review/cube paths can fall back to the React shell when the spec is applied.
 
 ## ARRWEB.com / GoDaddy handoff
 

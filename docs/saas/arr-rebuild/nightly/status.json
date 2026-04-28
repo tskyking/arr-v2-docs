@@ -4,7 +4,7 @@
   "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
   "goal": "Coordinate ARR-V2 DigitalOcean staging readiness, verify live deploy health/autodeploy status, and maintain dashboard/nightly handoffs.",
   "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available and origin/main is reachable. 02:30 coordinator docs/status updates are safe to commit/push.",
-  "localCommit": "81b2485 Add DO staging 01:30 QA report (HEAD/origin at start of 02:30 coordinator run); DO staging is healthy, but imports are disappearing between runs.",
+  "localCommit": "Expose staging persistence diagnostics (03:30 Dev commit on main)",
   "runs": [
     {
       "time": "2026-04-27T01:00:00-07:00",
@@ -281,17 +281,50 @@
         "Frontend large bundle warning and browser click-driving audit remain follow-ups, not immediate staging blockers."
       ],
       "nextRecommendedOwner": "dev-0330: persistence first, then stable routing/hash links, ARR as-of model prep, and Contract Detail adapter planning; qa after dev should verify durable reopen across restart/redeploy/cold-start."
+    },
+    {
+      "time": "2026-04-28T03:30:00-07:00",
+      "agent": "dev",
+      "report": "docs/saas/arr-rebuild/nightly/do-staging-2026-04-28-0330-dev.md",
+      "summary": "Reviewed 02:30 Coordinator P0 persistence handoff. Added backend storage diagnostics to /health and /health/storage, improved missing-import dashboard recovery UX, and updated draft DO config/docs with prototype-only DATA_DIR caveat and static catchall_document fallback.",
+      "checks": {
+        "backendTypecheck": "pass",
+        "backendVitest": "pass_38_files_758_tests",
+        "backendBuild": "pass",
+        "backendStartHealthWithApiPrefix": "pass_storage_diagnostics_ephemeral_risk_visible",
+        "frontendTypecheck": "pass",
+        "frontendRootBuild": "pass_with_large_chunk_warning_672kb_js_187kb_gzip",
+        "liveApiHealthPreDeploy": "pass_http_200_old_response_no_storage_diagnostics_yet",
+        "doAdminChanges": "none"
+      },
+      "changes": [
+        "Backend /health now includes storage diagnostics and /health/storage exposes writable/import-count/durability smoke data.",
+        "Tenant-scoped /tenants/:tenantId/health/storage diagnostics added for QA.",
+        "Dashboard missing-import state now explains staging persistence risk and offers re-upload/sample-dashboard recovery actions.",
+        "Draft DO static site spec adds catchall_document: index.html for direct-route fallback when applied.",
+        "Deploy docs now state DATA_DIR is prototype-only and durable persistence needs managed DB or object/object-store design."
+      ],
+      "blockers": [
+        "True durable import persistence remains unresolved until a managed database/object store or other durable storage design is implemented and configured.",
+        "Live staging must autodeploy/redeploy before the new storage diagnostics and missing-import UX are observable.",
+        "Draft digitalocean-app.yaml still contains placeholder GitHub repo fields and should not be applied as-is.",
+        "Brian Contract Detail adapter and XLSX entity-expansion reader fix remain customer-critical follow-ups.",
+        "ARR as-of/default headline and subscription end-date conventions still need Todd/Brian product/accounting decisions."
+      ],
+      "nextRecommendedOwner": "qa/coordinator: verify autodeploy, /api/health/storage, missing-import panel, and durable reopen gap; dev: implement real persistence or Contract Detail adapter next."
     }
   ],
   "targetDomain": "ARRWEB.com via GoDaddy DNS, to be pointed after DigitalOcean app/custom-domain target exists.",
   "liveStaging": {
     "url": "https://arrweb-staging-zzyg7.ondigitalocean.app/",
     "lastCoordinatorCheck": "2026-04-28T02:30:41-07:00",
-    "health": "pass_http_200_api_health_ts_2026_04_28T09_30_41Z",
+    "health": "pass_http_200_api_health_ts_2026_04_28T10_35_00Z_pre_deploy_old_response_no_storage_diagnostics_yet",
     "importsList": "empty_after_0130_qa_upload_confirms_ephemeral_or_reset_data_dir",
     "priorImportSummary": "fail_http_404_for_0130_import_d04fb56f_d097_4fa3_b487_71c89f420613",
     "frontendRoot": "pass_http_200_last_modified_2026_04_28T08_37_06Z",
     "autodeploy": "healthy; live asset contains 0f329eb label strings; 1c32aba and 81b2485 were docs/report commits",
-    "directDashboardPath": "fail_http_404_hash_routes_required_or_spa_fallback_missing"
+    "directDashboardPath": "draft_spec_catchall_document_added_but_active_do_app_may_still_404_until_config_applied",
+    "lastDevCheck": "2026-04-28T03:35:00-07:00",
+    "persistenceDiagnostics": "pending_autodeploy_new_commit_adds_api_health_storage"
   }
 }

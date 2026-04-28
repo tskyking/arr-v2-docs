@@ -117,6 +117,28 @@ describe('GET /health', () => {
     const res = await request('GET', '/health');
     expect(res.headers['access-control-allow-origin']).toBe('*');
   });
+
+  it('includes storage diagnostics for staging smoke checks', async () => {
+    const res = await request('GET', '/health');
+    const body = res.json as { storage?: Record<string, unknown> };
+    expect(body.storage?.kind).toBe('file');
+    expect(typeof body.storage?.writable).toBe('boolean');
+    expect(typeof body.storage?.importCount).toBe('number');
+    expect(['ephemeral-risk', 'configured-file-storage']).toContain(body.storage?.durability);
+  });
+});
+
+// ─── 1b. GET /health/storage ──────────────────────────────────────────────────
+
+describe('GET /health/storage', () => {
+  it('returns storage diagnostics', async () => {
+    const res = await request('GET', '/health/storage');
+    expect(res.status).toBe(200);
+    const body = res.json as Record<string, unknown>;
+    expect(body.kind).toBe('file');
+    expect(typeof body.dataDirConfigured).toBe('boolean');
+    expect(typeof body.writable).toBe('boolean');
+  });
 });
 
 // ─── 2. GET /imports ──────────────────────────────────────────────────────────

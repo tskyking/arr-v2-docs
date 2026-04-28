@@ -1,3 +1,44 @@
+.missingImportCard {
+  max-width: 760px;
+  margin: 56px auto;
+  padding: 28px;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  border-radius: var(--radius-lg);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.missingEyebrow {
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.missingTitle {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.missingCopy,
+.missingHint {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.missingCopy strong {
+  color: var(--text);
+}
+
+.missingActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+
 .header {
   display: flex;
   align-items: flex-start;
