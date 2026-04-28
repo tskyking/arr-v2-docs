@@ -295,7 +295,11 @@
         "frontendTypecheck": "pass",
         "frontendRootBuild": "pass_with_large_chunk_warning_672kb_js_187kb_gzip",
         "liveApiHealthPreDeploy": "pass_http_200_old_response_no_storage_diagnostics_yet",
-        "doAdminChanges": "none"
+        "doAdminChanges": "none",
+        "liveApiHealthPostDeploy": "pass_http_200_storage_diagnostics_present_ts_2026_04_28T10_39_43Z",
+        "liveHealthStoragePostDeploy": "pass_http_200_durability_ephemeral_risk_import_count_0",
+        "liveFrontendAssetPostDeploy": "pass_asset_index_UbR6Rmdw_contains_missing_import_recovery_strings",
+        "directDashboardPathPostDeploy": "fail_http_404_active_do_fallback_not_applied"
       },
       "changes": [
         "Backend /health now includes storage diagnostics and /health/storage exposes writable/import-count/durability smoke data.",
@@ -318,13 +322,13 @@
   "liveStaging": {
     "url": "https://arrweb-staging-zzyg7.ondigitalocean.app/",
     "lastCoordinatorCheck": "2026-04-28T02:30:41-07:00",
-    "health": "pass_http_200_api_health_ts_2026_04_28T10_35_00Z_pre_deploy_old_response_no_storage_diagnostics_yet",
+    "health": "pass_http_200_api_health_storage_diagnostics_present_ts_2026_04_28T10_39_43Z",
     "importsList": "empty_after_0130_qa_upload_confirms_ephemeral_or_reset_data_dir",
     "priorImportSummary": "fail_http_404_for_0130_import_d04fb56f_d097_4fa3_b487_71c89f420613",
-    "frontendRoot": "pass_http_200_last_modified_2026_04_28T08_37_06Z",
+    "frontendRoot": "pass_http_200_live_asset_index_UbR6Rmdw_js_contains_missing_import_recovery_strings",
     "autodeploy": "healthy; live asset contains 0f329eb label strings; 1c32aba and 81b2485 were docs/report commits",
-    "directDashboardPath": "draft_spec_catchall_document_added_but_active_do_app_may_still_404_until_config_applied",
-    "lastDevCheck": "2026-04-28T03:35:00-07:00",
-    "persistenceDiagnostics": "pending_autodeploy_new_commit_adds_api_health_storage"
+    "directDashboardPath": "fail_http_404_active_do_static_fallback_not_applied; draft_spec_has_catchall_document",
+    "lastDevCheck": "2026-04-28T03:40:00-07:00",
+    "persistenceDiagnostics": "pass_api_health_storage_reports_durability_ephemeral_risk_import_count_0"
   }
 }
