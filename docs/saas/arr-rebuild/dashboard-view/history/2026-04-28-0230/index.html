@@ -69,6 +69,10 @@
   </style>
 </head>
 <body>
+  <div style="background:#eef6ff;border-bottom:1px solid #bfdbfe;color:#1e3a8a;padding:10px 18px;font:13px system-ui,-apple-system,Segoe UI,sans-serif">
+    Historical snapshot: <strong>2026-04-28 02:30 PT</strong> · <a href="../" style="color:#1d4ed8;font-weight:700">History index</a> · <a href="../../" style="color:#1d4ed8;font-weight:700">Current dashboard</a>
+  </div>
+
   <div class="wrap">
     <div class="hero" style="position:relative;padding-top:92px">
       <div style="position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
@@ -102,19 +106,6 @@
           <li>Fix staging persistence first: <code>/api/imports</code> was empty at 02:30 and the 01:30 QA import summary returned HTTP 404, so shareable demo links are not durable yet</li>
           <li>Decide and implement ARR as-of semantics: current month, latest invoice month, selected month, or ending imported period</li>
           <li>Build the Brian-style <code>Contract Detail</code> adapter locally/safely, and fix SPA fallback or standardize hash-route dashboard links</li>
-        </ul>
-      </div>
-
-
-      <div class="card col-12">
-        <h2>Dashboard History</h2>
-        <p>This page now keeps dated snapshots so the team can compare major ARR-V2 stages without digging through git history.</p>
-        <ul>
-          <li><a href="history/2026-04-28-0230/"><strong>2026-04-28 02:30 PT</strong></a> — DigitalOcean staging live; persistence escalated to P0</li>
-          <li><a href="history/2026-04-28-0030/"><strong>2026-04-28 00:30 PT</strong></a> — DO staging healthy; ARR labels clarified</li>
-          <li><a href="history/2026-04-27-0900/"><strong>2026-04-27 09:00 PT</strong></a> — GitHub auth restored; deploy-smoke prep</li>
-          <li><a href="history/2026-04-27-0600/"><strong>2026-04-27 06:00 PT</strong></a> — overnight local gates green</li>
-          <li><a href="history/"><strong>All dashboard snapshots →</strong></a></li>
         </ul>
       </div>
 

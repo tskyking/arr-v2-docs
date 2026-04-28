@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARR Rebuild Dashboard History</title>
+  <style>
+    body { margin:0; font-family: system-ui,-apple-system,Segoe UI,sans-serif; background:#f5f8fc; color:#172033; }
+    .wrap { max-width: 940px; margin: 0 auto; padding: 32px 18px; }
+    .hero,.card { background:white; border:1px solid #d9e3f0; border-radius:16px; padding:22px; box-shadow:0 10px 28px rgba(15,23,42,.06); }
+    h1 { margin:0 0 8px; }
+    a { color:#2563eb; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    ul { line-height:1.55; padding-left:22px; }
+    li { margin: 14px 0; }
+    span { color:#607086; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>ARR Rebuild Dashboard History</h1>
+      <p>Dated snapshots of the working dashboard as ARR-V2 moved from rebuild planning to DigitalOcean staging hardening.</p>
+      <p><a href="../">← Current dashboard</a></p>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h2>Snapshots</h2>
+      <ul>
+        <li><a href="2026-04-28-0230/"><strong>2026-04-28 02:30 PT</strong></a><br><span>DigitalOcean staging live + post-deploy hardening; persistence escalated to P0</span></li><li><a href="2026-04-28-0030/"><strong>2026-04-28 00:30 PT</strong></a><br><span>DO staging healthy; ARR labels clarified; persistence/routing still open</span></li><li><a href="2026-04-27-0900/"><strong>2026-04-27 09:00 PT</strong></a><br><span>GitHub auth restored; local deploy-smoke green; DO/ARRWEB prep</span></li><li><a href="2026-04-27-0600/"><strong>2026-04-27 06:00 PT</strong></a><br><span>Overnight backend/frontend gates green locally; publish/DO/persistence blockers</span></li><li><a href="2026-04-01/"><strong>2026-04-01</strong></a><br><span>Earlier planning/progress dashboard iteration</span></li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
