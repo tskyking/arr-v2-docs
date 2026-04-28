@@ -259,6 +259,9 @@ export default function DashboardPage() {
   const selectedPeriodIndex = periods.findIndex((period) => period.period === selectedMovement?.period);
   const selectedPeriodSnapshot = selectedPeriodIndex >= 0 ? periods[selectedPeriodIndex] : null;
   const priorPeriodSnapshot = selectedPeriodIndex > 0 ? periods[selectedPeriodIndex - 1] : null;
+  const headlinePeriod = selectedPeriodSnapshot ?? latestPeriod;
+  const headlinePeriodLabel = headlinePeriod?.period ?? null;
+  const isEndingImportedPeriod = Boolean(headlinePeriod && latestPeriod && headlinePeriod.period === latestPeriod.period);
 
   const customerMovementDrilldown = useMemo(() => {
     if (!selectedPeriodSnapshot) return [];
@@ -395,25 +398,30 @@ export default function DashboardPage() {
       {movErr && <div className="error-banner">ARR movement error: {movErr}</div>}
 
       {/* Stat row */}
+      <div className={styles.semanticNote}>
+        <strong>ARR recognition note:</strong> headline and roster ARR are period snapshots from the imported recognition schedule.{' '}
+        The default is the ending imported period, not automatically today's calendar month. Use the waterfall month chips to inspect a specific month.
+      </div>
       <div className={styles.statGrid}>
         <StatCard
-          label="Latest ARR"
-          value={latestPeriod ? formatArr(latestPeriod.totalArr) : '—'}
-          sub={latestPeriod ? `as of ${latestPeriod.period}` : undefined}
+          label={isEndingImportedPeriod ? 'Ending ARR' : 'Selected Period ARR'}
+          value={headlinePeriod ? formatArr(headlinePeriod.totalArr) : '—'}
+          sub={headlinePeriodLabel ? `${isEndingImportedPeriod ? 'ending imported period' : 'selected period'} ${headlinePeriodLabel}` : undefined}
         />
         <StatCard
-          label="Active Customers"
-          value={latestPeriod ? latestPeriod.activeCustomers.toLocaleString() : '—'}
+          label={isEndingImportedPeriod ? 'Ending Active Customers' : 'Selected Active Customers'}
+          value={headlinePeriod ? headlinePeriod.activeCustomers.toLocaleString() : '—'}
+          sub={headlinePeriodLabel ? `recognized ARR in ${headlinePeriodLabel}` : undefined}
         />
         <StatCard
           label="ARR Growth"
           value={arrGrowth !== null ? `${arrGrowth}%` : '—'}
-          sub={`${firstPeriod?.period ?? '—'} → ${latestPeriod?.period ?? '—'}`}
+          sub={`Full imported range: ${firstPeriod?.period ?? '—'} → ${latestPeriod?.period ?? '—'}`}
         />
         <StatCard
           label="Rows Imported"
           value={summary.totalRows.toLocaleString()}
-          sub={`${summary.reviewItems} need review · ${summary.skippedRows} skipped`}
+          sub={`${summary.mappedRows.toLocaleString()} mapped · ${summary.reviewItems} need review · ${summary.skippedRows} skipped`}
         />
       </div>
 
@@ -504,7 +512,7 @@ export default function DashboardPage() {
             <span>Expansion: <strong style={{ color: '#86efac' }}>+{formatArr(movements.totalExpansionArr)}</strong></span>
             <span>Contraction: <strong style={{ color: '#f97316' }}>−{formatArr(movements.totalContractionArr)}</strong></span>
             <span>Churn: <strong style={{ color: '#ef4444' }}>−{formatArr(movements.totalChurnArr)}</strong></span>
-            <span>Closing ARR: <strong style={{ color: '#6d28d9' }}>{formatArr(movementEntries[movementEntries.length - 1]?.closingArr ?? 0)}</strong></span>
+            <span>Ending ARR: <strong style={{ color: '#6d28d9' }}>{formatArr(movementEntries[movementEntries.length - 1]?.closingArr ?? 0)}</strong></span>
           </div>
           <ArrWaterfallChart
             movements={movements.movements}
@@ -660,7 +668,7 @@ export default function DashboardPage() {
       {/* Category breakdown (latest period) */}
       {categoryData.length > 0 && (
         <div className={`card ${styles.chartCard}`}>
-          <h2 className={styles.chartTitle}>ARR by Category — {latestPeriod?.period}</h2>
+          <h2 className={styles.chartTitle}>ARR by Category — ending imported period {latestPeriod?.period}</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={categoryData} margin={{ top: 5, right: 20, left: 0, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -689,7 +697,7 @@ export default function DashboardPage() {
       {/* Top customers (latest period) */}
       {topCustomers.length > 0 && (
         <div className={`card ${styles.tableCard}`}>
-          <h2 className={styles.chartTitle}>Top Customers by ARR — {latestPeriod?.period}</h2>
+          <h2 className={styles.chartTitle}>Top Customers by ARR — ending imported period {latestPeriod?.period}</h2>
           <table>
             <thead>
               <tr>
@@ -819,7 +827,7 @@ export default function DashboardPage() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Customer Roster</h2>
         <span className={styles.rangeInfo}>
-          {customerList ? `${customerList.total} customers · ${customersWithCurrentArr.length} with current ARR` : 'Live API-backed roster'}
+          {customerList ? `${customerList.total} customers · ${customersWithCurrentArr.length} with ending-period ARR` : 'Live API-backed roster'}
         </span>
       </div>
 
@@ -831,7 +839,7 @@ export default function DashboardPage() {
             <StatCard
               label="Customers in Import"
               value={customerList.total.toLocaleString()}
-              sub={`${customersWithCurrentArr.length} currently contributing ARR`}
+              sub={`${customersWithCurrentArr.length} contributing ARR in ending period`}
             />
             <StatCard
               label="Customers Needing Review"
@@ -839,7 +847,7 @@ export default function DashboardPage() {
               sub={customersWithReview.length > 0 ? 'Data quality follow-up recommended' : 'No customer-level review flags'}
             />
             <StatCard
-              label="Top Customer ARR"
+              label="Top Ending-Period Customer ARR"
               value={customers[0] ? formatArr(customers[0].currentArr) : '—'}
               sub={customers[0]?.name ?? 'No customer data'}
             />
@@ -857,7 +865,7 @@ export default function DashboardPage() {
                 <thead>
                   <tr>
                     <th>Customer</th>
-                    <th style={{ textAlign: 'right' }}>Current ARR</th>
+                    <th style={{ textAlign: 'right' }}>Ending-Period ARR</th>
                     <th style={{ textAlign: 'right' }}>Contracts</th>
                     <th style={{ textAlign: 'right' }}>Last Invoice</th>
                   </tr>
@@ -887,12 +895,12 @@ export default function DashboardPage() {
 
           {customerRosterPreview.length > 0 && (
             <div className={`card ${styles.tableCard}`}>
-              <h2 className={styles.chartTitle}>Customer ARR Snapshot</h2>
+              <h2 className={styles.chartTitle}>Customer ARR Snapshot — ending imported period</h2>
               <table>
                 <thead>
                   <tr>
                     <th>Customer</th>
-                    <th style={{ textAlign: 'right' }}>Current ARR</th>
+                    <th style={{ textAlign: 'right' }}>Ending-Period ARR</th>
                     <th style={{ textAlign: 'right' }}>Contracts</th>
                     <th style={{ textAlign: 'right' }}>Last Invoice</th>
                     <th style={{ textAlign: 'right' }}>Review</th>

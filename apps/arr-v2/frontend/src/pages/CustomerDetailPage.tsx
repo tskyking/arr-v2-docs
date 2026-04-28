@@ -63,7 +63,7 @@ export default function CustomerDetailPage() {
       </div>
 
       <div className={styles.statGrid}>
-        <StatCard label="Current ARR" value={formatArr(data.currentArr)} sub={data.lastActivePeriod ? `active in ${data.lastActivePeriod}` : 'No active ARR periods'} />
+        <StatCard label="Latest Active ARR" value={formatArr(data.currentArr)} sub={data.lastActivePeriod ? `last recognized in ${data.lastActivePeriod}` : 'No active ARR periods'} />
         <StatCard label="Peak ARR" value={formatArr(data.peakArr)} sub={data.firstSeenPeriod ? `since ${data.firstSeenPeriod}` : undefined} />
         <StatCard label="ARR Periods" value={data.arrHistory.length.toLocaleString()} sub={data.arrHistory.length > 0 ? `${data.arrHistory[0].period} → ${data.arrHistory[data.arrHistory.length - 1].period}` : 'No recognized ARR history'} />
         <StatCard label="Open Review Items" value={data.openReviewCount.toLocaleString()} sub={data.requiresReview ? 'Review queue may affect interpretation' : 'No current queue blockers'} />
