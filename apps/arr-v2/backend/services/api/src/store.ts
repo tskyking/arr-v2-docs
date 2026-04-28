@@ -38,6 +38,11 @@ const pgPool: PgPool | undefined = DATABASE_URL
 const pgImportCache = new Map<string, Map<string, ImportResult>>();
 const pgOverrideCache = new Map<string, Map<string, PersistedOverride>>();
 let postgresInitialized = false;
+let postgresInitError: string | undefined;
+
+function postgresReady(): boolean {
+  return Boolean(USE_POSTGRES && pgPool && postgresInitialized);
+}
 
 /** Safely build a tenant-scoped path. Rejects any tenantId containing path separators. */
 function tenantDir(tenantId: string): string {
@@ -73,11 +78,11 @@ function dataDirLooksEphemeral(): boolean {
 }
 
 export function getStorageDiagnostics(tenantId = 'default'): StorageDiagnostics {
-  if (USE_POSTGRES) {
+  if (postgresReady()) {
     return {
       kind: 'postgres',
       databaseUrlConfigured: true,
-      writable: postgresInitialized,
+      writable: true,
       importCount: pgImportCache.get(tenantId)?.size ?? 0,
       durability: 'managed-postgres',
     };
@@ -112,9 +117,11 @@ export function getStorageDiagnostics(tenantId = 'default'): StorageDiagnostics 
     writable,
     importCount,
     durability,
-    ...(durability === 'ephemeral-risk'
-      ? { warning: 'Import persistence is file-backed on a local/runtime filesystem. Use managed durable storage before relying on shared dashboard links.' }
-      : {}),
+    ...(USE_POSTGRES && postgresInitError
+      ? { warning: `DATABASE_URL is configured, but PostgreSQL initialization failed (${postgresInitError}). Falling back to file storage.` }
+      : durability === 'ephemeral-risk'
+        ? { warning: 'Import persistence is file-backed on a local/runtime filesystem. Use managed durable storage before relying on shared dashboard links.' }
+        : {}),
   };
 }
 
@@ -240,15 +247,25 @@ function warnAsync(label: string, promise: Promise<unknown>): void {
 
 export async function initStorage(): Promise<void> {
   if (!USE_POSTGRES) return;
-  if (!pgPool) throw new Error('DATABASE_URL is configured but PostgreSQL pool is unavailable');
-  await ensurePostgresSchema();
-  await loadPostgresCache();
-  postgresInitialized = true;
-  console.log(`[store] PostgreSQL persistence enabled; loaded ${[...pgImportCache.values()].reduce((sum, imports) => sum + imports.size, 0)} imports`);
+  if (!pgPool) {
+    postgresInitError = 'pool unavailable';
+    return;
+  }
+  try {
+    await ensurePostgresSchema();
+    await loadPostgresCache();
+    postgresInitialized = true;
+    postgresInitError = undefined;
+    console.log(`[store] PostgreSQL persistence enabled; loaded ${[...pgImportCache.values()].reduce((sum, imports) => sum + imports.size, 0)} imports`);
+  } catch (e) {
+    postgresInitialized = false;
+    postgresInitError = e instanceof Error ? e.message : String(e);
+    console.error(`[store] PostgreSQL initialization failed; falling back to file storage: ${postgresInitError}`);
+  }
 }
 
 export async function clearTenantData(tenantId: string): Promise<void> {
-  if (!USE_POSTGRES || !pgPool) {
+  if (!postgresReady() || !pgPool) {
     const imports = loadAllImports(tenantId);
     for (const importId of imports.keys()) deleteImport(tenantId, importId);
     return;
@@ -265,7 +282,7 @@ export async function clearTenantData(tenantId: string): Promise<void> {
 
 /** Persist an ImportResult for a tenant. */
 export function saveImport(tenantId: string, result: ImportResult): void {
-  if (USE_POSTGRES) {
+  if (postgresReady()) {
     cacheImport(tenantId, result);
     warnAsync('PostgreSQL import save', persistImportToPostgres(tenantId, result));
     return;
@@ -278,7 +295,7 @@ export function saveImport(tenantId: string, result: ImportResult): void {
 
 /** Load all imports for a tenant. Returns a Map keyed by importId. */
 export function loadAllImports(tenantId: string): Map<string, ImportResult> {
-  if (USE_POSTGRES) {
+  if (postgresReady()) {
     return new Map(pgImportCache.get(tenantId) ?? []);
   }
 
@@ -310,7 +327,7 @@ export function loadAllImports(tenantId: string): Map<string, ImportResult> {
 
 /** Delete a persisted import for a tenant. Returns true if it existed. */
 export function deleteImport(tenantId: string, importId: string): boolean {
-  if (USE_POSTGRES) {
+  if (postgresReady()) {
     const existed = pgImportCache.get(tenantId)?.delete(importId) ?? false;
     pgOverrideCache.delete(`${tenantId}:${importId}`);
     if (pgPool) {
@@ -342,7 +359,7 @@ export function saveOverrides(
   importId: string,
   overrides: Map<string, PersistedOverride>,
 ): void {
-  if (USE_POSTGRES) {
+  if (postgresReady()) {
     cacheOverrides(tenantId, importId, new Map(overrides));
     warnAsync('PostgreSQL overrides save', persistOverridesToPostgres(tenantId, importId, overrides));
     return;
@@ -358,7 +375,7 @@ export function saveOverrides(
 }
 
 export function loadOverrides(tenantId: string, importId: string): Map<string, PersistedOverride> {
-  if (USE_POSTGRES) {
+  if (postgresReady()) {
     return new Map(pgOverrideCache.get(`${tenantId}:${importId}`) ?? []);
   }
 
@@ -372,7 +389,7 @@ export function loadOverrides(tenantId: string, importId: string): Map<string, P
 }
 
 export function deleteOverrides(tenantId: string, importId: string): void {
-  if (USE_POSTGRES) {
+  if (postgresReady()) {
     pgOverrideCache.delete(`${tenantId}:${importId}`);
     if (pgPool) {
       warnAsync('PostgreSQL overrides delete', pgPool.query(
