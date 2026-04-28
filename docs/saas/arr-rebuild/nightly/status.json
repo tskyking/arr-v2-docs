@@ -4,7 +4,7 @@
   "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
   "goal": "Coordinate ARR-V2 DigitalOcean staging readiness, verify live deploy health/autodeploy status, and maintain dashboard/nightly handoffs.",
   "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available; local main and origin/main aligned at c46c4eb before 04:30 coordinator docs update.",
-  "localCommit": "Record staging diagnostics verification (04:30 Coordinator reviewed; origin/main c46c4eb)",
+  "localCommit": "df9f665 Fix direct SPA route staging fallback (local ahead of origin at 06:30 final; targeted tests pass)",
   "runs": [
     {
       "time": "2026-04-27T01:00:00-07:00",
@@ -344,20 +344,48 @@
         "Draft digitalocean-app.yaml still contains placeholder repo fields and should not be applied as-is."
       ],
       "nextRecommendedOwner": "qa-0530: verify storage diagnostics, missing-import UX, generated upload immediate smoke only if useful, and durable reopen/restart/wait evidence; dev next should implement real durable persistence or stable seeded-demo behavior before Brian-facing demo."
+    },
+    {
+      "time": "2026-04-28T06:30:00-07:00",
+      "agent": "final-coordinator",
+      "report": "docs/saas/arr-rebuild/nightly/do-staging-2026-04-28-0630-final-coordinator.md",
+      "summary": "Final hard-stop review: live DO staging health and immediate generated-workbook API smoke are green, but staging remains yellow/not Brian-demo ready because storage diagnostics still report durability=ephemeral-risk, direct non-hash SPA paths still 404 live, auth is absent, and Brian real/sanitized workbook QA plus Contract Detail adapter work remain open. Local main is ahead of origin by df9f665, a direct-SPA-route redirect fix with targeted backend tests.",
+      "checks": {
+        "gitLocalHead": "df9f665_fix_direct_spa_route_staging_fallback",
+        "gitOriginHead": "098c4b7_add_do_staging_0530_qa_report",
+        "backendTypecheck": "pass",
+        "backendServerTargetedTests": "pass_31_tests",
+        "liveApiHealth": "pass_http_200_ts_2026_04_28T13_30_42Z_storage_diagnostics_present",
+        "liveHealthStorage": "pass_http_200_durability_ephemeral_risk_import_count_1",
+        "liveImportsList": "pass_current_instance_one_import_dffad7e0_3bd6_44a3_acbd_221941bca0db_totalRows_96",
+        "liveDirectDashboardPath": "fail_http_404",
+        "liveHashDashboardPath": "pass_http_200_frontend_shell",
+        "privateWorkbookHandling": "pass_no_upload_no_commit",
+        "doAdminChanges": "none"
+      },
+      "blockers": [
+        "P0: durable import persistence or intentional seeded-demo behavior remains unresolved; live storage is file-backed and reports durability=ephemeral-risk.",
+        "P0/P1: direct non-hash SPA paths still 404 live; hash routes work; local df9f665 redirect fix is not yet reflected in live staging.",
+        "P1: auth/access control is absent; tenant/user fields are prototype controls only.",
+        "P1: Brian Contract Detail adapter and sanitized real-workbook QA remain customer-critical.",
+        "P1: ARR as-of/default headline and inclusive/exclusive end-date conventions still need Todd/Brian decisions.",
+        "ARRWEB.com DNS should not be pointed until persistence/routes/auth and real sanitized-workbook QA are acceptable."
+      ],
+      "nextRecommendedOwner": "Todd/Sky/dev: decide persistence strategy, push/deploy and verify df9f665 route fix if acceptable, add auth before private data, implement/QA Brian Contract Detail adapter with sanitized workbook, then wire ARRWEB.com DNS only after green smoke."
     }
   ],
   "targetDomain": "ARRWEB.com via GoDaddy DNS, to be pointed after DigitalOcean app/custom-domain target exists.",
   "liveStaging": {
     "url": "https://arrweb-staging-zzyg7.ondigitalocean.app/",
-    "lastCoordinatorCheck": "2026-04-28T04:30:39-07:00",
-    "health": "pass_http_200_api_health_storage_diagnostics_present_ts_2026_04_28T11_30_38Z",
-    "importsList": "empty_import_count_0_persistence_risk_active",
-    "priorImportSummary": "previous_0130_import_failed_reopen_at_0230; no durable import currently listed",
-    "frontendRoot": "pass_http_200_live_asset_index_UbR6Rmdw_js_contains_missing_import_recovery_strings_last_modified_2026_04_28T10_41_24Z",
-    "autodeploy": "pass_latest_app_affecting_commit_7ad88d2_deployed; latest_pushed_commit_c46c4eb_is_docs_status_report_only_and_not_runtime_verifiable_without_version_endpoint",
-    "directDashboardPath": "fail_http_404_active_do_static_fallback_not_applied; hash_routes_work; draft_spec_has_catchall_document",
-    "lastDevCheck": "2026-04-28T03:40:00-07:00",
-    "persistenceDiagnostics": "pass_api_health_storage_and_tenant_storage_report_durability_ephemeral_risk_import_count_0",
-    "lastCoordinatorReport": "docs/saas/arr-rebuild/nightly/do-staging-2026-04-28-0430-coordinator.md"
+    "lastCoordinatorCheck": "2026-04-28T06:30:43-07:00",
+    "health": "pass_http_200_api_health_storage_diagnostics_present_ts_2026_04_28T13_30_42Z",
+    "importsList": "one_current_instance_import_dffad7e0_3bd6_44a3_acbd_221941bca0db_totalRows_96_not_durability_proof",
+    "priorImportSummary": "current import summary/review reachable at final check; prior overnight evidence still shows imports can disappear across runtime changes",
+    "frontendRoot": "pass_http_200_for_hash_routes; direct_non_hash_dashboard_path_fails_http_404",
+    "autodeploy": "origin_main_at_098c4b7_docs_0530_qa; local_df9f665_direct_route_fix_not_yet_live_at_final_check",
+    "directDashboardPath": "fail_http_404_active_live_staging; hash_routes_work; local_df9f665_adds_redirect_mitigation_if_pushed_deployed",
+    "lastDevCheck": "2026-04-28T06:15:10-07:00 local commit df9f665",
+    "persistenceDiagnostics": "pass_api_health_storage_reports_kind_file_writable_true_importCount_1_durability_ephemeral_risk",
+    "lastCoordinatorReport": "docs/saas/arr-rebuild/nightly/do-staging-2026-04-28-0630-final-coordinator.md"
   }
 }
