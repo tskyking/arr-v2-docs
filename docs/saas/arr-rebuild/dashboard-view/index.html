@@ -78,8 +78,8 @@
       <h1>ARR Rebuild Dashboard</h1>
       <p>Main working dashboard for the SaaS ARR rebuild — milestones, phase, and next actions.</p>
       <div>
-        <span class="badge active">Current Phase: Prototype Deploy Smoke Ready + DigitalOcean/ARRWEB Prep</span>
-        <span class="badge todo">Target: commit/push local deployability changes, fill DigitalOcean repo/account values, connect ARRWEB.com, and decide DATA_DIR persistence</span>
+        <span class="badge active">Current Phase: DigitalOcean staging live + post-deploy hardening</span>
+        <span class="badge todo">Target: durable staging persistence, ARR as-of semantics, Contract Detail adapter, and routing polish before Brian-facing demo</span>
       </div>
     </div>
 
@@ -93,15 +93,15 @@
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>The MVP remains functionally past the 80% threshold, and the manual 2026-04-27 morning pass confirms the deployability story is locally green for prototype smoke. Backend typecheck, 38-file/756-test suite, backend production build, frontend typecheck, and frontend root build pass locally. The current objective is now reviewed commit/push, validated DigitalOcean repo/account settings, ARRWEB.com domain wiring, and a production persistence decision.</p>
+        <p>The MVP is live on DigitalOcean staging and the 00:30 PT coordinator pass indicates DO likely autodeployed the latest 23:30 Dev label/copy commit. The current objective has moved from basic deploy smoke to staging hardening: durable import persistence, explicit ARR as-of semantics, Brian's Contract Detail workbook adapter, and route/fallback polish before a Brian-facing demo.</p>
       </div>
 
       <div class="card col-4">
         <h3>Next 3 Actions</h3>
         <ul>
-          <li>Review and commit the local deployability/dashboard changes, then push once Todd approves external publishing</li>
-          <li>Create/confirm the DigitalOcean account/app, replace draft spec placeholders with the real GitHub repo/account values, and run a staging smoke deploy</li>
-          <li>Point ARRWEB.com DNS from GoDaddy to the DigitalOcean app after DO provides the canonical app/domain target; decide durable <code>DATA_DIR</code> persistence before customer use</li>
+          <li>Fix or explicitly scope staging persistence: <code>/api/imports</code> is empty after the 21:30 QA upload, so demos cannot rely on durable import state yet</li>
+          <li>Decide and implement ARR as-of semantics: current month, latest invoice month, selected month, or ending imported period</li>
+          <li>Build the Brian-style <code>Contract Detail</code> adapter locally/safely, and fix SPA fallback or standardize hash-route dashboard links</li>
         </ul>
       </div>
 
@@ -138,7 +138,7 @@
           </div>
           <div class="step active">
             <strong>8. Release Prep / Product Signoff</strong>
-            <p>Repo/package hygiene, backend CI, frontend build, and GitHub HTTPS auth are green locally; release prep now depends on reviewed commit/push, validated DigitalOcean settings, ARRWEB.com DNS wiring, and production persistence direction.</p>
+            <p>DigitalOcean staging is live and likely autodeploying from <code>main</code>; release prep now depends on durable staging persistence, ARR as-of semantics, Brian workbook adapter support, direct-path routing polish, and product decisions before a Brian-facing demo.</p>
           </div>
         </div>
       </div>
@@ -237,6 +237,18 @@
         <p class="sub" style="margin-top:8px">⚠️ These are estimates based on context window sizes and session counts — not exact billing figures. Check your Anthropic API dashboard for precise usage. I'll update this table after each significant work session.</p>
       </div>
 
+
+      <div class="card col-12">
+        <h2>DO Staging Coordination — 2026-04-28 00:30 PT</h2>
+        <ul>
+          <li><strong>Repo/deploy:</strong> <code>main</code> matches <code>origin/main</code> at <code>0f329eb Clarify ARR recognition dashboard labels</code>; live frontend assets contain the new Ending/Selected-Period ARR label strings, so DO staging likely autodeployed the 23:30 Dev commit.</li>
+          <li><strong>Live health:</strong> <code>/api/health</code> returned HTTP 200 at 00:30 PT and the frontend root returned HTTP 200.</li>
+          <li><strong>Still blocking demos:</strong> <code>/api/imports</code> remains empty after the 21:30 QA upload, confirming staging import persistence is still ephemeral/resettable.</li>
+          <li><strong>UX state:</strong> final imported-period ARR is now labeled more clearly as Ending/Selected-Period ARR, but Todd/Brian still need to choose the default ARR as-of semantics.</li>
+          <li><strong>Routing/privacy:</strong> direct <code>/dashboard/:id</code> paths still 404 while hash routes work; no private workbook was uploaded or committed.</li>
+          <li><strong>Next owners:</strong> Dev should prioritize persistence, ARR as-of model, Contract Detail adapter, and SPA fallback/hash-route polish; QA should retest persistence/restart behavior after fixes.</li>
+        </ul>
+      </div>
 
       <div class="card col-12">
         <h2>Manual Coordination — 2026-04-27 08:59 PT</h2>

@@ -1,10 +1,10 @@
 {
-  "date": "2026-04-27",
+  "date": "2026-04-28",
   "timezone": "America/Los_Angeles",
   "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
-  "goal": "Coordinate ARR-V2 git content toward DigitalOcean deployability and maintain dashboard-view readiness notes.",
-  "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available and origin/main is reachable. Current remaining publish gate is review/commit/push of docs/status updates from the DO staging coordinator run.",
-  "localCommit": "4aa7dea Add DO staging QA notes (HEAD/origin at start of 22:30 coordinator run); docs/status coordinator updates pending commit.",
+  "goal": "Coordinate ARR-V2 DigitalOcean staging readiness, verify live deploy health/autodeploy status, and maintain dashboard/nightly handoffs.",
+  "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available and origin/main is reachable. 00:30 coordinator docs/status updates are safe to commit/push.",
+  "localCommit": "0f329eb Clarify ARR recognition dashboard labels (HEAD/origin at start of 00:30 coordinator run); DO staging appears to have autodeployed this commit.",
   "runs": [
     {
       "time": "2026-04-27T01:00:00-07:00",
@@ -226,15 +226,43 @@
         "Frontend large bundle warning remains a performance follow-up, not a staging blocker."
       ],
       "nextRecommendedOwner": "dev: persistence + as-of semantics + Contract Detail adapter; qa: restart/persistence and business-semantics fixtures; Todd: approve private workbook staging use and decide metric/date semantics"
+    },
+    {
+      "time": "2026-04-28T00:30:00-07:00",
+      "agent": "coordinator",
+      "report": "docs/saas/arr-rebuild/nightly/do-staging-2026-04-28-0030-coordinator.md",
+      "summary": "Reviewed 21:30 QA, 22:30 Coordinator, and 23:30 Dev handoffs. Confirmed repo is aligned with origin/main at 0f329eb, live /api/health is green, live imports are still empty, direct dashboard paths still 404, and DO staging likely autodeployed the latest Dev label/copy commit because the live frontend asset contains the new Ending/Selected-Period ARR strings.",
+      "checks": {
+        "gitFetchOriginMain": "pass",
+        "gitBranchAlignment": "pass_main_matches_origin_main_at_0f329eb",
+        "liveApiHealth": "pass_http_200",
+        "liveImportsList": "empty_persistence_risk_still_active",
+        "frontendRoot": "pass_http_200_last_modified_2026_04_28T06_34_11Z",
+        "autodeployEvidence": "likely_pass_live_asset_contains_0f329eb_label_strings",
+        "directDashboardPath": "fail_http_404",
+        "hashRouteRoot": "pass_http_200",
+        "privateWorkbookHandling": "pass_no_upload_no_commit",
+        "doAdminChanges": "none"
+      },
+      "blockers": [
+        "DO staging import persistence remains unresolved; /api/imports returns an empty list after prior QA upload.",
+        "ARR as-of/current-month semantics still need Todd/Brian product decision; latest Dev pass clarified labels but did not change underlying model.",
+        "Subscription end-date inclusive/exclusive convention still needs product/accounting decision and tests.",
+        "Direct path dashboard URLs still 404; hash routes work or SPA fallback must be configured.",
+        "Brian generic contract schedule still needs a Contract Detail adapter/import mode; private workbook should not be uploaded externally or committed without Todd approval.",
+        "Frontend large bundle warning remains a performance follow-up, not a staging blocker."
+      ],
+      "nextRecommendedOwner": "dev: persistence + as-of model + Contract Detail adapter + SPA fallback; qa: persistence/restart and business-semantics fixtures; Todd: product/date/workbook-upload decisions"
     }
   ],
   "targetDomain": "ARRWEB.com via GoDaddy DNS, to be pointed after DigitalOcean app/custom-domain target exists.",
   "liveStaging": {
     "url": "https://arrweb-staging-zzyg7.ondigitalocean.app/",
-    "lastCoordinatorCheck": "2026-04-27T22:30:28-07:00",
-    "health": "pass_http_200_api_health",
+    "lastCoordinatorCheck": "2026-04-28T00:30:48-07:00",
+    "health": "pass_http_200_api_health_ts_2026_04_28T07_30_48Z",
     "importsList": "empty_after_2130_qa_upload_indicates_ephemeral_or_reset_data_dir",
-    "frontendRoot": "pass_http_200",
+    "frontendRoot": "pass_http_200_last_modified_2026_04_28T06_34_11Z",
+    "autodeploy": "likely_deployed_0f329eb_live_asset_contains_new_arr_label_strings",
     "directDashboardPath": "fail_http_404_hash_routes_required_or_spa_fallback_missing"
   }
 }
