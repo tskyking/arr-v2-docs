@@ -173,9 +173,9 @@ export default function ImportPage() {
                     {imp.importId.slice(0, 8)}…
                   </td>
                   <td>
-                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => navigate(`/dashboard/${imp.importId}`)}>
+                    <Link className="ghost" style={{ fontSize: 12, textDecoration: 'none', display: 'inline-flex' }} to={`/dashboard/${imp.importId}`}>
                       Dashboard →
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))}
