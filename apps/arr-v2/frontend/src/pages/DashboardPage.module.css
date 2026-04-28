@@ -184,6 +184,28 @@
   padding: 18px;
 }
 
+.compactReviewPanel {
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.compactIssueText {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.compactIssueItem {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.compactIssueCount {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .panelTitle {
   margin: 0 0 12px;
   font-size: 15px;

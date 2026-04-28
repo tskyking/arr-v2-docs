@@ -2,7 +2,7 @@
  * DashboardPage — ARR timeseries chart + summary stats for a given import.
  * Includes date range filter and top-customers breakdown.
  */
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -474,46 +474,22 @@ export default function DashboardPage() {
               value={reviewStats.resolvedCount.toLocaleString()}
               sub={`${reviewStats.overriddenCount} overridden`}
             />
-            <StatCard
-              label="Most Common Issue"
-              value={reviewStats.openByReasonCode[0]?.reasonCode ?? '—'}
-              sub={reviewStats.openByReasonCode[0] ? `${reviewStats.openByReasonCode[0].count} open items` : 'No open issues'}
-            />
           </div>
 
-          {(reviewStats.openByReasonCode.length > 0 || reviewStats.topCustomersWithIssues.length > 0) && (
-            <div className={styles.reviewPanels}>
-              <div className={`card ${styles.reviewPanel}`}>
-                <h3 className={styles.panelTitle}>Open Issues by Reason</h3>
-                {reviewStats.openByReasonCode.length === 0 ? (
-                  <div className={styles.emptyState}>No open issues.</div>
-                ) : (
-                  <div className={styles.issueList}>
-                    {reviewStats.openByReasonCode.slice(0, 6).map(item => (
-                      <div key={item.reasonCode} className={styles.issueRow}>
-                        <span className={styles.issueLabel}>{item.reasonCode}</span>
-                        <span className={styles.issueCount}>{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className={`card ${styles.reviewPanel}`}>
-                <h3 className={styles.panelTitle}>Customers With Open Issues</h3>
-                {reviewStats.topCustomersWithIssues.length === 0 ? (
-                  <div className={styles.emptyState}>No customers blocked.</div>
-                ) : (
-                  <div className={styles.issueList}>
-                    {reviewStats.topCustomersWithIssues.slice(0, 6).map(item => (
-                      <div key={item.customerName} className={styles.issueRow}>
-                        <span className={styles.issueLabel}>{item.customerName}</span>
-                        <span className={styles.issueCount}>{item.openCount}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+          {reviewStats.topCustomersWithIssues.length > 0 && (
+            <div className={`card ${styles.compactReviewPanel}`}>
+              <h3 className={styles.panelTitle}>Customers With Open Issues</h3>
+              <p className={styles.compactIssueText}>
+                {reviewStats.topCustomersWithIssues.map(item => (
+                  <span key={item.customerName} className={styles.compactIssueItem}>
+                    {item.customerName} <span className={styles.compactIssueCount}>({item.openCount})</span>
+                  </span>
+                )).reduce<ReactNode[]>((nodes, node, index) => {
+                  if (index > 0) nodes.push(', ');
+                  nodes.push(node);
+                  return nodes;
+                }, [])}
+              </p>
             </div>
           )}
         </>
