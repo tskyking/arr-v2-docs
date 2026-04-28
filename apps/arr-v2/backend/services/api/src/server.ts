@@ -50,7 +50,7 @@ import {
   exportCustomerCubeCsv,
 } from './importService.js';
 import { ImportError } from '../../imports/src/importErrors.js';
-import { getStorageDiagnostics } from './store.js';
+import { getStorageDiagnostics, initStorage } from './store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const API_PREFIX = normalizeApiPrefix(process.env.API_PREFIX ?? '');
@@ -466,6 +466,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 }
 
 const server = http.createServer(handleRequest);
+
+await initStorage();
+
 server.listen(PORT, '0.0.0.0', () => {
   const prefixLabel = API_PREFIX ? ` with API_PREFIX=${API_PREFIX}` : '';
   console.log(`ARR V2 API running on http://0.0.0.0:${PORT}${prefixLabel}`);

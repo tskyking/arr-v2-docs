@@ -3,19 +3,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && esbuild services/api/src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:adm-zip --external:fast-xml-parser",
+    "build": "tsc -p tsconfig.build.json && esbuild services/api/src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:adm-zip --external:fast-xml-parser --external:pg",
     "import:demo": "tsx services/imports/src/demo.ts",
     "start": "node dist/server.js",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "clear:tenant": "tsx services/api/src/clearTenantData.ts"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
-    "fast-xml-parser": "^4.5.3"
+    "fast-xml-parser": "^4.5.3",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
     "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
     "esbuild": "^0.27.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
