@@ -3,8 +3,8 @@
   "timezone": "America/Los_Angeles",
   "repo": "/Users/tylerking/.openclaw/workspace/arr-v2-docs-work",
   "goal": "Coordinate ARR-V2 DigitalOcean staging readiness, verify live deploy health/autodeploy status, and maintain dashboard/nightly handoffs.",
-  "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available and origin/main is reachable. 00:30 coordinator docs/status updates are safe to commit/push.",
-  "localCommit": "0f329eb Clarify ARR recognition dashboard labels (HEAD/origin at start of 00:30 coordinator run); DO staging appears to have autodeployed this commit.",
+  "pushBlocker": "Resolved for auth: GitHub HTTPS auth is available and origin/main is reachable. 02:30 coordinator docs/status updates are safe to commit/push.",
+  "localCommit": "81b2485 Add DO staging 01:30 QA report (HEAD/origin at start of 02:30 coordinator run); DO staging is healthy, but imports are disappearing between runs.",
   "runs": [
     {
       "time": "2026-04-27T01:00:00-07:00",
@@ -253,16 +253,45 @@
         "Frontend large bundle warning remains a performance follow-up, not a staging blocker."
       ],
       "nextRecommendedOwner": "dev: persistence + as-of model + Contract Detail adapter + SPA fallback; qa: persistence/restart and business-semantics fixtures; Todd: product/date/workbook-upload decisions"
+    },
+    {
+      "time": "2026-04-28T02:30:00-07:00",
+      "agent": "coordinator",
+      "report": "docs/saas/arr-rebuild/nightly/do-staging-2026-04-28-0230-coordinator.md",
+      "summary": "Reviewed all DO-staging reports through 01:30 QA and latest commits through 81b2485. Live health/root remain green and live assets contain the 23:30 label strings, but the 01:30 import disappeared by 02:30: /api/imports returned empty and /api/imports/d04fb56f-d097-4fa3-b487-71c89f420613/summary returned HTTP 404. Escalated staging persistence to P0 demo blocker for Dev 03:30.",
+      "checks": {
+        "gitFetchOriginMain": "pass",
+        "gitBranchAlignment": "pass_main_matches_origin_main_at_81b2485",
+        "liveApiHealth": "pass_http_200_ts_2026_04_28T09_30_41Z",
+        "liveImportsList": "empty_after_0130_qa_upload",
+        "priorImportSummaryReopen": "fail_http_404_for_d04fb56f_d097_4fa3_b487_71c89f420613",
+        "frontendRoot": "pass_http_200_last_modified_2026_04_28T08_37_06Z",
+        "autodeployEvidence": "pass_live_asset_contains_0f329eb_arr_label_strings_latest_later_commits_are_docs_reports",
+        "directDashboardPath": "fail_http_404",
+        "hashRouteRoot": "pass_http_200",
+        "privateWorkbookHandling": "pass_no_upload_no_commit",
+        "doAdminChanges": "none"
+      },
+      "blockers": [
+        "P0: DO staging import persistence is not durable; the 01:30 generated-workbook import was gone by 02:30 and its summary returned HTTP 404.",
+        "ARR as-of/current-month headline default still needs Todd/Brian product decision; labels are clearer but model is not settled.",
+        "Subscription end-date inclusive/exclusive convention still needs product/accounting decision and tests.",
+        "Direct path dashboard URLs still 404; hash routes work or SPA fallback must be configured.",
+        "Brian generic contract schedule still needs a Contract Detail adapter/import mode; private workbook should not be uploaded externally or committed without Todd approval.",
+        "Frontend large bundle warning and browser click-driving audit remain follow-ups, not immediate staging blockers."
+      ],
+      "nextRecommendedOwner": "dev-0330: persistence first, then stable routing/hash links, ARR as-of model prep, and Contract Detail adapter planning; qa after dev should verify durable reopen across restart/redeploy/cold-start."
     }
   ],
   "targetDomain": "ARRWEB.com via GoDaddy DNS, to be pointed after DigitalOcean app/custom-domain target exists.",
   "liveStaging": {
     "url": "https://arrweb-staging-zzyg7.ondigitalocean.app/",
-    "lastCoordinatorCheck": "2026-04-28T00:30:48-07:00",
-    "health": "pass_http_200_api_health_ts_2026_04_28T07_30_48Z",
-    "importsList": "empty_after_2130_qa_upload_indicates_ephemeral_or_reset_data_dir",
-    "frontendRoot": "pass_http_200_last_modified_2026_04_28T06_34_11Z",
-    "autodeploy": "likely_deployed_0f329eb_live_asset_contains_new_arr_label_strings",
+    "lastCoordinatorCheck": "2026-04-28T02:30:41-07:00",
+    "health": "pass_http_200_api_health_ts_2026_04_28T09_30_41Z",
+    "importsList": "empty_after_0130_qa_upload_confirms_ephemeral_or_reset_data_dir",
+    "priorImportSummary": "fail_http_404_for_0130_import_d04fb56f_d097_4fa3_b487_71c89f420613",
+    "frontendRoot": "pass_http_200_last_modified_2026_04_28T08_37_06Z",
+    "autodeploy": "healthy; live asset contains 0f329eb label strings; 1c32aba and 81b2485 were docs/report commits",
     "directDashboardPath": "fail_http_404_hash_routes_required_or_spa_fallback_missing"
   }
 }

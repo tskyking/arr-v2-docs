@@ -93,13 +93,13 @@
 
       <div class="card col-4">
         <h3>Current Objective</h3>
-        <p>The MVP is live on DigitalOcean staging and the 00:30 PT coordinator pass indicates DO likely autodeployed the latest 23:30 Dev label/copy commit. The current objective has moved from basic deploy smoke to staging hardening: durable import persistence, explicit ARR as-of semantics, Brian's Contract Detail workbook adapter, and route/fallback polish before a Brian-facing demo.</p>
+        <p>The MVP is live on DigitalOcean staging and the 02:30 PT coordinator pass keeps health/deploy status green, but escalates persistence to the top demo blocker: the 01:30 QA import disappeared by 02:30. The current objective is staging hardening: durable import persistence first, then explicit ARR as-of semantics, Brian's Contract Detail workbook adapter, and route/fallback polish before a Brian-facing demo.</p>
       </div>
 
       <div class="card col-4">
         <h3>Next 3 Actions</h3>
         <ul>
-          <li>Fix or explicitly scope staging persistence: <code>/api/imports</code> is empty after the 21:30 QA upload, so demos cannot rely on durable import state yet</li>
+          <li>Fix staging persistence first: <code>/api/imports</code> was empty at 02:30 and the 01:30 QA import summary returned HTTP 404, so shareable demo links are not durable yet</li>
           <li>Decide and implement ARR as-of semantics: current month, latest invoice month, selected month, or ending imported period</li>
           <li>Build the Brian-style <code>Contract Detail</code> adapter locally/safely, and fix SPA fallback or standardize hash-route dashboard links</li>
         </ul>
@@ -138,7 +138,7 @@
           </div>
           <div class="step active">
             <strong>8. Release Prep / Product Signoff</strong>
-            <p>DigitalOcean staging is live and likely autodeploying from <code>main</code>; release prep now depends on durable staging persistence, ARR as-of semantics, Brian workbook adapter support, direct-path routing polish, and product decisions before a Brian-facing demo.</p>
+            <p>DigitalOcean staging is live and healthy, but release prep now depends on fixing durable staging persistence first, then ARR as-of semantics, Brian workbook adapter support, direct-path routing polish, and product decisions before a Brian-facing demo.</p>
           </div>
         </div>
       </div>
@@ -237,6 +237,19 @@
         <p class="sub" style="margin-top:8px">⚠️ These are estimates based on context window sizes and session counts — not exact billing figures. Check your Anthropic API dashboard for precise usage. I'll update this table after each significant work session.</p>
       </div>
 
+
+
+      <div class="card col-12">
+        <h2>DO Staging Coordination — 2026-04-28 02:30 PT</h2>
+        <ul>
+          <li><strong>Repo/deploy:</strong> <code>main</code> matches <code>origin/main</code> at <code>81b2485 Add DO staging 01:30 QA report</code>. Live staging is healthy and still serves the ARR label strings from the latest app-affecting commit, <code>0f329eb</code>.</li>
+          <li><strong>Live health:</strong> <code>/api/health</code> returned HTTP 200 at 02:30 PT; frontend root returned HTTP 200 with root <code>last-modified</code> at 2026-04-28 08:37 UTC.</li>
+          <li><strong>P0 blocker:</strong> the 01:30 QA import <code>d04fb56f...</code> was gone by 02:30: <code>/api/imports</code> returned an empty list and the import summary returned HTTP 404.</li>
+          <li><strong>Still green immediately after upload:</strong> 01:30 QA verified generated-workbook upload, live API/local parity, dashboard/review/customer-cube UI correspondence, review stats, and CSV exports.</li>
+          <li><strong>Still open:</strong> ARR as-of default, inclusive/exclusive end-date convention, Brian <code>Contract Detail</code> adapter, and direct-path SPA fallback/hash-route standardization.</li>
+          <li><strong>Dev 03:30 handoff:</strong> persistence first, then stable demo links/routing, ARR as-of model prep, and Brian adapter planning. No private workbook upload/commit; no DO billing/domain/admin changes.</li>
+        </ul>
+      </div>
 
       <div class="card col-12">
         <h2>DO Staging Coordination — 2026-04-28 00:30 PT</h2>
