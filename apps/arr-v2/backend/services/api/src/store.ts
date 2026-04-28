@@ -28,9 +28,28 @@ const BASE_DATA_DIR = process.env.DATA_DIR
 
 const DATABASE_URL = process.env.DATABASE_URL?.trim();
 const USE_POSTGRES = Boolean(DATABASE_URL);
+
+function getPostgresConnectionString(): string | undefined {
+  if (!DATABASE_URL) return undefined;
+  try {
+    const url = new URL(DATABASE_URL);
+    // DigitalOcean App Platform database bindings commonly include sslmode=require.
+    // node-postgres/pg-connection-string currently treats that like verify-full,
+    // which can reject DO's certificate chain in the app container. We provide an
+    // explicit SSL object below, so remove libpq-style sslmode from the URL first.
+    url.searchParams.delete('sslmode');
+    url.searchParams.delete('sslrootcert');
+    url.searchParams.delete('sslcert');
+    url.searchParams.delete('sslkey');
+    return url.toString();
+  } catch {
+    return DATABASE_URL;
+  }
+}
+
 const pgPool: PgPool | undefined = DATABASE_URL
   ? new Pool({
-      connectionString: DATABASE_URL,
+      connectionString: getPostgresConnectionString(),
       ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
     })
   : undefined;
