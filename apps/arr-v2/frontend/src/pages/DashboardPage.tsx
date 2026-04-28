@@ -72,6 +72,8 @@ export default function DashboardPage() {
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadingKind, setDownloadingKind] = useState<'arr' | 'movements' | null>(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const pollMs = autoRefreshEnabled ? LIVE_POLL_MS : 0;
 
   // ─── Date range state ──────────────────────────────────────────────────
   const [preset, setPreset] = useState<Preset>('all');
@@ -85,7 +87,7 @@ export default function DashboardPage() {
     loading: sumLoading,
     error: sumErr,
     refetch: refetchSummary,
-  } = useImportSummary(importId!, { pollMs: LIVE_POLL_MS });
+  } = useImportSummary(importId!, { pollMs });
 
   // Derive from/to for API based on preset
   const { fromParam, toParam } = useMemo(() => {
@@ -113,7 +115,7 @@ export default function DashboardPage() {
     importId!,
     fromParam,
     toParam,
-    { pollMs: LIVE_POLL_MS },
+    { pollMs },
   );
 
   const {
@@ -125,20 +127,20 @@ export default function DashboardPage() {
     importId!,
     fromParam,
     toParam,
-    { pollMs: LIVE_POLL_MS },
+    { pollMs },
   );
   const {
     data: reviewStats,
     loading: reviewStatsLoading,
     error: reviewStatsErr,
     refetch: refetchReviewStats,
-  } = useReviewStats(importId!, { pollMs: LIVE_POLL_MS });
+  } = useReviewStats(importId!, { pollMs });
   const {
     data: customerList,
     loading: customerListLoading,
     error: customerListErr,
     refetch: refetchCustomerList,
-  } = useCustomerList(importId!, { pollMs: LIVE_POLL_MS });
+  } = useCustomerList(importId!, { pollMs });
 
   useEffect(() => {
     if (summary || reviewStats || customerList || ts || movements) {
@@ -181,12 +183,6 @@ export default function DashboardPage() {
     refetchReviewStats();
     refetchCustomerList();
     setLastRefreshedAt(new Date());
-
-    // Force a full-page reload with a cache-busting query param so new frontend
-    // bundles/layout changes show up immediately, not just fresh API data.
-    const url = new URL(window.location.href);
-    url.searchParams.set('refresh', String(Date.now()));
-    window.location.replace(url.toString());
   }
 
   async function handleDownload(kind: 'arr' | 'movements') {
@@ -327,7 +323,7 @@ export default function DashboardPage() {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.refreshMeta}>
-            <div>Live refresh every 30s</div>
+            <div>{autoRefreshEnabled ? 'Auto refresh every 30s' : 'Auto refresh off'}</div>
             <div>{lastRefreshedAt ? `Last refresh ${lastRefreshedAt.toLocaleTimeString()}` : 'Waiting for first refresh…'}</div>
           </div>
           <button className="ghost" onClick={() => handleDownload('arr')} disabled={downloadingKind !== null}>
@@ -343,7 +339,17 @@ export default function DashboardPage() {
               </button>
             </Link>
           )}
-          <button className="ghost" onClick={handleRefreshNow}>Refresh now</button>
+          <div className={styles.refreshControls}>
+            <button className="ghost" onClick={handleRefreshNow}>Refresh now</button>
+            <label className={styles.autoRefreshToggle}>
+              <input
+                type="checkbox"
+                checked={autoRefreshEnabled}
+                onChange={event => setAutoRefreshEnabled(event.target.checked)}
+              />
+              <span>Auto refresh</span>
+            </label>
+          </div>
           <Link to={`/review/${importId}`}>
             <button className="ghost">
               Review Queue ({summary.reviewItems})
