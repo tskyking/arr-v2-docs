@@ -4,7 +4,7 @@ import { useImportList } from '@/lib/hooks';
 import { useArrSettings } from '@/lib/settings';
 
 export default function Layout() {
-  const { tenantId, userEmail, updateSettings } = useArrSettings();
+  const { tenantId, userEmail, displayName, updateSettings, logout } = useArrSettings();
   const { data: imports } = useImportList();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,6 +27,11 @@ export default function Layout() {
     if (current.startsWith('/review')) navigate(`/review/${id}`);
     else if (current.startsWith('/customer-cube')) navigate(`/customer-cube/${id}`);
     else navigate(`/dashboard/${id}`);
+  }
+
+  function handleLogout() {
+    logout();
+    navigate('/login', { replace: true });
   }
 
   return (
@@ -58,6 +63,7 @@ export default function Layout() {
           )}
         </div>
         <div className={styles.importSelect}>
+          <span className={styles.sessionBadge} title={displayName}>Signed in: {displayName}</span>
           <label className={styles.selectLabel}>Tenant</label>
           <input
             className={styles.textInput}
@@ -90,6 +96,7 @@ export default function Layout() {
             </select>
             </>
           )}
+          <button className={`ghost ${styles.logoutButton}`} onClick={handleLogout}>Logout</button>
         </div>
       </nav>
       <main className={styles.main}>

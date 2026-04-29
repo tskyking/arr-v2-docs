@@ -6,11 +6,15 @@ const EVENT_NAME = 'arr-v2-settings-changed';
 export interface ArrSettings {
   tenantId: string;
   userEmail: string;
+  displayName: string;
+  isLoggedIn: boolean;
 }
 
 const DEFAULT_SETTINGS: ArrSettings = {
   tenantId: 'default',
   userEmail: 'user@arr.local',
+  displayName: 'Demo User',
+  isLoggedIn: false,
 };
 
 export function isStaticDemoEnvironment(): boolean {
@@ -29,6 +33,11 @@ function normalizeUserEmail(value: string | undefined): string {
   return trimmed || DEFAULT_SETTINGS.userEmail;
 }
 
+function normalizeDisplayName(value: string | undefined): string {
+  const trimmed = value?.trim() ?? '';
+  return trimmed || DEFAULT_SETTINGS.displayName;
+}
+
 export function getArrSettings(): ArrSettings {
   if (typeof window === 'undefined') return DEFAULT_SETTINGS;
 
@@ -36,6 +45,8 @@ export function getArrSettings(): ArrSettings {
     return {
       tenantId: 'aurora-capital',
       userEmail: 'analyst@auroracap.com',
+      displayName: 'Demo Analyst',
+      isLoggedIn: true,
     };
   }
 
@@ -46,6 +57,8 @@ export function getArrSettings(): ArrSettings {
     return {
       tenantId: normalizeTenantId(parsed.tenantId),
       userEmail: normalizeUserEmail(parsed.userEmail),
+      displayName: normalizeDisplayName(parsed.displayName),
+      isLoggedIn: Boolean(parsed.isLoggedIn),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -64,6 +77,8 @@ export function saveArrSettings(next: Partial<ArrSettings>): ArrSettings {
   const normalized: ArrSettings = {
     tenantId: normalizeTenantId(merged.tenantId),
     userEmail: normalizeUserEmail(merged.userEmail),
+    displayName: normalizeDisplayName(merged.displayName),
+    isLoggedIn: Boolean(merged.isLoggedIn),
   };
 
   if (typeof window !== 'undefined') {
@@ -108,5 +123,13 @@ export function useArrSettings() {
     setSettings(saveArrSettings(next));
   }, []);
 
-  return useMemo(() => ({ ...settings, updateSettings }), [settings, updateSettings]);
+  const login = useCallback((next: Pick<ArrSettings, 'tenantId' | 'userEmail'> & Partial<Pick<ArrSettings, 'displayName'>>) => {
+    setSettings(saveArrSettings({ ...next, isLoggedIn: true }));
+  }, []);
+
+  const logout = useCallback(() => {
+    setSettings(saveArrSettings({ isLoggedIn: false }));
+  }, []);
+
+  return useMemo(() => ({ ...settings, updateSettings, login, logout }), [settings, updateSettings, login, logout]);
 }
