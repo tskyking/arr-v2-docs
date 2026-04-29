@@ -352,7 +352,7 @@ export default function DashboardPage() {
           {cube && (
             <Link to={`/customer-cube/${importId}`}>
               <button className="ghost">
-                Customer Cube Download
+                Open Customer Cube
               </button>
             </Link>
           )}

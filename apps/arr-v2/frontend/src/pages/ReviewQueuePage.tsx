@@ -218,7 +218,9 @@ export default function ReviewQueuePage() {
   const errorCount = items.filter(i => i.severity === 'error').length;
   const warnCount = items.filter(i => i.severity === 'warning').length;
   const openCount = items.filter(i => i.status === 'open').length;
-  const resolvedCount = items.filter(i => i.status !== 'open').length;
+  const resolvedOnlyCount = items.filter(i => i.status === 'resolved').length;
+  const overriddenCount = items.filter(i => i.status === 'overridden').length;
+  const closedCount = resolvedOnlyCount + overriddenCount;
 
   return (
     <div>
@@ -264,7 +266,7 @@ export default function ReviewQueuePage() {
         </div>
         <div className="card" style={{ flex: 1 }}>
           <div className={styles.statLabel}>Resolved / Overridden</div>
-          <div className={styles.statValue} style={{ color: 'var(--success)' }}>{resolvedCount}</div>
+          <div className={styles.statValue} style={{ color: 'var(--success)' }}>{closedCount}</div>
         </div>
       </div>
 
@@ -289,7 +291,7 @@ export default function ReviewQueuePage() {
             onClick={() => setStatusFilter(s)}
             style={{ textTransform: 'capitalize' }}
           >
-            {s === 'all' ? `All` : s === 'open' ? `Open (${openCount})` : s === 'resolved' ? `Resolved (${resolvedCount})` : `Overridden`}
+            {s === 'all' ? `All` : s === 'open' ? `Open (${openCount})` : s === 'resolved' ? `Resolved (${resolvedOnlyCount})` : `Overridden (${overriddenCount})`}
           </button>
         ))}
       </div>

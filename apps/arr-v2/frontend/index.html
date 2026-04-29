@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ARR V2</title>
+    <script>
+      (function () {
+        var path = window.location.pathname || '/';
+        var search = window.location.search || '';
+        var spaPrefixes = ['/import', '/dashboard', '/review', '/customers', '/customer-cube'];
+        var isSpaRoute = spaPrefixes.some(function (prefix) {
+          return path === prefix || path.indexOf(prefix + '/') === 0;
+        });
+
+        if (isSpaRoute && !window.location.hash) {
+          window.location.replace('/#' + path + search);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

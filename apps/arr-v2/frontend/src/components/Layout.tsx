@@ -13,16 +13,19 @@ export default function Layout() {
   const dashboardMatch = useMatch('/dashboard/:importId');
   const reviewMatch = useMatch('/review/:importId');
   const customerMatch = useMatch('/customers/:importId/:customerName');
+  const cubeMatch = useMatch('/customer-cube/:importId');
   const activeImportId =
     dashboardMatch?.params?.importId ??
     reviewMatch?.params?.importId ??
     customerMatch?.params?.importId ??
+    cubeMatch?.params?.importId ??
     (imports && imports.length > 0 ? imports[imports.length - 1].importId : undefined);
 
   function handleImportChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
     const current = location.pathname;
     if (current.startsWith('/review')) navigate(`/review/${id}`);
+    else if (current.startsWith('/customer-cube')) navigate(`/customer-cube/${id}`);
     else navigate(`/dashboard/${id}`);
   }
 
