@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useMatch, useLocation } from 'react-router-dom';
 import styles from './Layout.module.css';
 import { useImportList } from '@/lib/hooks';
@@ -6,6 +7,10 @@ import { useArrSettings } from '@/lib/settings';
 export default function Layout() {
   const { tenantId, userEmail, displayName, updateSettings, logout } = useArrSettings();
   const { data: imports } = useImportList();
+  const sortedImports = useMemo(() => [...(imports ?? [])].sort(
+    (a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime(),
+  ), [imports]);
+  const latestImport = sortedImports[0];
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -19,7 +24,7 @@ export default function Layout() {
     reviewMatch?.params?.importId ??
     customerMatch?.params?.importId ??
     cubeMatch?.params?.importId ??
-    (imports && imports.length > 0 ? imports[imports.length - 1].importId : undefined);
+    latestImport?.importId;
 
   function handleImportChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
@@ -80,7 +85,7 @@ export default function Layout() {
             onChange={e => updateSettings({ userEmail: e.target.value })}
             spellCheck={false}
           />
-          {imports && imports.length > 0 && (
+          {sortedImports.length > 0 && (
             <>
             <label className={styles.selectLabel}>Import</label>
             <select
@@ -88,7 +93,7 @@ export default function Layout() {
               value={activeImportId ?? ''}
               onChange={handleImportChange}
             >
-              {[...imports].reverse().map(imp => (
+              {sortedImports.map(imp => (
                 <option key={imp.importId} value={imp.importId}>
                   {new Date(imp.importedAt).toLocaleDateString()} — {imp.totalRows} rows
                 </option>

@@ -142,6 +142,9 @@ export default function DashboardPage() {
     refetch: refetchCustomerList,
   } = useCustomerList(importId!, { pollMs });
   const { data: imports } = useImportList();
+  const sortedImports = useMemo(() => [...(imports ?? [])].sort(
+    (a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime(),
+  ), [imports]);
 
   useEffect(() => {
     if (summary || reviewStats || customerList || ts || movements) {
@@ -309,7 +312,7 @@ export default function DashboardPage() {
 
   if (sumLoading) return <div className="loading">Loading summary…</div>;
   if (sumErr) {
-    const latestImport = imports?.[imports.length - 1];
+    const latestImport = sortedImports[0];
     return (
       <div className={styles.missingImportCard}>
         <div className={styles.missingEyebrow}>Import unavailable</div>

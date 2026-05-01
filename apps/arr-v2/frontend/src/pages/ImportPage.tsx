@@ -2,7 +2,7 @@
  * ImportPage — upload a workbook or specify a local file path.
  * On success, navigates to the dashboard for the new import.
  */
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { uploadImportFile, uploadImportPath } from '@/lib/api';
 import { useImportList } from '@/lib/hooks';
@@ -16,6 +16,9 @@ export default function ImportPage() {
   const { tenantId } = useArrSettings();
   const demoMode = isStaticDemoEnvironment();
   const { data: imports, refetch } = useImportList();
+  const sortedImports = useMemo(() => [...(imports ?? [])].sort(
+    (a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime(),
+  ), [imports]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localPath, setLocalPath] = useState('');
@@ -26,7 +29,7 @@ export default function ImportPage() {
     if (location.search === '?focus=history') {
       historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [location.search, imports]);
+  }, [location.search, sortedImports.length]);
 
   async function handleFile(file: File) {
     setError(null);
@@ -160,7 +163,7 @@ export default function ImportPage() {
       </div>
 
       {/* Prior imports */}
-      {imports && imports.length > 0 && (
+      {sortedImports.length > 0 && (
         <div id="import-history" ref={historyRef} className={styles.history}>
           <h2 className={styles.historyHeading}>Previous Imports</h2>
           <table>
@@ -173,7 +176,7 @@ export default function ImportPage() {
               </tr>
             </thead>
             <tbody>
-              {[...imports].reverse().map(imp => (
+              {sortedImports.map(imp => (
                 <tr key={imp.importId}>
                   <td>{new Date(imp.importedAt).toLocaleString()}</td>
                   <td>{imp.totalRows.toLocaleString()}</td>
