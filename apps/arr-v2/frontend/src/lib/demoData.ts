@@ -602,6 +602,13 @@ export const demoTimeseries: Record<string, ArrTimeseries> = {
   'demo-q4-2025': { fromDate: '2025-01-01', toDate: '2025-12-31', periods: [] },
 };
 
+const demoPriorSnapshotPeriods = demoTimeseries[DEMO_IMPORT_ID].periods.filter(period => period.period <= '2025-12');
+demoTimeseries['demo-q4-2025'] = {
+  fromDate: demoPriorSnapshotPeriods[0]?.asOf.slice(0, 8).concat('01') ?? '2025-04-01',
+  toDate: demoPriorSnapshotPeriods[demoPriorSnapshotPeriods.length - 1]?.asOf ?? '2025-12-31',
+  periods: demoPriorSnapshotPeriods,
+};
+
 export const demoMovements: Record<string, ArrMovementsResult> = {
   [DEMO_IMPORT_ID]: {
   "movements": [
@@ -808,6 +815,18 @@ export const demoMovements: Record<string, ArrMovementsResult> = {
   },
 };
 
+const demoPriorSnapshotMovements = demoMovements[DEMO_IMPORT_ID].movements.filter(movement => movement.period <= '2025-12');
+demoMovements['demo-q4-2025'] = {
+  fromDate: demoTimeseries['demo-q4-2025'].fromDate,
+  toDate: demoTimeseries['demo-q4-2025'].toDate,
+  movements: demoPriorSnapshotMovements,
+  totalNewArr: demoPriorSnapshotMovements.reduce((sum, movement) => sum + movement.newArr, 0),
+  totalExpansionArr: demoPriorSnapshotMovements.reduce((sum, movement) => sum + movement.expansionArr, 0),
+  totalContractionArr: demoPriorSnapshotMovements.reduce((sum, movement) => sum + movement.contractionArr, 0),
+  totalChurnArr: demoPriorSnapshotMovements.reduce((sum, movement) => sum + movement.churnArr, 0),
+  totalNetMovement: demoPriorSnapshotMovements.reduce((sum, movement) => sum + movement.netMovement, 0),
+};
+
 export const demoReviewQueue: Record<string, ReviewQueue> = {
   [DEMO_IMPORT_ID]: {
   "items": [],
@@ -816,6 +835,31 @@ export const demoReviewQueue: Record<string, ReviewQueue> = {
   "resolvedCount": 0
 },
   'demo-q4-2025': { items: [], total: 0, openCount: 0, resolvedCount: 0 },
+};
+
+const demoQ4ReviewCustomers = ['Northstar Health', 'Apex Retail Group', 'Harbor Logistics'];
+const demoQ4ReviewItems: ReviewQueue['items'] = Array.from({ length: 9 }, (_, index) => ({
+  id: `demo-q4-rq-${String(index + 1).padStart(2, '0')}`,
+  importId: 'demo-q4-2025',
+  sourceRowNumber: 42 + index,
+  severity: index < 3 ? 'error' : 'warning',
+  reasonCode: index < 3 ? 'MISSING_MAPPING' : index < 6 ? 'AMBIGUOUS_RECOGNITION_RULE' : 'CUSTOMER_ALIAS_REVIEW',
+  message: index < 3
+    ? 'Product/service needs revenue category mapping before final ARR review.'
+    : index < 6
+      ? 'Recognition assumption should be confirmed for this recurring charge.'
+      : 'Customer naming looks like a possible alias and should be confirmed.',
+  customerName: demoQ4ReviewCustomers[index % demoQ4ReviewCustomers.length],
+  productService: index < 3 ? 'Legacy Analytics Bundle' : index < 6 ? 'Premium Support Subscription' : 'Enterprise Analytics Platform',
+  amount: [42000, 18500, 9600][index % 3],
+  invoiceDate: `2025-${String(10 + Math.floor(index / 3)).padStart(2, '0')}-15`,
+  status: 'open',
+}));
+demoReviewQueue['demo-q4-2025'] = {
+  items: demoQ4ReviewItems,
+  total: demoQ4ReviewItems.length,
+  openCount: demoQ4ReviewItems.length,
+  resolvedCount: 0,
 };
 
 export const demoReviewItems = demoReviewQueue[DEMO_IMPORT_ID].items;
@@ -836,16 +880,23 @@ export const demoReviewStats: Record<string, ReviewStats> = {
 },
   'demo-q4-2025': {
     importId: 'demo-q4-2025',
-    total: 0,
-    openCount: 0,
+    total: demoQ4ReviewItems.length,
+    openCount: demoQ4ReviewItems.length,
     resolvedCount: 0,
     overriddenCount: 0,
-    errorCount: 0,
-    warningCount: 0,
-    openByReasonCode: [],
-    openBySeverity: [],
-    topCustomersWithIssues: [],
-    allResolved: true,
+    errorCount: demoQ4ReviewItems.filter(item => item.severity === 'error').length,
+    warningCount: demoQ4ReviewItems.filter(item => item.severity === 'warning').length,
+    openByReasonCode: [
+      { reasonCode: 'MISSING_MAPPING', count: 3 },
+      { reasonCode: 'AMBIGUOUS_RECOGNITION_RULE', count: 3 },
+      { reasonCode: 'CUSTOMER_ALIAS_REVIEW', count: 3 },
+    ],
+    openBySeverity: [
+      { severity: 'error', count: 3 },
+      { severity: 'warning', count: 6 },
+    ],
+    topCustomersWithIssues: demoQ4ReviewCustomers.map(customerName => ({ customerName, openCount: 3 })),
+    allResolved: false,
   },
 };
 
@@ -933,6 +984,19 @@ export const demoCustomers: Record<string, CustomerListResult> = {
   "total": 11
 },
   'demo-q4-2025': { total: 0, customers: [] },
+};
+
+const demoPriorSnapshotPeriodList = demoTimeseries['demo-q4-2025'].periods;
+const demoPriorSnapshotLatestPeriod = demoPriorSnapshotPeriodList[demoPriorSnapshotPeriodList.length - 1];
+demoCustomers['demo-q4-2025'] = {
+  total: demoPriorSnapshotLatestPeriod?.byCustomer.length ?? 0,
+  customers: demoPriorSnapshotLatestPeriod?.byCustomer.map((customer, index) => ({
+    name: customer.customer,
+    currentArr: Number(customer.arr.toFixed(2)),
+    activeContracts: index < 2 ? 3 : 1,
+    lastInvoiceDate: `2025-${String(12 - (index % 3)).padStart(2, '0')}-15`,
+    requiresReview: demoQ4ReviewCustomers.includes(customer.customer),
+  })) ?? [],
 };
 
 export const demoCustomerDetails: Record<string, Record<string, CustomerDetail>> = {

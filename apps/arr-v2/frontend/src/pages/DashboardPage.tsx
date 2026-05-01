@@ -12,7 +12,7 @@ import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, us
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
 import MonthPuckRail from '@/components/MonthPuckRail';
 import type { MonthPuckItem } from '@/components/MonthPuckRail';
-import { DEMO_IMPORT_ID, demoCustomerCube, isDemoImportId } from '@/lib/demoData';
+import { DEMO_IMPORT_ID, demoCustomerCube, demoImports, isDemoImportId } from '@/lib/demoData';
 import { useArrSettings } from '@/lib/settings';
 import styles from './DashboardPage.module.css';
 
@@ -145,6 +145,9 @@ export default function DashboardPage() {
   const sortedImports = useMemo(() => [...(imports ?? [])].sort(
     (a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime(),
   ), [imports]);
+  const sortedSampleImports = useMemo(() => [...demoImports].sort(
+    (a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime(),
+  ), []);
 
   useEffect(() => {
     if (summary || reviewStats || customerList || ts || movements) {
@@ -226,6 +229,10 @@ export default function DashboardPage() {
   const reviewCompletion = reviewStats && reviewStats.total > 0
     ? Math.round(((reviewStats.resolvedCount + reviewStats.overriddenCount) / reviewStats.total) * 100)
     : null;
+
+  const isSampleDashboard = isDemoImportId(importId);
+  const otherLiveImports = sortedImports.filter(imp => imp.importId !== importId).slice(0, 4);
+  const otherSampleImports = sortedSampleImports.filter(imp => imp.importId !== importId);
 
   const cube = importId && isDemoImportId(importId) ? demoCustomerCube : null;
   const cubeSegmentTotals = useMemo(() => {
@@ -342,6 +349,7 @@ export default function DashboardPage() {
             Tenant: <span className={styles.mono}>{tenantId}</span>
             {' '}· Import: <span className={styles.mono}>{importId?.slice(0, 8)}…</span>{' '}
             · {new Date(summary.importedAt).toLocaleString()}
+            {' '}· <span className={isSampleDashboard ? styles.sampleBadgeInline : styles.liveBadgeInline}>{isSampleDashboard ? 'Seeded sample' : 'Live tenant upload'}</span>
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -378,6 +386,31 @@ export default function DashboardPage() {
               Review Queue ({summary.reviewItems})
             </button>
           </Link>
+        </div>
+      </div>
+
+      <div className={`card ${styles.importSwitchCard}`}>
+        <div>
+          <h2 className={styles.importSwitchTitle}>{isSampleDashboard ? 'Sample import history' : 'Import history context'}</h2>
+          <p className={styles.importSwitchCopy}>
+            {isSampleDashboard
+              ? 'This seeded dashboard is one import snapshot. Switch to another sample to see different periods and totals, or return to the import page history.'
+              : 'This dashboard is tied to the selected tenant upload. Use history links to compare it against other uploads or seeded samples.'}
+          </p>
+        </div>
+        <div className={styles.importSwitchLinks}>
+          <Link to="/import?focus=history">Current tenant history</Link>
+          <Link to="/import?focus=sample-history">Seeded sample history</Link>
+          {otherLiveImports.map(imp => (
+            <Link key={imp.importId} to={`/dashboard/${imp.importId}`}>
+              Live {imp.importId.slice(0, 8)}… · {imp.totalRows.toLocaleString()} rows
+            </Link>
+          ))}
+          {otherSampleImports.map(imp => (
+            <Link key={imp.importId} to={`/dashboard/${imp.importId}`}>
+              {imp.importId === DEMO_IMPORT_ID ? 'Current showcase' : 'Prior snapshot'} · {imp.totalRows.toLocaleString()} rows
+            </Link>
+          ))}
         </div>
       </div>
 
