@@ -164,11 +164,28 @@
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.historyHighlight {
-  border-color: var(--accent);
-  background: rgba(99,102,241,0.08);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.16);
+.historyDemoCard {
+  cursor: default;
 }
+
+.historyDemoLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.historyDemoLinks a {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.historyDemoLinks a:hover {
+  text-decoration: underline;
+}
+
 .historyHeading {
   font-size: 14px;
   font-weight: 600;

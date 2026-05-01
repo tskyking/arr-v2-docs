@@ -2,8 +2,8 @@
  * ImportPage — upload a workbook or specify a local file path.
  * On success, navigates to the dashboard for the new import.
  */
-import { useEffect, useMemo, useState, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useMemo, useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { uploadImportFile, uploadImportPath } from '@/lib/api';
 import { useImportList } from '@/lib/hooks';
 import { isStaticDemoEnvironment, useArrSettings } from '@/lib/settings';
@@ -12,7 +12,6 @@ import styles from './ImportPage.module.css';
 
 export default function ImportPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { tenantId } = useArrSettings();
   const demoMode = isStaticDemoEnvironment();
   const { data: imports, refetch } = useImportList();
@@ -22,21 +21,7 @@ export default function ImportPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localPath, setLocalPath] = useState('');
-  const [historyHighlight, setHistoryHighlight] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const historyRef = useRef<HTMLDivElement>(null);
-
-  function scrollToHistory() {
-    historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setHistoryHighlight(true);
-    window.setTimeout(() => setHistoryHighlight(false), 1400);
-  }
-
-  useEffect(() => {
-    if (location.search === '?focus=history') {
-      window.requestAnimationFrame(scrollToHistory);
-    }
-  }, [location.search, sortedImports.length]);
 
   async function handleFile(file: File) {
     setError(null);
@@ -85,11 +70,7 @@ export default function ImportPage() {
 
       {/* Prior imports */}
       {sortedImports.length > 0 && (
-        <div
-          id="import-history"
-          ref={historyRef}
-          className={`${styles.history} ${historyHighlight ? styles.historyHighlight : ''}`}
-        >
+        <div id="import-history" className={styles.history}>
           <h2 className={styles.historyHeading}>Previous Imports</h2>
           <table>
             <thead>
@@ -183,10 +164,18 @@ export default function ImportPage() {
             <span className={styles.demoTitle}>Download demo import workbook</span>
             <span className={styles.demoText}>Real 3-sheet XLSX template with seeded transactions, mapping coverage, and recognition assumptions.</span>
           </a>
-          <button className={styles.demoCard} type="button" onClick={scrollToHistory}>
+          <div className={`${styles.demoCard} ${styles.historyDemoCard}`}>
             <span className={styles.demoTitle}>Sample import history</span>
-            <span className={styles.demoText}>Jump to the visible import runs with realistic dates, row counts, and dashboard entry points.</span>
-          </button>
+            <span className={styles.demoText}>Open one of the live persisted sample dashboards:</span>
+            <div className={styles.historyDemoLinks}>
+              {sortedImports.slice(0, 4).map(imp => (
+                <Link key={imp.importId} to={`/dashboard/${imp.importId}`}>
+                  {new Date(imp.importedAt).toLocaleDateString()} — {imp.totalRows.toLocaleString()} rows
+                </Link>
+              ))}
+              {sortedImports.length === 0 && <Link to={`/dashboard/${DEMO_IMPORT_ID}`}>Open static sample dashboard</Link>}
+            </div>
+          </div>
           <Link className={styles.demoCard} to={`/dashboard/${DEMO_IMPORT_ID}`}>
             <span className={styles.demoTitle}>Sample dashboard metrics</span>
             <span className={styles.demoText}>ARR trend, waterfall movement summary, customer mix, and review progress panels.</span>
