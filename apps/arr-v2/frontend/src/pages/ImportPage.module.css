@@ -129,6 +129,11 @@
   border-radius: 10px;
   background: rgba(255,255,255,0.02);
   transition: border-color 0.15s, transform 0.15s, background 0.15s;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
 }
 
 .demoCard:hover {
@@ -149,7 +154,21 @@
   line-height: 1.5;
 }
 
-.history { margin-top: 8px; }
+.history {
+  margin: 0 0 32px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,0.02);
+  scroll-margin-top: 20px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.historyHighlight {
+  border-color: var(--accent);
+  background: rgba(99,102,241,0.08);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.16);
+}
 .historyHeading {
   font-size: 14px;
   font-weight: 600;

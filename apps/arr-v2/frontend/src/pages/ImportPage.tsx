@@ -22,12 +22,19 @@ export default function ImportPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localPath, setLocalPath] = useState('');
+  const [historyHighlight, setHistoryHighlight] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
 
+  function scrollToHistory() {
+    historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setHistoryHighlight(true);
+    window.setTimeout(() => setHistoryHighlight(false), 1400);
+  }
+
   useEffect(() => {
     if (location.search === '?focus=history') {
-      historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.requestAnimationFrame(scrollToHistory);
     }
   }, [location.search, sortedImports.length]);
 
@@ -75,6 +82,43 @@ export default function ImportPage() {
       </p>
 
       {error && <div className="error-banner">{error}</div>}
+
+      {/* Prior imports */}
+      {sortedImports.length > 0 && (
+        <div
+          id="import-history"
+          ref={historyRef}
+          className={`${styles.history} ${historyHighlight ? styles.historyHighlight : ''}`}
+        >
+          <h2 className={styles.historyHeading}>Previous Imports</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Rows</th>
+                <th>Import ID</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedImports.map(imp => (
+                <tr key={imp.importId}>
+                  <td>{new Date(imp.importedAt).toLocaleString()}</td>
+                  <td>{imp.totalRows.toLocaleString()}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>
+                    {imp.importId.slice(0, 8)}…
+                  </td>
+                  <td>
+                    <Link className="ghost" style={{ fontSize: 12, textDecoration: 'none', display: 'inline-flex' }} to={`/dashboard/${imp.importId}`}>
+                      Dashboard →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Drop zone */}
       <div
@@ -139,10 +183,10 @@ export default function ImportPage() {
             <span className={styles.demoTitle}>Download demo import workbook</span>
             <span className={styles.demoText}>Real 3-sheet XLSX template with seeded transactions, mapping coverage, and recognition assumptions.</span>
           </a>
-          <Link className={styles.demoCard} to="/import?focus=history">
+          <button className={styles.demoCard} type="button" onClick={scrollToHistory}>
             <span className={styles.demoTitle}>Sample import history</span>
-            <span className={styles.demoText}>Jump to the available import runs with realistic dates, row counts, and dashboard entry points.</span>
-          </Link>
+            <span className={styles.demoText}>Jump to the visible import runs with realistic dates, row counts, and dashboard entry points.</span>
+          </button>
           <Link className={styles.demoCard} to={`/dashboard/${DEMO_IMPORT_ID}`}>
             <span className={styles.demoTitle}>Sample dashboard metrics</span>
             <span className={styles.demoText}>ARR trend, waterfall movement summary, customer mix, and review progress panels.</span>
@@ -162,38 +206,6 @@ export default function ImportPage() {
         </div>
       </div>
 
-      {/* Prior imports */}
-      {sortedImports.length > 0 && (
-        <div id="import-history" ref={historyRef} className={styles.history}>
-          <h2 className={styles.historyHeading}>Previous Imports</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Rows</th>
-                <th>Import ID</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedImports.map(imp => (
-                <tr key={imp.importId}>
-                  <td>{new Date(imp.importedAt).toLocaleString()}</td>
-                  <td>{imp.totalRows.toLocaleString()}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>
-                    {imp.importId.slice(0, 8)}…
-                  </td>
-                  <td>
-                    <Link className="ghost" style={{ fontSize: 12, textDecoration: 'none', display: 'inline-flex' }} to={`/dashboard/${imp.importId}`}>
-                      Dashboard →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }
