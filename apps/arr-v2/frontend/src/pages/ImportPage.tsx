@@ -2,8 +2,8 @@
  * ImportPage — upload a workbook or specify a local file path.
  * On success, navigates to the dashboard for the new import.
  */
-import { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { uploadImportFile, uploadImportPath } from '@/lib/api';
 import { useImportList } from '@/lib/hooks';
 import { isStaticDemoEnvironment, useArrSettings } from '@/lib/settings';
@@ -12,6 +12,7 @@ import styles from './ImportPage.module.css';
 
 export default function ImportPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { tenantId } = useArrSettings();
   const demoMode = isStaticDemoEnvironment();
   const { data: imports, refetch } = useImportList();
@@ -19,6 +20,13 @@ export default function ImportPage() {
   const [error, setError] = useState<string | null>(null);
   const [localPath, setLocalPath] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (location.search === '?focus=history') {
+      historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.search, imports]);
 
   async function handleFile(file: File) {
     setError(null);
@@ -128,9 +136,9 @@ export default function ImportPage() {
             <span className={styles.demoTitle}>Download demo import workbook</span>
             <span className={styles.demoText}>Real 3-sheet XLSX template with seeded transactions, mapping coverage, and recognition assumptions.</span>
           </a>
-          <Link className={styles.demoCard} to="/import">
+          <Link className={styles.demoCard} to="/import?focus=history">
             <span className={styles.demoTitle}>Sample import history</span>
-            <span className={styles.demoText}>Seeded import runs with realistic dates, row counts, and dashboard entry points.</span>
+            <span className={styles.demoText}>Jump to the available import runs with realistic dates, row counts, and dashboard entry points.</span>
           </Link>
           <Link className={styles.demoCard} to={`/dashboard/${DEMO_IMPORT_ID}`}>
             <span className={styles.demoTitle}>Sample dashboard metrics</span>
@@ -153,7 +161,7 @@ export default function ImportPage() {
 
       {/* Prior imports */}
       {imports && imports.length > 0 && (
-        <div className={styles.history}>
+        <div id="import-history" ref={historyRef} className={styles.history}>
           <h2 className={styles.historyHeading}>Previous Imports</h2>
           <table>
             <thead>

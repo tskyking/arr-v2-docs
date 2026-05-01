@@ -8,7 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { downloadArrCsv, downloadArrMovementsCsv } from '@/lib/api';
-import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, useCustomerList } from '@/lib/hooks';
+import { useImportSummary, useArrTimeseries, useArrMovements, useReviewStats, useCustomerList, useImportList } from '@/lib/hooks';
 import ArrWaterfallChart from '@/components/ArrWaterfallChart';
 import MonthPuckRail from '@/components/MonthPuckRail';
 import type { MonthPuckItem } from '@/components/MonthPuckRail';
@@ -141,6 +141,7 @@ export default function DashboardPage() {
     error: customerListErr,
     refetch: refetchCustomerList,
   } = useCustomerList(importId!, { pollMs });
+  const { data: imports } = useImportList();
 
   useEffect(() => {
     if (summary || reviewStats || customerList || ts || movements) {
@@ -308,19 +309,21 @@ export default function DashboardPage() {
 
   if (sumLoading) return <div className="loading">Loading summary…</div>;
   if (sumErr) {
+    const latestImport = imports?.[imports.length - 1];
     return (
       <div className={styles.missingImportCard}>
         <div className={styles.missingEyebrow}>Import unavailable</div>
         <h1 className={styles.missingTitle}>This dashboard link can’t find its import data.</h1>
         <p className={styles.missingCopy}>
-          The backend returned: <strong>{sumErr}</strong>. On staging, uploaded workbooks are file-backed and may disappear after a deploy, restart, or cold start until durable storage is configured.
+          The backend returned: <strong>{sumErr}</strong>. This link likely points to an older import that is no longer available. Use the persisted import history to open one of the current sample dashboards.
         </p>
         <div className={styles.missingActions}>
-          <Link to="/import"><button className="primary">Re-upload workbook</button></Link>
-          <Link to={`/dashboard/${DEMO_IMPORT_ID}`}><button className="ghost">Open sample dashboard</button></Link>
+          <Link to="/import?focus=history"><button className="primary">Open import history</button></Link>
+          {latestImport && <Link to={`/dashboard/${latestImport.importId}`}><button className="ghost">Open latest dashboard</button></Link>}
+          <Link to={`/dashboard/${DEMO_IMPORT_ID}`}><button className="ghost">Open static sample</button></Link>
         </div>
         <p className={styles.missingHint}>
-          Demo/share links should use the hash-route form (<span className={styles.mono}>/#/dashboard/…</span>) and need a fresh upload unless persistence has been verified.
+          Demo/share links should use the hash-route form (<span className={styles.mono}>/#/dashboard/…</span>). Current staging storage is Postgres-backed, so new uploads should appear in import history.
         </p>
       </div>
     );
