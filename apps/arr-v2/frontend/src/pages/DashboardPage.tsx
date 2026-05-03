@@ -49,6 +49,12 @@ function monthOffset(date: Date, months: number): string {
   return d.toISOString().slice(0, 7); // YYYY-MM
 }
 
+function monthOffsetFromPeriod(period: string, months: number): string {
+  const [year, month] = period.slice(0, 7).split('-').map(Number);
+  if (!year || !month) return monthOffset(new Date(), months);
+  return monthOffset(new Date(Date.UTC(year, month - 1, 1)), months);
+}
+
 function toMonthStr(s: string): string {
   // Accepts YYYY-MM or YYYY-MM-DD, returns YYYY-MM
   return s.slice(0, 7);
@@ -89,7 +95,20 @@ export default function DashboardPage() {
     refetch: refetchSummary,
   } = useImportSummary(importId!, { pollMs });
 
-  // Derive from/to for API based on preset
+  const {
+    data: fullRangeTs,
+    refetch: refetchFullRangeTimeseries,
+  } = useArrTimeseries(
+    importId!,
+    null,
+    null,
+    { pollMs },
+  );
+
+  // Derive from/to for API based on preset. Anchor relative presets to the
+  // imported data range rather than today's calendar date; historical uploads
+  // like Brian's 2015–2019 workbook otherwise produce confusing empty/partial
+  // ranges when viewed years later.
   const { fromParam, toParam } = useMemo(() => {
     if (preset === 'all') return { fromParam: null, toParam: null };
     if (preset === 'custom') {
@@ -99,12 +118,12 @@ export default function DashboardPage() {
       };
     }
     const months = preset === '1y' ? -12 : -24;
-    const now = new Date();
+    const anchorPeriod = fullRangeTs?.periods[fullRangeTs.periods.length - 1]?.period ?? fullRangeTs?.toDate;
     return {
-      fromParam: monthOffset(now, months),
+      fromParam: anchorPeriod ? monthOffsetFromPeriod(anchorPeriod, months) : null,
       toParam: null,
     };
-  }, [preset, customFrom, customTo]);
+  }, [preset, customFrom, customTo, fullRangeTs]);
 
   const {
     data: ts,
@@ -185,6 +204,7 @@ export default function DashboardPage() {
 
   function handleRefreshNow() {
     refetchSummary();
+    refetchFullRangeTimeseries();
     refetchTimeseries();
     refetchMovements();
     refetchReviewStats();
@@ -251,6 +271,9 @@ export default function DashboardPage() {
   const selectedMovement = movementEntries.find((movement) => movement.period === selectedMovementPeriod)
     ?? movementEntries[movementEntries.length - 1]
     ?? null;
+  const chartMaxPeriods = preset === 'all' || preset === 'custom'
+    ? Math.max(movementEntries.length, 24)
+    : 24;
   const customers = customerList?.customers ?? [];
   const customersWithReview = customers.filter(customer => customer.requiresReview);
   const customersWithCurrentArr = customers.filter(customer => customer.currentArr > 0);
@@ -554,6 +577,7 @@ export default function DashboardPage() {
           </div>
           <ArrWaterfallChart
             movements={movements.movements}
+            maxPeriods={chartMaxPeriods}
             selectedPeriod={hoveredMovementPeriod ?? selectedMovement?.period ?? null}
             onSelectPeriod={(period) => {
               setHoveredMovementPeriod(null);

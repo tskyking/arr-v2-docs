@@ -24,7 +24,7 @@ import type { ArrMovement } from '@/lib/api';
 interface AxisTickProps {
   x?: number;
   y?: number;
-  payload?: { value: number };
+  payload?: { value: number | string };
 }
 
 function LeftAxisTick({ x = 0, y = 0, payload }: AxisTickProps) {
@@ -124,6 +124,29 @@ function buildLeftAxisTicks(leftMin: number, leftMax: number): number[] {
   return [...ticks].sort((a, b) => a - b);
 }
 
+function buildXAxisTicks(periods: string[]): string[] | undefined {
+  if (periods.length <= 18) return undefined;
+
+  const step = periods.length > 60
+    ? 6
+    : periods.length > 36
+      ? 3
+      : 2;
+
+  const ticks = periods.filter((_, index) => index % step === 0);
+  const last = periods[periods.length - 1];
+  if (last && ticks[ticks.length - 1] !== last) ticks.push(last);
+  return ticks;
+}
+
+function formatXAxisTick(period: string): string {
+  const [year, month] = period.split('-').map(Number);
+  if (!year || !month) return period;
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(date);
+  return `${monthLabel} '${String(year).slice(2)}`;
+}
+
 export default function ArrWaterfallChart({
   movements,
   maxPeriods = 24,
@@ -141,6 +164,8 @@ export default function ArrWaterfallChart({
     churn: -m.churnArr,
     closingArr: m.closingArr,
   }));
+  const xAxisTicks = buildXAxisTicks(chartData.map(d => d.period));
+  const isDenseRange = chartData.length > 24;
 
   const maxPositiveMovement = Math.max(0, ...chartData.map(d => d.new + d.expansion));
   const maxNegativeMovement = Math.max(0, ...chartData.map(d => Math.abs(d.contraction + d.churn)));
@@ -183,6 +208,7 @@ export default function ArrWaterfallChart({
       <ComposedChart
         data={chartData}
         margin={{ top: 10, right: 28, left: 10, bottom: 5 }}
+        barCategoryGap={isDenseRange ? '8%' : '20%'}
         onClick={(state: any) => commitChartPeriod(chartStatePeriod(state))}
         onMouseMove={(state: any) => {
           onHoverPeriod?.(chartStatePeriod(state));
@@ -193,10 +219,13 @@ export default function ArrWaterfallChart({
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis
           dataKey="period"
+          ticks={xAxisTicks}
+          interval={0}
+          tickFormatter={formatXAxisTick}
           tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
-          angle={visible.length > 12 ? -30 : 0}
+          angle={isDenseRange ? -35 : visible.length > 12 ? -30 : 0}
           textAnchor={visible.length > 12 ? 'end' : 'middle'}
-          height={visible.length > 12 ? 44 : 24}
+          height={visible.length > 12 ? 48 : 24}
         />
         <YAxis
           yAxisId="left"
@@ -243,10 +272,10 @@ export default function ArrWaterfallChart({
             return labels[value] ?? value;
           }}
         />
-        <Bar yAxisId="left" dataKey="new" stackId="pos" fill={COLORS.new} radius={[2, 2, 0, 0]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="expansion" stackId="pos" fill={COLORS.expansion} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="contraction" stackId="neg" fill={COLORS.contraction} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="churn" stackId="neg" fill={COLORS.churn} radius={[0, 0, 2, 2]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="new" stackId="movement" fill={COLORS.new} maxBarSize={isDenseRange ? 12 : 28} radius={[2, 2, 0, 0]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="expansion" stackId="movement" fill={COLORS.expansion} maxBarSize={isDenseRange ? 12 : 28} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="contraction" stackId="movement" fill={COLORS.contraction} maxBarSize={isDenseRange ? 12 : 28} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="churn" stackId="movement" fill={COLORS.churn} maxBarSize={isDenseRange ? 12 : 28} radius={[0, 0, 2, 2]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
         <Line
           yAxisId="right"
           type="monotone"
