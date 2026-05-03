@@ -272,10 +272,10 @@ export default function ArrWaterfallChart({
             return labels[value] ?? value;
           }}
         />
-        <Bar yAxisId="left" dataKey="new" stackId="movement" fill={COLORS.new} maxBarSize={isDenseRange ? 12 : 28} radius={[2, 2, 0, 0]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="expansion" stackId="movement" fill={COLORS.expansion} maxBarSize={isDenseRange ? 12 : 28} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="contraction" stackId="movement" fill={COLORS.contraction} maxBarSize={isDenseRange ? 12 : 28} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
-        <Bar yAxisId="left" dataKey="churn" stackId="movement" fill={COLORS.churn} maxBarSize={isDenseRange ? 12 : 28} radius={[0, 0, 2, 2]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="new" stackId="pos" fill={COLORS.new} maxBarSize={isDenseRange ? 12 : 28} radius={[2, 2, 0, 0]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="expansion" stackId="pos" fill={COLORS.expansion} maxBarSize={isDenseRange ? 12 : 28} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="contraction" stackId="neg" fill={COLORS.contraction} maxBarSize={isDenseRange ? 12 : 28} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
+        <Bar yAxisId="left" dataKey="churn" stackId="neg" fill={COLORS.churn} maxBarSize={isDenseRange ? 12 : 28} radius={[0, 0, 2, 2]} onClick={(data) => commitChartPeriod(data.period)} style={{ cursor: onSelectPeriod ? 'pointer' : 'default' }} />
         <Line
           yAxisId="right"
           type="monotone"
