@@ -29,7 +29,7 @@ import http from 'node:http';
 import { createReadStream } from 'node:fs';
 import { writeFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
   processImport,
@@ -50,7 +50,7 @@ import {
   exportCustomerCubeCsv,
 } from './importService.js';
 import { ImportError } from '../../imports/src/importErrors.js';
-import { getStorageDiagnostics, initStorage } from './store.js';
+import { getStorageDiagnostics, initStorage, listAuditEvents, saveAuditEvent, type AuditEvent } from './store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const API_PREFIX = normalizeApiPrefix(process.env.API_PREFIX ?? '');
@@ -125,6 +125,68 @@ function getUserEmail(req: http.IncomingMessage): string | undefined {
   return header;
 }
 
+function firstHeader(req: http.IncomingMessage, name: string): string | undefined {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function getRequestMeta(req: http.IncomingMessage): Pick<AuditEvent, 'sourceIp' | 'userAgent'> {
+  const forwardedFor = firstHeader(req, 'x-forwarded-for')?.split(',')[0]?.trim();
+  const sourceIp = forwardedFor
+    || firstHeader(req, 'x-real-ip')
+    || firstHeader(req, 'cf-connecting-ip')
+    || req.socket.remoteAddress
+    || undefined;
+  return {
+    ...(sourceIp ? { sourceIp: safeText(sourceIp, 80) } : {}),
+    ...(req.headers['user-agent'] ? { userAgent: safeText(String(req.headers['user-agent']), 300) } : {}),
+  };
+}
+
+function safeText(value: unknown, max = 160): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.replace(/[\r\n\t]+/g, ' ').trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, max);
+}
+
+function safeAuditFilename(req: http.IncomingMessage, filePath?: string): string | undefined {
+  const explicit = safeText(firstHeader(req, 'x-arr-filename') ?? firstHeader(req, 'x-upload-filename'), 240);
+  if (explicit) {
+    try { return basename(decodeURIComponent(explicit)); } catch { return basename(explicit); }
+  }
+
+  const disposition = firstHeader(req, 'content-disposition');
+  const match = disposition?.match(/filename\*?=(?:UTF-8''|\")?([^";]+)/i);
+  if (match?.[1]) {
+    try { return basename(decodeURIComponent(match[1].replace(/"/g, ''))); } catch { return basename(match[1].replace(/"/g, '')); }
+  }
+
+  return filePath ? basename(filePath) : undefined;
+}
+
+function safeError(e: unknown): { errorCode: string; errorMessage: string } {
+  if (e instanceof ImportError) {
+    return { errorCode: e.code, errorMessage: e.userMessage };
+  }
+  if (e instanceof Error && (e as Error & { tooLarge?: boolean }).tooLarge) {
+    return { errorCode: 'PAYLOAD_TOO_LARGE', errorMessage: `Request body exceeds the ${getMaxBodyBytes()}-byte limit.` };
+  }
+  if (e instanceof SyntaxError) {
+    return { errorCode: 'INVALID_JSON', errorMessage: 'Request body was not valid JSON.' };
+  }
+  return { errorCode: 'INTERNAL_ERROR', errorMessage: 'An unexpected error occurred. Please try again or contact support.' };
+}
+
+function recordAudit(event: AuditEvent): void {
+  try {
+    saveAuditEvent({ ...event, timestamp: event.timestamp || new Date().toISOString() });
+  } catch (e) {
+    console.warn('[audit] Failed to write audit event:', e);
+  }
+}
+
 /**
  * Buffer the full request body up to MAX_BODY_BYTES.
  *
@@ -187,7 +249,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-User-Email',
+      'Access-Control-Allow-Headers': 'Content-Type, X-User-Email, X-ARR-Filename, X-ARR-Client-Id',
     });
     res.end();
     return;
@@ -244,6 +306,46 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       return;
     }
 
+    // Privacy-safe future-only audit event inspection. Intended for staging QA/debugging.
+    if (routePath === '/audit/events' && method === 'GET') {
+      const eventType = url.searchParams.get('eventType') ?? url.searchParams.get('type') ?? undefined;
+      const limit = Number(url.searchParams.get('limit') ?? '100');
+      const events = await listAuditEvents({ tenantId, eventType, limit: isNaN(limit) ? 100 : limit });
+      json(res, 200, { tenantId, events });
+      return;
+    }
+
+    // Client-side activity telemetry. Only a small allowlisted shape is accepted;
+    // no form values, workbook contents, or arbitrary payloads are persisted.
+    if (routePath === '/audit/activity' && method === 'POST') {
+      const body = await parseBody(req);
+      let payload: Record<string, unknown> = {};
+      try { payload = JSON.parse(body.toString()); } catch { err(res, 400, 'INVALID_JSON', 'Request body must be JSON'); return; }
+
+      const eventType = safeText(payload.eventType ?? payload.type, 80);
+      const clientId = safeText(payload.clientId, 120);
+      if (!eventType || !clientId) {
+        err(res, 400, 'INVALID_AUDIT_EVENT', 'eventType and clientId are required'); return;
+      }
+
+      recordAudit({
+        timestamp: new Date().toISOString(),
+        tenantId,
+        eventType,
+        clientId,
+        sessionId: safeText(payload.sessionId, 120),
+        route: safeText(payload.route, 240),
+        path: safeText(payload.path, 240),
+        hash: safeText(payload.hash, 240),
+        importId: safeText(payload.importId, 120),
+        targetLabel: safeText(payload.targetLabel, 160),
+        targetId: safeText(payload.targetId, 120),
+        ...getRequestMeta(req),
+      });
+      json(res, 202, { ok: true });
+      return;
+    }
+
     // List imports
     if (routePath === '/imports' && method === 'GET') {
       json(res, 200, { tenantId, imports: listImports(tenantId) });
@@ -253,38 +355,77 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     // Upload + process import
     if (routePath === '/imports' && method === 'POST') {
       const contentType = req.headers['content-type'] ?? '';
-      let filePath: string;
+      let filePath: string | undefined;
       let tempFile = false;
-
-      if (contentType.includes('application/json')) {
-        // Accept { filePath: "..." } for local testing
-        const body = await parseBody(req);
-        const data = JSON.parse(body.toString());
-        if (!data.filePath) { err(res, 400, 'MISSING_FILE_PATH', 'filePath required'); return; }
-        filePath = data.filePath;
-      } else if (contentType.includes('multipart/form-data') || contentType.includes('application/octet-stream')) {
-        // Save uploaded file to tmp
-        const tmpPath = join(tmpdir(), `arr-import-${randomUUID()}.xlsx`);
-        const body = await parseBody(req);
-        await writeFile(tmpPath, body);
-        filePath = tmpPath;
-        tempFile = true;
-      } else {
-        err(res, 415, 'UNSUPPORTED_MEDIA_TYPE', 'Send JSON {filePath} or multipart/form-data'); return;
-      }
+      let filename: string | undefined;
 
       try {
+        if (contentType.includes('application/json')) {
+          // Accept { filePath: "..." } for local testing
+          const body = await parseBody(req);
+          const data = JSON.parse(body.toString());
+          if (!data.filePath) { err(res, 400, 'MISSING_FILE_PATH', 'filePath required'); return; }
+          filePath = data.filePath;
+          filename = safeAuditFilename(req, filePath);
+        } else if (contentType.includes('multipart/form-data') || contentType.includes('application/octet-stream')) {
+          // Save uploaded file to tmp. Do not inspect or persist workbook contents beyond import processing.
+          const tmpPath = join(tmpdir(), `arr-import-${randomUUID()}.xlsx`);
+          const body = await parseBody(req);
+          await writeFile(tmpPath, body);
+          filePath = tmpPath;
+          tempFile = true;
+          filename = safeAuditFilename(req);
+        } else {
+          recordAudit({
+            timestamp: new Date().toISOString(),
+            tenantId,
+            eventType: 'upload_error',
+            filename: safeAuditFilename(req),
+            rowCount: 0,
+            success: false,
+            errorCode: 'UNSUPPORTED_MEDIA_TYPE',
+            errorMessage: 'Send JSON {filePath} or multipart/form-data',
+            ...getRequestMeta(req),
+          });
+          err(res, 415, 'UNSUPPORTED_MEDIA_TYPE', 'Send JSON {filePath} or multipart/form-data'); return;
+        }
+
+        if (!filePath) throw new Error('Import file path was not initialized');
         const result = processImport(tenantId, filePath);
+        const rowCount = result.bundle.normalizedRows.length;
+        recordAudit({
+          timestamp: new Date().toISOString(),
+          tenantId,
+          eventType: 'upload_success',
+          importId: result.importId,
+          filename,
+          rowCount,
+          success: true,
+          ...getRequestMeta(req),
+        });
         json(res, 200, {
           tenantId,
           importId: result.importId,
           status: 'complete',
-          totalRows: result.bundle.normalizedRows.length,
+          totalRows: rowCount,
           reviewItems: result.bundle.reviewItems.length,
           segments: result.segments.length,
         });
+      } catch (e) {
+        const safe = safeError(e);
+        recordAudit({
+          timestamp: new Date().toISOString(),
+          tenantId,
+          eventType: 'upload_error',
+          filename: filename ?? safeAuditFilename(req, filePath),
+          rowCount: 0,
+          success: false,
+          ...safe,
+          ...getRequestMeta(req),
+        });
+        throw e;
       } finally {
-        if (tempFile) await unlink(filePath).catch(() => {});
+        if (tempFile && filePath) await unlink(filePath).catch(() => {});
       }
       return;
     }

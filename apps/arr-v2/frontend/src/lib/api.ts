@@ -4,6 +4,7 @@
  */
 
 import { buildApiPath, getArrSettings } from './settings';
+import { trackAuditEvent } from './audit';
 import {
   demoCustomerCube,
   demoCustomers,
@@ -80,26 +81,44 @@ export async function listImports(): Promise<ImportListItem[]> {
 
 export async function uploadImportFile(file: File): Promise<ImportUploadResult> {
   const { userEmail } = getArrSettings();
-  const res = await fetch(buildApiPath('/imports'), {
-    method: 'POST',
-    body: file,
-    headers: {
-      'Content-Type': 'application/octet-stream',
-      'X-User-Email': userEmail,
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new ApiError(res.status, err.code ?? 'ERROR', err.message ?? res.statusText);
+  trackAuditEvent({ eventType: 'upload_start', targetLabel: file.name });
+  try {
+    const res = await fetch(buildApiPath('/imports'), {
+      method: 'POST',
+      body: file,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-User-Email': userEmail,
+        'X-ARR-Filename': encodeURIComponent(file.name),
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      trackAuditEvent({ eventType: 'upload_error', targetLabel: file.name });
+      throw new ApiError(res.status, err.code ?? 'ERROR', err.message ?? res.statusText);
+    }
+    const result = await res.json() as ImportUploadResult;
+    trackAuditEvent({ eventType: 'upload_success', importId: result.importId, targetLabel: file.name });
+    return result;
+  } catch (e) {
+    if (!(e instanceof ApiError)) trackAuditEvent({ eventType: 'upload_error', targetLabel: file.name });
+    throw e;
   }
-  return res.json();
 }
 
 export async function uploadImportPath(filePath: string): Promise<ImportUploadResult> {
-  return request<ImportUploadResult>('/imports', {
-    method: 'POST',
-    body: JSON.stringify({ filePath }),
-  });
+  trackAuditEvent({ eventType: 'upload_start', targetLabel: 'local path import' });
+  try {
+    const result = await request<ImportUploadResult>('/imports', {
+      method: 'POST',
+      body: JSON.stringify({ filePath }),
+    });
+    trackAuditEvent({ eventType: 'upload_success', importId: result.importId, targetLabel: 'local path import' });
+    return result;
+  } catch (e) {
+    trackAuditEvent({ eventType: 'upload_error', targetLabel: 'local path import' });
+    throw e;
+  }
 }
 
 export async function getImportSummary(importId: string): Promise<ImportSummary> {
@@ -308,6 +327,7 @@ async function downloadBlob(path: string, filename: string): Promise<void> {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(blobUrl);
+  trackAuditEvent({ eventType: 'export_download', targetLabel: filename });
 }
 
 export async function downloadArrCsv(importId: string, from?: string, to?: string): Promise<void> {

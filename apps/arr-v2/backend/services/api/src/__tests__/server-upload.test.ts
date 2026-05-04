@@ -157,6 +157,72 @@ describe('POST /imports — application/octet-stream', () => {
   });
 });
 
+// ─── Audit logging ──────────────────────────────────────────────────────────
+
+describe('future-only audit logging', () => {
+  it('records upload failures with tenant, filename, safe error, IP, and user-agent metadata', async () => {
+    const tenantId = `audit-${Date.now()}`;
+    const res = await request('POST', `/tenants/${tenantId}/imports`, GARBAGE_BYTES, {
+      'Content-Type': 'application/octet-stream',
+      'X-ARR-Filename': encodeURIComponent('Brian Test Upload.xlsx'),
+      'X-Forwarded-For': '203.0.113.25',
+      'User-Agent': 'arr-audit-test-agent',
+    });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+
+    const audit = await request('GET', `/tenants/${tenantId}/audit/events?type=upload_error&limit=5`);
+    const body = audit.json as { events: Array<Record<string, unknown>> };
+    expect(audit.status).toBe(200);
+    expect(body.events.length).toBeGreaterThan(0);
+    expect(body.events[0].tenantId).toBe(tenantId);
+    expect(body.events[0].eventType).toBe('upload_error');
+    expect(body.events[0].filename).toBe('Brian Test Upload.xlsx');
+    expect(body.events[0].success).toBe(false);
+    expect(typeof body.events[0].errorCode).toBe('string');
+    expect(typeof body.events[0].errorMessage).toBe('string');
+    expect(body.events[0].sourceIp).toBe('203.0.113.25');
+    expect(body.events[0].userAgent).toBe('arr-audit-test-agent');
+    expect(JSON.stringify(body.events[0])).not.toContain(GARBAGE_BYTES.toString('utf8'));
+  });
+
+  it('accepts privacy-safe client activity events and returns filtered recent audit events', async () => {
+    const tenantId = `activity-${Date.now()}`;
+    const payload = JSON.stringify({
+      eventType: 'page_view',
+      clientId: 'client-test-123',
+      sessionId: 'session-test-123',
+      route: '/dashboard/import-123',
+      path: '/dashboard/import-123',
+      hash: '#/dashboard/import-123',
+      importId: 'import-123',
+      targetLabel: 'Dashboard',
+      arbitraryFormValue: 'SHOULD_NOT_BE_STORED',
+    });
+
+    const post = await request('POST', `/tenants/${tenantId}/audit/activity`, payload, {
+      'Content-Type': 'application/json',
+      'X-Forwarded-For': '198.51.100.10',
+      'User-Agent': 'arr-activity-test-agent',
+    });
+    expect(post.status).toBe(202);
+
+    const audit = await request('GET', `/tenants/${tenantId}/audit/events?eventType=page_view&limit=1`);
+    const body = audit.json as { events: Array<Record<string, unknown>> };
+    expect(audit.status).toBe(200);
+    expect(body.events).toHaveLength(1);
+    expect(body.events[0]).toMatchObject({
+      tenantId,
+      eventType: 'page_view',
+      clientId: 'client-test-123',
+      sessionId: 'session-test-123',
+      route: '/dashboard/import-123',
+      sourceIp: '198.51.100.10',
+      userAgent: 'arr-activity-test-agent',
+    });
+    expect(JSON.stringify(body.events[0])).not.toContain('SHOULD_NOT_BE_STORED');
+  });
+});
+
 // ─── 5–6. 413 Payload Too Large ──────────────────────────────────────────────
 
 describe('POST /imports — 413 Payload Too Large hardening', () => {

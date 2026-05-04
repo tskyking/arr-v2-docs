@@ -20,6 +20,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { ArrMovement } from '@/lib/api';
+import { trackAuditEvent } from '@/lib/audit';
 
 interface AxisTickProps {
   x?: number;
@@ -201,6 +202,7 @@ export default function ArrWaterfallChart({
     if (!period || !chartData.some((entry) => entry.period === period)) return;
     onHoverPeriod?.(null);
     onSelectPeriod?.(period);
+    trackAuditEvent({ eventType: 'chart_selection', targetLabel: period });
   };
 
   return (

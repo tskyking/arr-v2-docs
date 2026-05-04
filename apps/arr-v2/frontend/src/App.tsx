@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Layout from '@/components/Layout';
 import ImportPage from '@/pages/ImportPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -6,7 +7,29 @@ import ReviewQueuePage from '@/pages/ReviewQueuePage';
 import CustomerDetailPage from '@/pages/CustomerDetailPage';
 import CustomerCubePage from '@/pages/CustomerCubePage';
 import LoginPage from '@/pages/LoginPage';
+import { auditInteractiveClick, trackAuditEvent } from '@/lib/audit';
 import { useArrSettings } from '@/lib/settings';
+
+function AuditRouteTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    trackAuditEvent({
+      eventType: 'page_view',
+      route: `${location.pathname}${location.search}${location.hash}`,
+      path: location.pathname,
+      hash: location.hash,
+    });
+  }, [location.pathname, location.search, location.hash]);
+
+  useEffect(() => {
+    const handler = (event: MouseEvent) => auditInteractiveClick(event.target);
+    document.addEventListener('click', handler, { capture: true });
+    return () => document.removeEventListener('click', handler, { capture: true });
+  }, []);
+
+  return null;
+}
 
 function RequireLogin({ children }: { children: JSX.Element }) {
   const location = useLocation();
@@ -17,6 +40,8 @@ function RequireLogin({ children }: { children: JSX.Element }) {
 
 export default function App() {
   return (
+    <>
+    <AuditRouteTracker />
     <Routes>
       <Route path="login" element={<LoginPage />} />
       <Route element={<RequireLogin><Layout /></RequireLogin>}>
@@ -30,5 +55,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/import" replace />} />
       </Route>
     </Routes>
+    </>
   );
 }

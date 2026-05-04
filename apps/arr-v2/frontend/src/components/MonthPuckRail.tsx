@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
+import { trackAuditEvent } from '@/lib/audit';
 import styles from './MonthPuckRail.module.css';
 
 export type MonthPuckItem = {
@@ -86,6 +87,7 @@ export default function MonthPuckRail({
     if (!next) return;
     onHoverChange?.(null);
     onSelect(next.value);
+    trackAuditEvent({ eventType: 'month_selection', targetLabel: next.value });
     requestAnimationFrame(() => puckRefs.current[next.index]?.focus());
   }
 
@@ -94,6 +96,7 @@ export default function MonthPuckRail({
     // rail center, and reference line all settle on the clicked month.
     onHoverChange?.(null);
     onSelect(value);
+    trackAuditEvent({ eventType: 'month_selection', targetLabel: value });
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {

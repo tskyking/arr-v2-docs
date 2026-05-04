@@ -10,7 +10,7 @@
  * startup, while preserving the file-backed fallback for tests and local work.
  */
 
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
@@ -69,6 +69,14 @@ function tenantDir(tenantId: string): string {
     throw new Error(`Invalid tenantId: "${tenantId}"`);
   }
   return join(BASE_DATA_DIR, tenantId, 'imports');
+}
+
+/** Tenant-scoped audit log path. Kept outside imports so audit writes never alter workbook data. */
+function auditDir(tenantId: string): string {
+  if (!tenantId || /[/\\.]/.test(tenantId)) {
+    throw new Error(`Invalid tenantId: "${tenantId}"`);
+  }
+  return join(BASE_DATA_DIR, tenantId, 'audit');
 }
 
 function ensureDir(dir: string): void {
@@ -197,6 +205,20 @@ async function ensurePostgresSchema(): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       PRIMARY KEY (tenant_id, import_id, item_id)
     );
+
+    CREATE TABLE IF NOT EXISTS arr_audit_events (
+      id BIGSERIAL PRIMARY KEY,
+      tenant_id TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      occurred_at TIMESTAMPTZ NOT NULL,
+      payload JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS arr_audit_events_tenant_time_idx
+      ON arr_audit_events (tenant_id, occurred_at DESC);
+    CREATE INDEX IF NOT EXISTS arr_audit_events_tenant_type_time_idx
+      ON arr_audit_events (tenant_id, event_type, occurred_at DESC);
   `);
 }
 
@@ -421,4 +443,105 @@ export function deleteOverrides(tenantId: string, importId: string): void {
 
   const filePath = join(tenantDir(tenantId), `${importId}.overrides.json`);
   try { unlinkSync(filePath); } catch { /* no-op */ }
+}
+
+// ─── Lightweight future-only audit logging ──────────────────────────────────
+
+export interface AuditEvent {
+  id?: number | string;
+  timestamp: string;
+  tenantId: string;
+  eventType: string;
+  importId?: string;
+  sessionId?: string;
+  clientId?: string;
+  route?: string;
+  path?: string;
+  hash?: string;
+  targetLabel?: string;
+  targetId?: string;
+  filename?: string;
+  rowCount?: number;
+  success?: boolean;
+  errorCode?: string;
+  errorMessage?: string;
+  sourceIp?: string;
+  userAgent?: string;
+}
+
+export interface AuditEventFilters {
+  tenantId: string;
+  eventType?: string;
+  limit?: number;
+}
+
+function auditFilePath(tenantId: string): string {
+  const dir = auditDir(tenantId);
+  ensureDir(dir);
+  return join(dir, 'events.jsonl');
+}
+
+async function persistAuditEventToPostgres(event: AuditEvent): Promise<void> {
+  if (!pgPool) return;
+  await pgPool.query(
+    `INSERT INTO arr_audit_events (tenant_id, event_type, occurred_at, payload)
+     VALUES ($1, $2, $3, $4::jsonb)`,
+    [event.tenantId, event.eventType, event.timestamp, JSON.stringify(event)],
+  );
+}
+
+/**
+ * Record one privacy-safe audit event. This intentionally accepts only a small
+ * whitelisted event shape; workbook contents, form values, and arbitrary app
+ * payloads are never persisted here.
+ */
+export function saveAuditEvent(event: AuditEvent): void {
+  if (postgresReady()) {
+    warnAsync('PostgreSQL audit save', persistAuditEventToPostgres(event));
+    return;
+  }
+
+  appendFileSync(auditFilePath(event.tenantId), `${JSON.stringify(event)}\n`, 'utf8');
+}
+
+export async function listAuditEvents(filters: AuditEventFilters): Promise<AuditEvent[]> {
+  const limit = Math.min(Math.max(filters.limit ?? 100, 1), 500);
+
+  if (postgresReady() && pgPool) {
+    const params: unknown[] = [filters.tenantId];
+    let where = 'tenant_id = $1';
+    if (filters.eventType) {
+      params.push(filters.eventType);
+      where += ` AND event_type = $${params.length}`;
+    }
+    params.push(limit);
+    const rows = await pgPool.query(
+      `SELECT id, payload
+       FROM arr_audit_events
+       WHERE ${where}
+       ORDER BY occurred_at DESC
+       LIMIT $${params.length}`,
+      params,
+    );
+    return rows.rows.map((row) => ({ ...(row.payload as AuditEvent), id: row.id }));
+  }
+
+  let lines: string[] = [];
+  try {
+    lines = readFileSync(auditFilePath(filters.tenantId), 'utf8').trim().split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
+
+  const events: AuditEvent[] = [];
+  for (let i = lines.length - 1; i >= 0 && events.length < limit; i -= 1) {
+    try {
+      const event = JSON.parse(lines[i]) as AuditEvent;
+      if (filters.eventType && event.eventType !== filters.eventType) continue;
+      events.push(event);
+    } catch {
+      // Ignore malformed legacy/corrupt audit lines; do not fail inspection.
+    }
+  }
+  return events;
 }
