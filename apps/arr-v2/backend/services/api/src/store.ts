@@ -10,7 +10,7 @@
  * startup, while preserving the file-backed fallback for tests and local work.
  */
 
-import { appendFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
@@ -219,6 +219,10 @@ async function ensurePostgresSchema(): Promise<void> {
       ON arr_audit_events (tenant_id, occurred_at DESC);
     CREATE INDEX IF NOT EXISTS arr_audit_events_tenant_type_time_idx
       ON arr_audit_events (tenant_id, event_type, occurred_at DESC);
+    CREATE INDEX IF NOT EXISTS arr_audit_events_time_idx
+      ON arr_audit_events (occurred_at DESC);
+    CREATE INDEX IF NOT EXISTS arr_audit_events_type_time_idx
+      ON arr_audit_events (event_type, occurred_at DESC);
   `);
 }
 
@@ -467,10 +471,28 @@ export interface AuditEvent {
   errorMessage?: string;
   sourceIp?: string;
   userAgent?: string;
+  userEmail?: string;
+}
+
+export interface AuditTenantSummary {
+  tenantId: string;
+  lastTouchedAt: string;
+  lastEventType: string;
+  lastUserEmail?: string;
+  eventCount: number;
+  lastUploadAt?: string;
+  lastUploadEventType?: string;
+  links: {
+    events: string;
+    uploads: string;
+    uploadErrors: string;
+    pageViews: string;
+    clicks: string;
+  };
 }
 
 export interface AuditEventFilters {
-  tenantId: string;
+  tenantId?: string;
   eventType?: string;
   limit?: number;
 }
@@ -504,44 +526,158 @@ export function saveAuditEvent(event: AuditEvent): void {
   appendFileSync(auditFilePath(event.tenantId), `${JSON.stringify(event)}\n`, 'utf8');
 }
 
+function clampAuditLimit(limit: number | undefined): number {
+  return Math.min(Math.max(limit ?? 100, 1), 500);
+}
+
+function auditSummaryLinks(tenantId: string): AuditTenantSummary['links'] {
+  const encoded = encodeURIComponent(tenantId);
+  return {
+    events: `/api/admin/audit/events?tenantId=${encoded}&limit=100`,
+    uploads: `/api/admin/audit/events?tenantId=${encoded}&type=upload_success&limit=100`,
+    uploadErrors: `/api/admin/audit/events?tenantId=${encoded}&type=upload_error&limit=100`,
+    pageViews: `/api/admin/audit/events?tenantId=${encoded}&type=page_view&limit=100`,
+    clicks: `/api/admin/audit/events?tenantId=${encoded}&type=ui_click&limit=100`,
+  };
+}
+
+function listAuditTenantsFromFiles(): string[] {
+  try {
+    if (!existsSync(BASE_DATA_DIR)) return [];
+    return readdirSync(BASE_DATA_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .filter((tenantId) => {
+        try {
+          return existsSync(join(auditDir(tenantId), 'events.jsonl'));
+        } catch {
+          return false;
+        }
+      });
+  } catch {
+    return [];
+  }
+}
+
+function readAuditEventsFromFile(tenantId: string): AuditEvent[] {
+  let lines: string[] = [];
+  try {
+    lines = readFileSync(auditFilePath(tenantId), 'utf8').trim().split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
+
+  const events: AuditEvent[] = [];
+  for (const line of lines) {
+    try {
+      events.push(JSON.parse(line) as AuditEvent);
+    } catch {
+      // Ignore malformed legacy/corrupt audit lines; do not fail inspection.
+    }
+  }
+  return events;
+}
+
 export async function listAuditEvents(filters: AuditEventFilters): Promise<AuditEvent[]> {
-  const limit = Math.min(Math.max(filters.limit ?? 100, 1), 500);
+  const limit = clampAuditLimit(filters.limit);
 
   if (postgresReady() && pgPool) {
-    const params: unknown[] = [filters.tenantId];
-    let where = 'tenant_id = $1';
+    const params: unknown[] = [];
+    const whereParts: string[] = [];
+    if (filters.tenantId) {
+      params.push(filters.tenantId);
+      whereParts.push(`tenant_id = $${params.length}`);
+    }
     if (filters.eventType) {
       params.push(filters.eventType);
-      where += ` AND event_type = $${params.length}`;
+      whereParts.push(`event_type = $${params.length}`);
     }
     params.push(limit);
+    const where = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
     const rows = await pgPool.query(
       `SELECT id, payload
        FROM arr_audit_events
-       WHERE ${where}
-       ORDER BY occurred_at DESC
+       ${where}
+       ORDER BY occurred_at DESC, id DESC
        LIMIT $${params.length}`,
       params,
     );
     return rows.rows.map((row) => ({ ...(row.payload as AuditEvent), id: row.id }));
   }
 
-  let lines: string[] = [];
-  try {
-    lines = readFileSync(auditFilePath(filters.tenantId), 'utf8').trim().split('\n').filter(Boolean);
-  } catch {
-    return [];
+  const tenantIds = filters.tenantId ? [filters.tenantId] : listAuditTenantsFromFiles();
+  return tenantIds
+    .flatMap((tenantId) => readAuditEventsFromFile(tenantId))
+    .filter((event) => !filters.eventType || event.eventType === filters.eventType)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, limit);
+}
+
+export async function listAuditTenantSummaries(limitInput?: number): Promise<AuditTenantSummary[]> {
+  const limit = clampAuditLimit(limitInput);
+
+  if (postgresReady() && pgPool) {
+    const rows = await pgPool.query(
+      `WITH latest AS (
+         SELECT tenant_id, event_type, occurred_at, payload,
+                row_number() OVER (PARTITION BY tenant_id ORDER BY occurred_at DESC, id DESC) AS rn
+         FROM arr_audit_events
+       ), counts AS (
+         SELECT tenant_id, count(*)::int AS event_count
+         FROM arr_audit_events
+         GROUP BY tenant_id
+       ), latest_upload AS (
+         SELECT tenant_id, event_type, occurred_at,
+                row_number() OVER (PARTITION BY tenant_id ORDER BY occurred_at DESC, id DESC) AS rn
+         FROM arr_audit_events
+         WHERE event_type LIKE 'upload_%'
+       )
+       SELECT latest.tenant_id, latest.event_type, latest.occurred_at, latest.payload,
+              counts.event_count, latest_upload.event_type AS upload_event_type, latest_upload.occurred_at AS upload_at
+       FROM latest
+       JOIN counts ON counts.tenant_id = latest.tenant_id
+       LEFT JOIN latest_upload ON latest_upload.tenant_id = latest.tenant_id AND latest_upload.rn = 1
+       WHERE latest.rn = 1
+       ORDER BY latest.occurred_at DESC
+       LIMIT $1`,
+      [limit],
+    );
+
+    return rows.rows.map((row) => {
+      const payload = row.payload as AuditEvent;
+      const tenantId = String(row.tenant_id);
+      return {
+        tenantId,
+        lastTouchedAt: new Date(row.occurred_at).toISOString(),
+        lastEventType: String(row.event_type),
+        ...(payload.userEmail ? { lastUserEmail: payload.userEmail } : {}),
+        eventCount: Number(row.event_count),
+        ...(row.upload_at ? { lastUploadAt: new Date(row.upload_at).toISOString() } : {}),
+        ...(row.upload_event_type ? { lastUploadEventType: String(row.upload_event_type) } : {}),
+        links: auditSummaryLinks(tenantId),
+      };
+    });
   }
 
-  const events: AuditEvent[] = [];
-  for (let i = lines.length - 1; i >= 0 && events.length < limit; i -= 1) {
-    try {
-      const event = JSON.parse(lines[i]) as AuditEvent;
-      if (filters.eventType && event.eventType !== filters.eventType) continue;
-      events.push(event);
-    } catch {
-      // Ignore malformed legacy/corrupt audit lines; do not fail inspection.
-    }
+  const summaries = new Map<string, AuditTenantSummary>();
+  for (const tenantId of listAuditTenantsFromFiles()) {
+    const events = readAuditEventsFromFile(tenantId)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    if (!events.length) continue;
+    const latest = events[0];
+    const latestUpload = events.find((event) => event.eventType.startsWith('upload_'));
+    summaries.set(tenantId, {
+      tenantId,
+      lastTouchedAt: latest.timestamp,
+      lastEventType: latest.eventType,
+      ...(latest.userEmail ? { lastUserEmail: latest.userEmail } : {}),
+      eventCount: events.length,
+      ...(latestUpload ? { lastUploadAt: latestUpload.timestamp, lastUploadEventType: latestUpload.eventType } : {}),
+      links: auditSummaryLinks(tenantId),
+    });
   }
-  return events;
+
+  return [...summaries.values()]
+    .sort((a, b) => new Date(b.lastTouchedAt).getTime() - new Date(a.lastTouchedAt).getTime())
+    .slice(0, limit);
 }

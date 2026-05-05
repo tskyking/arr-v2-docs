@@ -1,30 +1,59 @@
 import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { trackAuditEvent } from '@/lib/audit';
 import { useArrSettings } from '@/lib/settings';
+import { validateStagingLogin } from '@/lib/stagingLogin';
 import styles from './LoginPage.module.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, login } = useArrSettings();
+  const { isLoggedIn, login, tenantId } = useArrSettings();
   const [name, setName] = useState('Brian Demo User');
   const [email, setEmail] = useState('brian@example.com');
   const [companyName, setCompanyName] = useState('default');
-  const [password, setPassword] = useState('demo');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | undefined>();
 
   if (isLoggedIn) {
-    const next = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/import';
+    const next = tenantId === 'admin'
+      ? '/admin/audit'
+      : ((location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/import');
     return <Navigate to={next} replace />;
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setError(undefined);
+
+    const validation = validateStagingLogin(email, password, companyName);
+    if (!validation.ok) {
+      setError(validation.message);
+      if (validation.normalizedTenantId && validation.errorCode) {
+        trackAuditEvent({
+          eventType: 'login_error',
+          tenantId: validation.normalizedTenantId,
+          userEmail: validation.normalizedEmail ?? email.trim(),
+          errorCode: validation.errorCode,
+          targetLabel: validation.errorCode,
+        });
+      }
+      return;
+    }
+
+    const normalizedEmail = validation.normalizedEmail ?? email.trim();
+    const normalizedTenantId = validation.normalizedTenantId ?? companyName.trim();
     login({
       displayName: name,
-      userEmail: email,
-      tenantId: companyName,
+      userEmail: normalizedEmail,
+      tenantId: normalizedTenantId,
     });
-    navigate('/import', { replace: true });
+    trackAuditEvent({
+      eventType: 'login_success',
+      tenantId: normalizedTenantId,
+      userEmail: normalizedEmail,
+    });
+    navigate(normalizedTenantId === 'admin' ? '/admin/audit' : '/import', { replace: true });
   }
 
   return (
@@ -36,7 +65,7 @@ export default function LoginPage() {
         </div>
         <h1 className={styles.heading}>Sign in to ARR review</h1>
         <p className={styles.copy}>
-          Prototype login for walkthroughs. Any username/password works; company sets the demo tenant and email is used for review audit actions.
+          Prototype staging login for walkthroughs. Use a lowercase email-style username and the matching demo password pattern.
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
@@ -56,11 +85,12 @@ export default function LoginPage() {
             Password
             <input className={styles.input} type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" />
           </label>
+          {error && <div className={styles.error} role="alert">{error}</div>}
           <p className={styles.note}>
-            This is not production authentication yet. It only stores local demo context in this browser.
+            Staging/demo auth only. Todd uses <code>todd@DEF</code>, Brian uses <code>brian@ABC</code>, and other lowercase users use <code>{'{username}@XYZ'}</code>.
           </p>
           <button className={`primary ${styles.submit}`} type="submit">
-            Continue to import workflow
+            Continue
           </button>
         </form>
       </div>

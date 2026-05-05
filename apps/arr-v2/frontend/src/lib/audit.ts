@@ -1,4 +1,4 @@
-import { buildApiPath } from './settings';
+import { buildApiPath, getArrSettings } from './settings';
 
 const CLIENT_ID_KEY = 'arr-v2.audit.clientId';
 const SESSION_ID_KEY = 'arr-v2.audit.sessionId';
@@ -17,7 +17,9 @@ export type AuditEventType =
   | 'export_download'
   | 'upload_start'
   | 'upload_success'
-  | 'upload_error';
+  | 'upload_error'
+  | 'login_success'
+  | 'login_error';
 
 export interface ClientAuditEvent {
   eventType: AuditEventType;
@@ -27,6 +29,9 @@ export interface ClientAuditEvent {
   importId?: string;
   targetLabel?: string;
   targetId?: string;
+  userEmail?: string;
+  tenantId?: string;
+  errorCode?: string;
 }
 
 function randomId(prefix: string): string {
@@ -78,6 +83,7 @@ export function trackAuditEvent(event: ClientAuditEvent): void {
   if (typeof window === 'undefined') return;
   if (shouldThrottle(event)) return;
 
+  const settings = getArrSettings();
   const payload = {
     eventType: event.eventType,
     clientId: getAuditClientId(),
@@ -88,12 +94,14 @@ export function trackAuditEvent(event: ClientAuditEvent): void {
     importId: event.importId,
     targetLabel: event.targetLabel,
     targetId: event.targetId,
+    userEmail: event.userEmail ?? settings.userEmail,
+    errorCode: event.errorCode,
   };
 
   // Fire-and-forget by design: telemetry must never slow down the app UX.
-  fetch(buildApiPath('/audit/activity'), {
+  fetch(buildApiPath('/audit/activity', event.tenantId ?? settings.tenantId), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-User-Email': event.userEmail ?? settings.userEmail },
     body: JSON.stringify(payload),
     keepalive: true,
   }).catch(() => {});

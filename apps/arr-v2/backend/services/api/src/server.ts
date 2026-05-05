@@ -50,7 +50,7 @@ import {
   exportCustomerCubeCsv,
 } from './importService.js';
 import { ImportError } from '../../imports/src/importErrors.js';
-import { getStorageDiagnostics, initStorage, listAuditEvents, saveAuditEvent, type AuditEvent } from './store.js';
+import { getStorageDiagnostics, initStorage, listAuditEvents, listAuditTenantSummaries, saveAuditEvent, type AuditEvent } from './store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const API_PREFIX = normalizeApiPrefix(process.env.API_PREFIX ?? '');
@@ -113,7 +113,7 @@ function redirect(res: http.ServerResponse, location: string) {
 
 function getSpaHashRedirect(path: string, search: string): string | undefined {
   const spaRoutePrefixes = ['/import', '/dashboard', '/review', '/customers', '/customer-cube'];
-  if (!spaRoutePrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+  if (path !== '/admin/audit' && !spaRoutePrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     return undefined;
   }
   return `/#${path}${search}`;
@@ -123,6 +123,11 @@ function getUserEmail(req: http.IncomingMessage): string | undefined {
   const header = req.headers['x-user-email'];
   if (Array.isArray(header)) return header[0];
   return header;
+}
+
+function normalizeUserEmailHeader(value: string | undefined): string | undefined {
+  const trimmed = safeText(value, 240);
+  return trimmed?.toLowerCase();
 }
 
 function firstHeader(req: http.IncomingMessage, name: string): string | undefined {
@@ -282,6 +287,28 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       return;
     }
 
+    // ── Staging admin/debug audit routes ───────────────────────────────────
+    // These inspect privacy-safe audit metadata across tenants. They do not
+    // expose workbook contents, spreadsheet cell values, passwords, or imports.
+    if (path === '/admin/audit/tenants' && method === 'GET') {
+      const limit = Number(url.searchParams.get('limit') ?? '100');
+      const tenants = await listAuditTenantSummaries(isNaN(limit) ? 100 : limit);
+      json(res, 200, { tenants });
+      return;
+    }
+
+    if (path === '/admin/audit/events' && method === 'GET') {
+      const tenantIdFilter = url.searchParams.get('tenantId') ?? undefined;
+      if (tenantIdFilter && !/^[a-zA-Z0-9_-]+$/.test(tenantIdFilter)) {
+        err(res, 400, 'INVALID_TENANT_ID', 'Tenant ID must be alphanumeric (hyphens and underscores allowed)'); return;
+      }
+      const eventType = url.searchParams.get('eventType') ?? url.searchParams.get('type') ?? undefined;
+      const limit = Number(url.searchParams.get('limit') ?? '100');
+      const events = await listAuditEvents({ tenantId: tenantIdFilter, eventType, limit: isNaN(limit) ? 100 : limit });
+      json(res, 200, { events });
+      return;
+    }
+
     // ── Tenant-scoped routes (/tenants/:tenantId/...) ──────────────────────
     // All data access requires a tenantId. No cross-tenant access is possible.
     // For MVP single-tenant deployments, use tenantId = 'default'.
@@ -337,9 +364,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         route: safeText(payload.route, 240),
         path: safeText(payload.path, 240),
         hash: safeText(payload.hash, 240),
+        userEmail: normalizeUserEmailHeader(safeText(payload.userEmail, 240) ?? getUserEmail(req)),
         importId: safeText(payload.importId, 120),
         targetLabel: safeText(payload.targetLabel, 160),
         targetId: safeText(payload.targetId, 120),
+        errorCode: safeText(payload.errorCode, 80),
         ...getRequestMeta(req),
       });
       json(res, 202, { ok: true });
@@ -382,6 +411,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             eventType: 'upload_error',
             filename: safeAuditFilename(req),
             rowCount: 0,
+            userEmail: normalizeUserEmailHeader(getUserEmail(req)),
             success: false,
             errorCode: 'UNSUPPORTED_MEDIA_TYPE',
             errorMessage: 'Send JSON {filePath} or multipart/form-data',
@@ -400,6 +430,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
           importId: result.importId,
           filename,
           rowCount,
+          userEmail: normalizeUserEmailHeader(getUserEmail(req)),
           success: true,
           ...getRequestMeta(req),
         });
@@ -419,6 +450,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
           eventType: 'upload_error',
           filename: filename ?? safeAuditFilename(req, filePath),
           rowCount: 0,
+          userEmail: normalizeUserEmailHeader(getUserEmail(req)),
           success: false,
           ...safe,
           ...getRequestMeta(req),

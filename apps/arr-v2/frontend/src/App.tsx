@@ -7,6 +7,7 @@ import ReviewQueuePage from '@/pages/ReviewQueuePage';
 import CustomerDetailPage from '@/pages/CustomerDetailPage';
 import CustomerCubePage from '@/pages/CustomerCubePage';
 import LoginPage from '@/pages/LoginPage';
+import AdminAuditPage from '@/pages/AdminAuditPage';
 import { auditInteractiveClick, trackAuditEvent } from '@/lib/audit';
 import { useArrSettings } from '@/lib/settings';
 
@@ -38,14 +39,28 @@ function RequireLogin({ children }: { children: JSX.Element }) {
   return children;
 }
 
+function RequireAdminLogin({ children }: { children: JSX.Element }) {
+  const location = useLocation();
+  const { isLoggedIn, tenantId } = useArrSettings();
+  if (!isLoggedIn) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (tenantId !== 'admin') return <Navigate to="/import" replace />;
+  return children;
+}
+
+function IndexRedirect() {
+  const { tenantId } = useArrSettings();
+  return <Navigate to={tenantId === 'admin' ? '/admin/audit' : '/import'} replace />;
+}
+
 export default function App() {
   return (
     <>
     <AuditRouteTracker />
     <Routes>
       <Route path="login" element={<LoginPage />} />
+      <Route path="admin/audit" element={<RequireAdminLogin><AdminAuditPage /></RequireAdminLogin>} />
       <Route element={<RequireLogin><Layout /></RequireLogin>}>
-        <Route index element={<Navigate to="/import" replace />} />
+        <Route index element={<IndexRedirect />} />
         <Route path="import" element={<ImportPage />} />
         <Route path="dashboard/:importId" element={<DashboardPage />} />
         <Route path="review/:importId" element={<ReviewQueuePage />} />

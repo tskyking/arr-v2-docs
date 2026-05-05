@@ -337,3 +337,71 @@ describe('POST /imports — unsupported media type', () => {
     expect(res.status).toBe(415);
   });
 });
+
+// ─── 19. Admin audit/debug routes ────────────────────────────────────────────
+
+describe('admin audit routes', () => {
+  async function postAudit(tenantId: string, eventType: string, userEmail: string, extra: Record<string, unknown> = {}) {
+    const res = await request('POST', `/tenants/${tenantId}/audit/activity`, JSON.stringify({
+      eventType,
+      clientId: `client-${tenantId}-${eventType}-${Date.now()}`,
+      route: `/test/${eventType}`,
+      targetLabel: extra.targetLabel ?? eventType,
+      userEmail,
+      ...extra,
+    }), { 'X-User-Email': userEmail });
+    expect(res.status).toBe(202);
+  }
+
+  it('redirects direct /admin/audit SPA URLs to the hash route', async () => {
+    const res = await request('GET', '/admin/audit');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('/#/admin/audit');
+  });
+
+  it('returns summaries and all-tenant events across tenants without breaking tenant endpoint', async () => {
+    await postAudit('U', 'page_view', 'todd@example.com');
+    await postAudit('admin', 'login_success', 'todd@example.com');
+    await postAudit('U', 'upload_success', 'todd@example.com', { targetLabel: 'workbook.xlsx' });
+
+    const summaries = await request('GET', '/admin/audit/tenants?limit=100');
+    expect(summaries.status).toBe(200);
+    const summaryBody = summaries.json as { tenants: Array<Record<string, unknown>> };
+    const tenantIds = summaryBody.tenants.map((tenant) => tenant.tenantId);
+    expect(tenantIds).toContain('U');
+    expect(tenantIds).toContain('admin');
+    const u = summaryBody.tenants.find((tenant) => tenant.tenantId === 'U');
+    expect(u?.lastUserEmail).toBe('todd@example.com');
+    expect(u?.lastUploadAt).toBeTruthy();
+    expect((u?.links as Record<string, string>).events).toContain('tenantId=U');
+
+    const allEvents = await request('GET', '/admin/audit/events?limit=100');
+    expect(allEvents.status).toBe(200);
+    expect((allEvents.json as { events: unknown[] }).events.length).toBeGreaterThanOrEqual(3);
+
+    const tenantEvents = await request('GET', '/admin/audit/events?tenantId=U&limit=100');
+    expect(tenantEvents.status).toBe(200);
+    expect((tenantEvents.json as { events: Array<Record<string, unknown>> }).events.every((event) => event.tenantId === 'U')).toBe(true);
+
+    const typeEvents = await request('GET', '/admin/audit/events?tenantId=U&type=upload_success&limit=100');
+    expect(typeEvents.status).toBe(200);
+    expect((typeEvents.json as { events: Array<Record<string, unknown>> }).events.every((event) => event.eventType === 'upload_success')).toBe(true);
+
+    const aliasEvents = await request('GET', '/admin/audit/events?tenantId=U&eventType=upload_success&limit=100');
+    expect(aliasEvents.status).toBe(200);
+    expect((aliasEvents.json as { events: Array<Record<string, unknown>> }).events.every((event) => event.eventType === 'upload_success')).toBe(true);
+
+    const legacy = await request('GET', '/tenants/U/audit/events?limit=100');
+    expect(legacy.status).toBe(200);
+    expect((legacy.json as { tenantId: string; events: unknown[] }).tenantId).toBe('U');
+  });
+
+  it('caps admin audit event limits at 500', async () => {
+    for (let i = 0; i < 3; i += 1) {
+      await postAudit('limitcheck', 'ui_click', 'jim@example.com', { targetLabel: `button-${i}` });
+    }
+    const res = await request('GET', '/admin/audit/events?limit=9999');
+    expect(res.status).toBe(200);
+    expect((res.json as { events: unknown[] }).events.length).toBeLessThanOrEqual(500);
+  });
+});

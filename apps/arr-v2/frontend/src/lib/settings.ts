@@ -22,7 +22,7 @@ export function isStaticDemoEnvironment(): boolean {
   return window.location.hostname.endsWith('github.io') || window.location.search.includes('demo=1');
 }
 
-function normalizeTenantId(value: string | undefined): string {
+export function normalizeTenantId(value: string | undefined): string {
   const trimmed = value?.trim() ?? '';
   const normalized = trimmed.replace(/[^a-zA-Z0-9_-]/g, '-');
   return normalized || DEFAULT_SETTINGS.tenantId;
@@ -96,11 +96,20 @@ function normalizePrefix(prefix: string | undefined): string {
 }
 
 export function buildApiPath(path: string, tenantId = getArrSettings().tenantId): string {
-  const apiOrigin = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/g, '');
-  const apiPrefix = normalizePrefix(import.meta.env.VITE_API_BASE_PATH as string | undefined) || '/api';
   const tenantPath = `/tenants/${encodeURIComponent(tenantId)}`;
   const resourcePath = path.startsWith('/') ? path : `/${path}`;
-  return `${apiOrigin ?? apiPrefix}${tenantPath}${resourcePath}`;
+  return `${buildApiBase()}${tenantPath}${resourcePath}`;
+}
+
+export function buildAdminApiPath(path: string): string {
+  const resourcePath = path.startsWith('/') ? path : `/${path}`;
+  return `${buildApiBase()}/admin${resourcePath}`;
+}
+
+function buildApiBase(): string {
+  const apiOrigin = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/g, '');
+  const apiPrefix = normalizePrefix(import.meta.env.VITE_API_BASE_PATH as string | undefined) || '/api';
+  return apiOrigin ?? apiPrefix;
 }
 
 export function useArrSettings() {
