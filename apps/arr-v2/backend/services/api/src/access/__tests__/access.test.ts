@@ -1,12 +1,18 @@
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { createServer, type Server } from "node:http";
-import { scryptSync } from "node:crypto";
+import { scryptSync, randomBytes } from "node:crypto";
 import sharp from "sharp";
 import { PGlite } from "@electric-sql/pglite";
 import type { Pool } from "pg";
 import { AccessStore } from "../store.js";
 import { createAccessHandler } from "../handler.js";
-import { newRequest, transition, validateIntake } from "../domain.js";
+import {
+  newRequest,
+  transition,
+  validateIntake,
+  sha256,
+  firstPageKeys,
+} from "../domain.js";
 
 const input = {
   name: "Test Requester",
@@ -251,7 +257,12 @@ describe("Access HTTP and PostgreSQL persistence", () => {
       .jpeg()
       .withMetadata({ exif: { IFD0: { Artist: "Private metadata" } } })
       .toBuffer();
+    const draftToken = randomBytes(32).toString("base64url");
+    expect(
+      (await call("drafts", "POST", { draftToken, data: input })).status,
+    ).toBe(200);
     const res = await call("requests", "POST", {
+      draftToken,
       data: {
         ...input,
         schedule: "After hours",
@@ -355,9 +366,12 @@ describe("Access HTTP and PostgreSQL persistence", () => {
     expect(raw.rows).toHaveLength(1);
   });
   it("rejects invalid images and oversized requests", async () => {
+    const draftToken = randomBytes(32).toString("base64url");
+    await call("drafts", "POST", { draftToken, data: input });
     expect(
       (
         await call("requests", "POST", {
+          draftToken,
           data: input,
           photo: "data:image/jpeg;base64,ZmFrZQ==",
         })
@@ -366,6 +380,7 @@ describe("Access HTTP and PostgreSQL persistence", () => {
     expect(
       (
         await call("requests", "POST", {
+          draftToken,
           data: input,
           photo: "a".repeat(950000),
         })
@@ -385,6 +400,171 @@ describe("Access HTTP and PostgreSQL persistence", () => {
     );
     await store.cleanup();
     expect(await store.get(record.id)).toBeUndefined();
+  });
+
+  it("stores only validated page one, hides active drafts, and exposes expired partials without receipts", async () => {
+    const draftToken = randomBytes(32).toString("base64url");
+    const data = {
+      ...input,
+      name: "Partial visibility test",
+      photo: "never stored",
+    };
+    const saved = await call("drafts", "POST", { draftToken, data });
+    expect(saved.status).toBe(200);
+    const timing = await saved.json();
+    expect(Object.keys(timing).sort()).toEqual(["expiresAt", "serverNow"]);
+    expect(
+      Date.parse(timing.expiresAt) - Date.parse(timing.serverNow),
+    ).toBeGreaterThan(1199000);
+    const raw = await db.query<{ data: object; id: string }>(
+      "SELECT data,id FROM tschutes_arr_drafts WHERE token_hash=$1",
+      [sha256(draftToken)],
+    );
+    expect(Object.keys(raw.rows[0].data).sort()).toEqual(
+      [...firstPageKeys].sort(),
+    );
+    let list = await (
+      await call("requests", "GET", undefined, reviewer)
+    ).json();
+    expect(list.some((r: { id: string }) => r.id === raw.rows[0].id)).toBe(
+      false,
+    );
+    await db.query(
+      "UPDATE tschutes_arr_drafts SET expires_at=clock_timestamp()-interval '1 second' WHERE token_hash=$1",
+      [sha256(draftToken)],
+    );
+    list = await (await call("requests", "GET", undefined, reviewer)).json();
+    const partial = list.find((r: { id: string }) => r.id === raw.rows[0].id);
+    expect(partial.status).toBe("partial");
+    expect(partial.reference).toBe("");
+    expect(partial.data.name).toBe(data.name);
+    expect(partial.data.facility).toBeUndefined();
+    expect(partial.hasPhoto).toBe(false);
+    expect(JSON.stringify(partial)).not.toContain(sha256(draftToken));
+    expect((await call("status", "POST", { receipt: draftToken })).status).toBe(
+      404,
+    );
+    for (const actor of [reviewer, manager])
+      expect(
+        (
+          await call(
+            "requests/" + partial.id,
+            "PATCH",
+            { action: "approve", version: 1, note: "No", verified: true },
+            actor,
+          )
+        ).status,
+      ).toBe(404);
+    expect(
+      (await call("requests", "POST", { draftToken, data: input })).status,
+    ).toBe(410);
+    expect(
+      (await call("drafts", "POST", { draftToken, data: input })).status,
+    ).toBe(410);
+    // Restarting requires a new token, never resumes or overwrites the expired partial.
+    expect(
+      (
+        await call("drafts", "POST", {
+          draftToken: randomBytes(32).toString("base64url"),
+          data: input,
+        })
+      ).status,
+    ).toBe(200);
+  });
+  it("does not extend the deadline on page-one edits and completes once despite retries", async () => {
+    const draftToken = randomBytes(32).toString("base64url");
+    const first = await (
+      await call("drafts", "POST", { draftToken, data: input })
+    ).json();
+    const second = await (
+      await call("drafts", "POST", {
+        draftToken,
+        data: { ...input, name: "Edited draft" },
+      })
+    ).json();
+    expect(second.expiresAt).toBe(first.expiresAt);
+    const completed = await call("requests", "POST", {
+      draftToken,
+      data: { ...input, name: "Completed once" },
+    });
+    expect(completed.status).toBe(201);
+    const result = await completed.json();
+    const retry = await (
+      await call("requests", "POST", {
+        draftToken,
+        data: { ...input, name: "Completed once" },
+      })
+    ).json();
+    expect(retry).toEqual(result);
+    await db.query(
+      "UPDATE tschutes_arr_drafts SET expires_at=clock_timestamp()-interval '1 second' WHERE token_hash=$1",
+      [sha256(draftToken)],
+    );
+    const list = await (
+      await call("requests", "GET", undefined, reviewer)
+    ).json();
+    expect(
+      list.filter(
+        (r: { reference: string }) => r.reference === result.reference,
+      ),
+    ).toHaveLength(1);
+    expect(
+      list.some(
+        (r: { status: string; data: { name: string } }) =>
+          r.status === "partial" && r.data.name === "Edited draft",
+      ),
+    ).toBe(false);
+    expect(
+      (
+        await (
+          await call("requests", "POST", { draftToken, data: input })
+        ).json()
+      ).receipt,
+    ).toBe(result.receipt);
+    const raw = await db.query<{ data: object }>(
+      "SELECT data FROM tschutes_arr_drafts WHERE token_hash=$1",
+      [sha256(draftToken)],
+    );
+    expect(raw.rows[0].data).toEqual({});
+  });
+  it("rejects invalid, missing and cross-origin draft sessions and retains them only seven days", async () => {
+    expect((await call("requests", "POST", { data: input })).status).toBe(428);
+    expect(
+      (await call("drafts", "POST", { draftToken: "bad", data: input })).status,
+    ).toBe(400);
+    const draftToken = randomBytes(32).toString("base64url");
+    expect(
+      (
+        await call("drafts", "POST", {
+          draftToken,
+          data: { ...input, email: "bad" },
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await call("drafts", "POST", { draftToken, data: input }, undefined, {
+          Origin: "https://evil.example",
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (await call("requests", "POST", { draftToken, data: input })).status,
+    ).toBe(410);
+    await call("drafts", "POST", { draftToken, data: input });
+    await db.query(
+      "UPDATE tschutes_arr_drafts SET started_at=now()-interval '8 days' WHERE token_hash=$1",
+      [sha256(draftToken)],
+    );
+    await store.cleanup();
+    expect(
+      (
+        await db.query(
+          "SELECT id FROM tschutes_arr_drafts WHERE token_hash=$1",
+          [sha256(draftToken)],
+        )
+      ).rows,
+    ).toHaveLength(0);
   });
   it("invalidates a staff session on logout", async () => {
     expect((await call("logout", "POST", {}, reviewer)).status).toBe(200);
