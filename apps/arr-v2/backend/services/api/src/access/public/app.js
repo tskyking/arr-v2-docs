@@ -3,6 +3,7 @@ const main = document.querySelector("#main");
 const dialog = document.querySelector("#detail");
 const BASE = location.pathname.replace(/\/$/, "") + "/";
 const labels = {
+  partial: "Partial form · timed out",
   submitted: "Ready for review",
   needs_approval: "Manager approval",
   approved: "Approved · not provisioned",
@@ -65,6 +66,9 @@ let submitting = false,
   receipt = null,
   filter = "all",
   search = "";
+let draftToken = null,
+  draftDeadline = null,
+  timeoutNotice = "";
 let pageVersion = 0,
   photoVersion = 0;
 async function api(path, method = "GET", payload) {
@@ -108,6 +112,9 @@ function clearStaff() {
   dialog.innerHTML = "";
 }
 function clearIntake() {
+  draftToken = null;
+  draftDeadline = null;
+  timeoutNotice = "";
   data = defaults();
   photo = null;
   step = 0;
@@ -154,7 +161,7 @@ function side() {
 }
 function formStep() {
   if (step === 0)
-    return `<div class="section-kicker">01 / REQUESTER INFORMATION</div><h2>First, a little about you.</h2><p class="section-help">Help Facilities connect this request to the right person and sponsor.</p><div class="fields">${field("name", "Full name", "e.g. Alex Morgan")}${field("email", "Email address", "alex@example.com", true, "email")}${select("department", "Department", ["Facilities", "Public Works", "Health Services", "Community Development", "Administration", "9-1-1 Service District", "Assessor's Office", "Community Justice", "District Attorney's Office", "Information Technology", "Road Department", "Sheriff's Office", "Other"])}${select("affiliation", "I am an", ["Employee", "Contractor", "Visitor"])}${field("phone", "Phone number", "e.g. 541-555-0100", false, "tel")}${field("badge", "Existing badge / employee reference", "Sample reference only", false)}<div class="field-divider"></div>${field("sponsor", "Manager or on-site sponsor", "e.g. Jordan Lee")}${field("sponsorEmail", "Sponsor email", "jordan@example.com", true, "email")}</div><div class="info-banner"><span aria-hidden="true">ⓘ</span><span>Your sponsor confirms the business need. This demo records the details; it does not email them.</span></div>`;
+    return `<div class="section-kicker">01 / REQUESTER INFORMATION</div><h2>First, a little about you.</h2><p class="section-help">Help Facilities connect this request to the right person and sponsor.</p><div class="fields">${field("name", "Full name", "e.g. Alex Morgan")}${field("email", "Email address", "alex@example.com", true, "email")}${select("department", "Department", ["Facilities", "Public Works", "Health Services", "Community Development", "Administration", "9-1-1 Service District", "Assessor's Office", "Community Justice", "District Attorney's Office", "Information Technology", "Road Department", "Sheriff's Office", "Other"])}${select("affiliation", "I am an", ["Employee", "Contractor", "Visitor"])}${field("phone", "Phone number", "e.g. 541-555-0100", false, "tel")}${field("badge", "Existing badge / employee reference", "Sample reference only", false)}<div class="field-divider"></div>${field("sponsor", "Manager or on-site sponsor", "e.g. Jordan Lee")}${field("sponsorEmail", "Sponsor email", "jordan@example.com", true, "email")}</div><div class="info-banner"><span aria-hidden="true">ⓘ</span><span>Your sponsor confirms the business need. Clicking Continue saves this page’s answers. If you do not finish all steps within 20 minutes, staff will see a partial form and you must restart. Use fictional information only; records expire after 7 days. No email is sent.</span></div>`;
   if (step === 1)
     return `<div class="section-kicker">02 / ACCESS DETAILS</div><h2>Where do you need access?</h2><p class="section-help">Choose the smallest access scope and time window that meets your needs.</p><div class="fields"><div class="field full"><span class="field-label">Access requested<span class="required">*</span></span><div class="choice-row">${["Building / badge", "Physical key", "Parking"].map((v) => `<label class="choice"><input type="checkbox" name="accessTypes" value="${v}" ${data.accessTypes.includes(v) ? "checked" : ""}>${v}</label>`).join("")}</div></div>${select("facility", "Facility · fictional demo locations", ["Cascades Administration Building", "Juniper Public Services Center", "High Desert Operations Yard"], true)}${field("areas", "Specific doors, rooms, or parking area", "e.g. Main entrance and first-floor meeting rooms", true, "text", true)}${field("startDate", "Access start date", "", true, "date")}${field("endDate", "Access end date", "", true, "date")}${select("schedule", "Access hours", ["Business hours", "After hours", "24/7"])}${select("urgency", "Request priority", ["Standard", "Time-sensitive"])}${textarea("reason", "Business reason", "Briefly describe the work, visit, or assignment that requires access.")}${textarea("exception", "Exceptions or nonstandard needs", "For after-hours access, explain the days, times, and reason.", data.schedule !== "Business hours")}</div><div class="info-banner warn"><span aria-hidden="true">↗</span><span>After-hours, contractor/visitor, physical-key, and other nonstandard requests automatically enter the manager’s queue.</span></div>`;
   if (step === 2)
@@ -206,8 +213,31 @@ function applyFormView() {
     "</span>";
   toggle.setAttribute("aria-pressed", String(sheetView));
 }
+function timedOut() {
+  return draftDeadline !== null && Date.now() >= draftDeadline;
+}
+function expireIntake() {
+  clearIntake();
+  timeoutNotice =
+    "Your form timed out after 20 minutes. Only your page-one answers were captured as a partial form. No complete request or confirmation number was issued. Please start again.";
+  if (main.querySelector("#intake")) {
+    renderIntake();
+    focusHeading();
+  }
+}
+function newDraftToken() {
+  return btoa(
+    String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))),
+  )
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/, "");
+}
 function renderIntake() {
-  main.innerHTML = `<div class="intake-surface"><div class="view-toolbar"><span>One request · two views</span><button type="button" class="view-toggle" id="form-view-toggle" aria-pressed="false"></button></div>${kiosk ? '<div class="kiosk-banner"><span><strong>Shared-iPad mode</strong> · This form clears after 3 idle minutes.</span><button class="btn link" id="exit-kiosk">Exit kiosk</button></div>' : ""}<section class="hero"><div class="hero-copy"><div class="eyebrow arr-title"><span class="arr-acronym">ARR</span><span class="arr-expansion"> / <strong>A</strong>ccess <strong>R</strong>equest <strong>R</strong>eview</span></div><h1>Access starts with<br><em>a simple request.</em></h1><p>Buildings. Badges. Keys. Parking. Tell us what you need, and we’ll put your request in the right hands.</p></div><div class="service-note"><small>Designed around people</small><strong>One form. A clear next step.</strong><p>Start on your phone, or use a shared iPad at the Facilities desk.</p><div class="tiny-label">↳ About 3 minutes to complete</div></div></section><div class="layout"><section class="form-card"><div class="card-top"><strong>NEW ACCESS REQUEST</strong><span class="tag">${kiosk ? "IPAD MODE" : "DEMO INTAKE"}</span></div><div class="steps" aria-label="Form progress">${["About you", "Access", "Details", "Review"].map((label, i) => `<div class="step ${i === step ? "current" : i < step ? "done" : ""}" ${i === step ? 'aria-current="step"' : ""}><span class="step-circle">${i < step ? "✓" : i + 1}</span><span>${label}</span></div>`).join("")}</div><form id="intake" autocomplete="off"><div class="form-content"><div class="error hidden" id="form-error" role="alert"></div>${formStep()}<div class="honey" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div></div><div class="form-bottom">${step > 0 ? '<button type="button" class="btn secondary" id="back">← Back</button>' : '<span class="save-note">Fields marked * are required.<br>Your form is not saved until submitted.</span>'}<button class="btn" id="next" type="submit">${step === 3 ? "Submit request" : "Continue"} <span aria-hidden="true">→</span></button></div></form></section>${side()}</div></div>`;
+  if (timedOut()) {
+    expireIntake();
+  }
+  main.innerHTML = `<div class="intake-surface"><div class="view-toolbar"><span>One request · two views</span><button type="button" class="view-toggle" id="form-view-toggle" aria-pressed="false"></button></div>${kiosk ? '<div class="kiosk-banner"><span><strong>Shared-iPad mode</strong> · This form clears after 3 idle minutes.</span><button class="btn link" id="exit-kiosk">Exit kiosk</button></div>' : ""}${timeoutNotice ? `<div class="info-banner warn" role="alert">${esc(timeoutNotice)}</div>` : ""}<section class="hero"><div class="hero-copy"><div class="eyebrow arr-title"><span class="arr-acronym">ARR</span><span class="arr-expansion"> / <strong>A</strong>ccess <strong>R</strong>equest <strong>R</strong>eview</span></div><h1>Access starts with<br><em>a simple request.</em></h1><p>Buildings. Badges. Keys. Parking. Tell us what you need, and we’ll put your request in the right hands.</p></div><div class="service-note"><small>Designed around people</small><strong>One form. A clear next step.</strong><p>Start on your phone, or use a shared iPad at the Facilities desk.</p><div class="tiny-label">↳ About 3 minutes to complete</div></div></section><div class="layout"><section class="form-card"><div class="card-top"><strong>NEW ACCESS REQUEST</strong><span class="tag">${kiosk ? "IPAD MODE" : "DEMO INTAKE"}</span></div><div class="steps" aria-label="Form progress">${["About you", "Access", "Details", "Review"].map((label, i) => `<div class="step ${i === step ? "current" : i < step ? "done" : ""}" ${i === step ? 'aria-current="step"' : ""}><span class="step-circle">${i < step ? "✓" : i + 1}</span><span>${label}</span></div>`).join("")}</div><form id="intake" autocomplete="off">${draftDeadline ? '<div class="info-banner draft-notice" role="status">Page one saved. Complete all remaining steps within 20 minutes of your first Continue. Otherwise only page one is kept as a partial and you must restart. Closing or refreshing this page loses your current form session.</div>' : ""}<div class="form-content"><div class="error hidden" id="form-error" role="alert"></div>${formStep()}<div class="honey" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div></div><div class="form-bottom">${step > 0 ? '<button type="button" class="btn secondary" id="back">← Back</button>' : '<span class="save-note">Fields marked * are required.<br>Continue saves page one and starts a 20-minute window.</span>'}<button class="btn" id="next" type="submit">${step === 3 ? "Submit request" : "Continue"} <span aria-hidden="true">→</span></button></div></form></section>${side()}</div></div>`;
   applyFormView();
   main.querySelector("#form-view-toggle").addEventListener("click", () => {
     sheetView = !sheetView;
@@ -309,6 +339,59 @@ async function loadPhoto(file) {
 async function submitStep(e) {
   e.preventDefault();
   if (submitting || photoBusy) return;
+  if (timedOut()) {
+    expireIntake();
+    return;
+  }
+  if (step === 0) {
+    const generation = photoVersion;
+    draftToken ||= newDraftToken();
+    submitting = true;
+    const next = main.querySelector("#next");
+    next.disabled = true;
+    next.textContent = "Saving page one…";
+    try {
+      const saved = await api("drafts", "POST", {
+        draftToken,
+        data: Object.fromEntries(
+          [
+            "name",
+            "email",
+            "phone",
+            "department",
+            "affiliation",
+            "sponsor",
+            "sponsorEmail",
+            "badge",
+          ].map((key) => [key, data[key]]),
+        ),
+        website: main.querySelector("[name=website]").value,
+      });
+      if (generation !== photoVersion) return;
+      draftDeadline =
+        Date.now() +
+        (Date.parse(saved.expiresAt) - Date.parse(saved.serverNow));
+      if (timedOut()) {
+        expireIntake();
+        return;
+      }
+      timeoutNotice = "";
+      step = 1;
+      renderIntake();
+      focusHeading();
+    } catch (err) {
+      if (generation !== photoVersion) return;
+      if (err.status === 410) expireIntake();
+      else {
+        showError(err.message);
+        next.disabled = false;
+        next.textContent = "Continue →";
+      }
+    } finally {
+      submitting = false;
+    }
+    return;
+  }
   if (step === 1) {
     if (!data.accessTypes.length) {
       showError("Choose at least one access type.");
@@ -338,6 +421,7 @@ async function submitStep(e) {
   button.textContent = "Submitting…";
   try {
     const result = await api("requests", "POST", {
+      draftToken,
       data,
       photo,
       website: document.querySelector("[name=website]").value,
@@ -354,6 +438,10 @@ async function submitStep(e) {
       }, 45000);
     } else navigate("#receipt/" + result.receipt);
   } catch (err) {
+    if (err.status === 410) {
+      expireIntake();
+      return;
+    }
     showError(err.message);
     button.disabled = false;
     button.textContent = "Submit request →";
@@ -458,7 +546,7 @@ function renderWorkspace() {
     )
     .join(
       "",
-    )}</select><span class="tag">${role === "manager" ? "MANAGER" : "REVIEWER"}</span></div><section class="queue" id="queue" aria-label="Access request queue"></section><p class="demo-policy">Showing up to 250 newest requests · Retained for 7 days · Refresh to see new submissions.<br>Decisions stay in this workspace. Contact requesters/sponsors through your normal channels; this demo sends no email.</p>`;
+    )}</select><span class="tag">${role === "manager" ? "MANAGER" : "REVIEWER"}</span></div><section class="queue" id="queue" aria-label="Access request queue"></section><p class="demo-policy">Showing up to 250 newest requests · Retained for 7 days · Refresh to see submissions and partials after their 20-minute window.<br>Decisions stay in this workspace. Contact requesters/sponsors through your normal channels; this demo sends no email.</p>`;
   renderQueue();
   main.querySelector("#search").oninput = (e) => {
     search = e.target.value;
@@ -484,14 +572,16 @@ function renderQueue() {
     (r) =>
       (filter === "all" || r.status === filter) &&
       [r.reference, r.data.name, r.data.facility, r.data.department].some((v) =>
-        v.toLowerCase().includes(search.toLowerCase()),
+        String(v || "")
+          .toLowerCase()
+          .includes(search.toLowerCase()),
       ),
   );
   document.querySelector("#queue").innerHTML = shown.length
     ? shown
         .map(
           (r) =>
-            `<button class="queue-row" data-id="${r.id}"><span><strong>${esc(r.data.name)}</strong><small>${esc(r.reference)} · ${niceDate(r.createdAt)}</small></span><span><strong>${esc(r.data.facility)}</strong><small>${esc(r.data.accessTypes.join(" · "))}</small></span><span>${statusTag(r.status)}<small>${r.owner ? esc(r.owner) : "Unassigned"}${r.hasPhoto ? " · Photo attached" : ""}</small></span><span class="arrow" aria-hidden="true">↗</span></button>`,
+            `<button class="queue-row" data-id="${r.id}"><span><strong>${esc(r.data.name)}</strong><small>${esc(r.reference || "Partial · no confirmation number")} · ${niceDate(r.createdAt)}</small></span><span><strong>${esc(r.data.facility || "Page one only")}</strong><small>${esc((r.data.accessTypes || []).join(" · "))}</small></span><span>${statusTag(r.status)}<small>${r.owner ? esc(r.owner) : "Unassigned"}${r.hasPhoto ? " · Photo attached" : ""}</small></span><span class="arrow" aria-hidden="true">↗</span></button>`,
         )
         .join("")
     : '<div class="empty"><h3>No requests here yet.</h3><p>New submissions will appear in this queue. Try another filter or refresh.</p></div>';
@@ -504,6 +594,26 @@ function openDetail(id) {
   if (!selected) return;
   const r = selected,
     d = r.data;
+  if (r.status === "partial") {
+    dialog.innerHTML = `<div class="detail-top"><div><small>PARTIAL FORM · ${esc(d.department)}</small><h2 id="detail-title">${esc(d.name)}</h2>${statusTag(r.status)}</div><button class="close" aria-label="Close request">×</button></div><div class="detail-body"><section><div class="info-banner warn">Not a submitted access request. The 20-minute window ended before final submission. Only page-one answers were saved; no confirmation number was issued. The requester must start a new form.</div><h3>Page-one answers</h3>${summaryRows(
+      [
+        ["Name", d.name],
+        ["Email", d.email],
+        ["Phone", d.phone],
+        ["Department", d.department],
+        ["Affiliation", d.affiliation],
+        ["Badge reference", d.badge],
+        ["Sponsor", d.sponsor],
+        ["Sponsor email", d.sponsorEmail],
+      ],
+    )}<h3>Timing</h3>${summaryRows([
+      ["Page one saved", new Date(r.createdAt).toLocaleString()],
+      ["Timed out", new Date(r.expiresAt).toLocaleString()],
+    ])}</section><section class="decision-panel"><h3>Incomplete · no access decision</h3><p>This partial cannot be approved or provisioned. It expires after 7 days. No email was sent.</p></section></div>`;
+    dialog.querySelector(".close").onclick = () => dialog.close();
+    if (!dialog.open) dialog.showModal();
+    return;
+  }
   const terminal = ["denied", "provisioned"].includes(r.status);
   const canApprove =
     ["submitted", "needs_approval"].includes(r.status) &&
@@ -624,6 +734,7 @@ async function route() {
   }),
 );
 setInterval(() => {
+  if (!submitting && timedOut()) expireIntake();
   if (kiosk && !submitting && Date.now() - lastActivity > 180000) {
     clearIntake();
     lastActivity = Date.now();
@@ -631,6 +742,12 @@ setInterval(() => {
     toast("The shared form was cleared after inactivity.");
   }
 }, 10000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !submitting && timedOut()) expireIntake();
+});
+window.addEventListener("focus", () => {
+  if (!submitting && timedOut()) expireIntake();
+});
 window.addEventListener("hashchange", route);
 window.addEventListener("pageshow", (e) => {
   if (e.persisted) {

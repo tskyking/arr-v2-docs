@@ -88,6 +88,47 @@ const choices: Record<string, string[]> = {
   schedule: ["Business hours", "After hours", "24/7"],
   urgency: ["Standard", "Time-sensitive"],
 };
+export const firstPageKeys = [
+  "name",
+  "email",
+  "phone",
+  "department",
+  "affiliation",
+  "sponsor",
+  "sponsorEmail",
+  "badge",
+] as const;
+export type FirstPage = Pick<Intake, (typeof firstPageKeys)[number]>;
+export function validateFirstPage(raw: unknown): FirstPage {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw))
+    throw new AccessError(400, "Complete the requester information.");
+  const input = raw as Record<string, unknown>;
+  const out = {} as FirstPage;
+  for (const key of firstPageKeys) {
+    if (input[key] !== undefined && typeof input[key] !== "string")
+      throw new AccessError(400, "Invalid " + key + ".");
+    const value = String(input[key] ?? "").trim();
+    if (
+      value.length > 160 ||
+      /[\x00-\x1f]/.test(value) ||
+      (!["phone", "badge"].includes(key) && !value)
+    )
+      throw new AccessError(400, "Please complete a valid " + key + ".");
+    out[key] = value;
+  }
+  for (const key of ["email", "sponsorEmail"] as const) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out[key]))
+      throw new AccessError(
+        400,
+        "Enter valid requester and sponsor email addresses.",
+      );
+    out[key] = out[key].toLowerCase();
+  }
+  for (const key of ["department", "affiliation"] as const)
+    if (!choices[key].includes(out[key]))
+      throw new AccessError(400, "Choose a valid " + key + ".");
+  return out;
+}
 export function validateIntake(raw: unknown): Intake {
   if (!raw || typeof raw !== "object")
     throw new AccessError(400, "Enter the request details.");

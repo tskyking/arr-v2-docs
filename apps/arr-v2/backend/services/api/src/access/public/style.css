@@ -1563,3 +1563,13 @@ footer {
     padding: 22px 16px;
   }
 }
+
+.status.partial {
+  background: #fff0d9;
+  color: #795000;
+  border: 1px dashed #bd882e;
+}
+.draft-notice {
+  margin: 16px 24px 0;
+  font-size: 12px;
+}

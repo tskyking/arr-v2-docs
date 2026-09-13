@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -10,6 +10,7 @@ import {
   sha256,
   transition,
   validateIntake,
+  validateFirstPage,
   type Role,
 } from "./domain.js";
 import { AccessStore, productionStore } from "./store.js";
@@ -177,6 +178,24 @@ export function createAccessHandler(
         });
         return true;
       }
+      if (suffix === "drafts" && method === "POST") {
+        await store.limit("draft:" + sha256(ip), 60, 3600);
+        await store.limit("draft:global", 400, 3600);
+        const input = await body(req);
+        if (
+          input.website ||
+          typeof input.draftToken !== "string" ||
+          !/^[A-Za-z0-9_-]{43}$/.test(input.draftToken)
+        )
+          throw new AccessError(400, "Open the form and complete page one.");
+        const saved = await store.saveDraft(
+          sha256(input.draftToken),
+          randomUUID(),
+          validateFirstPage(input.data),
+        );
+        json(res, 200, saved);
+        return true;
+      }
       if (suffix === "requests" && method === "POST") {
         await store.limit("submit:" + sha256(ip), 30, 3600);
         // A global hourly ceiling bounds public demo storage even with rotating source IPs.
@@ -184,15 +203,23 @@ export function createAccessHandler(
         const input = await body(req);
         if (input.website)
           throw new AccessError(400, "Unable to submit this request.");
+        if (
+          typeof input.draftToken !== "string" ||
+          !/^[A-Za-z0-9_-]{43}$/.test(input.draftToken)
+        )
+          throw new AccessError(
+            428,
+            "Return to page one and click Continue before submitting.",
+          );
         const data = validateIntake(input.data);
         const photo = await cleanPhoto(input.photo);
         const { record, receipt } = newRequest(data, photo);
-        await store.insert(record);
-        json(res, 201, {
-          reference: record.reference,
-          status: record.status,
+        const result = await store.completeDraft(
+          sha256(input.draftToken),
+          record,
           receipt,
-        });
+        );
+        json(res, 201, result);
         return true;
       }
       if (suffix === "status" && method === "POST") {

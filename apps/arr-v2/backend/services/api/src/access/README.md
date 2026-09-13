@@ -20,16 +20,48 @@ The existing DigitalOcean API route hosts all three static assets and the API. N
 5. Clarification and escalation invalidate prior approval. Terminal requests cannot be changed. Concurrent/stale actions return 409 using a version check inside a locked database transaction.
 6. Requester receives a high-entropy private receipt link. Status lookup shows only the reference, status, and update time. Staff notes/contact/photo are never part of a public receipt.
 
+## Partial capture and 20-minute deadline
+
+- First-page Continue validates and saves only name, email, phone, department,
+  affiliation, badge reference, sponsor, and sponsor email. The form discloses
+  this before Continue. Later-page fields/photos are not stored in drafts.
+- A 256-bit browser-generated session token is held only in memory; the database
+  stores its hash. Retrying Continue updates the same draft without extending
+  its original database-issued 20-minute deadline.
+- Unfinished drafts are hidden from staff until the deadline. Queue reads project
+  expired drafts as **Partial form · timed out**, even if the browser closed.
+  This is based on database time, not a browser callback or background scheduler.
+  Refresh the queue or use the partial-status filter to see them.
+- Final Submit requires a valid draft session. A transaction locks it, checks
+  database time, creates one full request and marks the draft completed.
+  Completed drafts never show as partials. Idempotent final retries return the
+  original receipt; their cached response is private and expires with the draft.
+- After expiry, the server rejects completion with 410, and the browser clears
+  the form, shows a timeout explanation and returns to page one. A new session
+  is required. Partials receive no receipt/ARR confirmation number and cannot
+  be approved or provisioned. They contain no access scope or consent claim.
+- Closing/reloading loses the in-browser session; it does not erase the saved
+  page one. Shared-iPad mode still clears locally after three idle minutes;
+  its abandoned draft becomes eligible at the same 20-minute deadline.
+- Older already-open pages must return to step one and click Continue (428).
+  No partials can be recovered from attempts made before this feature existed.
+
+For isolated browser timeout verification (database-time manipulation is confined
+to an in-memory test database, never deployed endpoints):
+`npx tsx services/api/src/access/partial-browser-check.ts`.
+It uses the same optional CHROMIUM_PATH/TSCHUTES_EVIDENCE variables as the
+full browser test.
+
 ## Storage and security
 
-- Uses the existing `DATABASE_URL` with its own small pool and three new tables: `tschutes_arr_requests`, `tschutes_arr_sessions`, `tschutes_arr_limits`. No financial tables are read, modified, or deleted.
+- Uses the existing `DATABASE_URL` with its own small pool and four isolated tables: `tschutes_arr_requests`, `tschutes_arr_drafts`, `tschutes_arr_sessions`, `tschutes_arr_limits`. No financial tables are read, modified, or deleted.
 - No in-memory/file fallback in deployed mode. Without durable storage the service returns 503 instead of claiming a successful submission.
 - JSON request body limit: 900 KB. Photo decoded with a pixel limit and re-encoded via Sharp, stripping EXIF/GPS. Original files are not saved; one resized JPEG is stored in the dedicated request record.
 - All photo retrieval and queue/action endpoints require a staff session. Public queue reads return 401. No wildcard CORS is inherited from ARR-V2.
 - Generated random role passwords use salted scrypt hashes. Only hashes are committed in `credentials.json`; the demo owner holds plaintext passwords outside the repository. Staff sessions are random, hashed in PostgreSQL, expire in four hours, and use HttpOnly/Secure/SameSite=Strict cookies.
 - Write endpoints require a custom JSON header and same-origin checks. A restrictive CSP, no-store, no-referrer, nosniff, and frame denial apply across the app.
 - Persistent per-source and global submission/login limits bound abuse. These are a demonstration guard, not a replacement for edge DDoS protection.
-- Request records/photos older than seven days are purged on service activity, at most once an hour; expired sessions and rate-limit rows are cleaned at the same time. No separate cloud scheduler has been added.
+- Request records/photos and first-page drafts older than seven days are purged on service activity, at most once an hour; expired sessions and rate-limit rows are cleaned at the same time. No separate cloud scheduler has been added.
 - Kiosk entry signs staff out, clears staff state and form data, and resets after three idle minutes. Success clears the form immediately, retaining only the receipt on-screen for 45 seconds. No requester data is stored in browser localStorage/sessionStorage.
 
 ## Scope limits before real-world use
