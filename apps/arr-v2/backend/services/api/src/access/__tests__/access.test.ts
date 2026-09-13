@@ -31,6 +31,20 @@ const input = {
   consent: true,
 };
 describe("Access policy", () => {
+  it.each([
+    "9-1-1 Service District",
+    "Assessor's Office",
+    "Community Justice",
+    "District Attorney's Office",
+    "Information Technology",
+    "Road Department",
+    "Sheriff's Office",
+    "Health Services",
+  ])("accepts department %s", (department) => {
+    expect(validateIntake({ ...input, department }).department).toBe(
+      department,
+    );
+  });
   it("rejects invalid dates, incomplete data, unsupported choices and missing consent", () => {
     for (const change of [
       { email: "invalid" },
