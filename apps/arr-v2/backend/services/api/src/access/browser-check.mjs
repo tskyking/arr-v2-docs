@@ -47,9 +47,40 @@ try {
   await page
     .getByLabel("Email address", { exact: false })
     .fill("demo.requester@example.com");
-  await page.getByLabel("Department").selectOption("Facilities");
+  await page.getByLabel("Department").selectOption("9-1-1 Service District");
   await page.getByLabel("Manager or on-site sponsor").fill("Demo Supervisor");
   await page.getByLabel("Sponsor email").fill("demo.supervisor@example.com");
+  const originalInput = await page.locator("#name").elementHandle();
+  await page.getByRole("button", { name: "Smartsheet-style view" }).click();
+  await expect(page.locator(".sheet-view")).toBeVisible();
+  expect(
+    await originalInput.evaluate(
+      (el) => el === document.querySelector("#name"),
+    ),
+  ).toBe(true);
+  await expect(page.getByLabel("Full name")).toHaveValue(name);
+  await expect(page.getByLabel("Department")).toHaveValue(
+    "9-1-1 Service District",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: join(out, "mobile-sheet.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({
+    path: join(out, "desktop-sheet.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Web-style form" }).click();
+  await expect(page.getByLabel("Full name")).toHaveValue(name);
+  await page.screenshot({ path: join(out, "desktop-web.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+
   await page.getByRole("button", { name: "Continue" }).click();
   await page
     .getByLabel("Facility ·")
@@ -68,21 +99,33 @@ try {
   })
     .png()
     .toBuffer();
-  await page
-    .locator("#upload")
-    .setInputFiles({
-      name: "sample-badge.png",
-      mimeType: "image/png",
-      buffer: fixture,
-    });
+  await page.locator("#upload").setInputFiles({
+    name: "sample-badge.png",
+    mimeType: "image/png",
+    buffer: fixture,
+  });
   await expect(
     page.getByAltText("Your selected demo attachment"),
   ).toBeVisible();
+
+  await page.getByLabel("License plate").fill("DEMO-789");
+  const photoSource = await page.locator(".photo-preview").getAttribute("src");
+  await page.getByRole("button", { name: "Smartsheet-style view" }).click();
+  await expect(page.getByLabel("License plate")).toHaveValue("DEMO-789");
+  expect(await page.locator(".photo-preview").getAttribute("src")).toBe(
+    photoSource,
+  );
+  await page.getByRole("button", { name: "Web-style form" }).click();
+  expect(await page.locator(".photo-preview").getAttribute("src")).toBe(
+    photoSource,
+  );
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(
     page.getByRole("heading", { name: "Everything look right?" }),
   ).toBeVisible();
   await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Smartsheet-style view" }).click();
+  await expect(page.getByRole("checkbox")).toBeChecked();
   await page.getByRole("button", { name: "Submit request" }).click();
   await expect(
     page.getByRole("heading", { name: "You’re in the queue." }),

@@ -63,6 +63,18 @@ node services/api/src/access/browser-check.mjs
 
 The browser check submits fictional information, uploads a generated color swatch, checks role separation, approves/provisions in separate browser contexts, checks the receipt, and verifies kiosk sign-out and inactivity reset. It never emails anyone.
 
+## Requester presentation
+
+The navy sheet/check button switches between the original web form and a compact,
+single-column Smartsheet-style presentation (not a Smartsheet integration).
+Both use the same live form DOM. Toggling preserves fields, selected department,
+photo, consent, and current step. View preference is in memory only; existing
+kiosk privacy resets still clear requester data. Departments must remain aligned
+between the frontend options and server validation.
+
+The browser check exercises both views on mobile/desktop and checks field,
+photo, and consent preservation before submitting a new department.
+
 ## Deploy / rollback
 
 The existing ARR DigitalOcean deployment follows the repository's main branch. Verify the new health endpoint, full browser workflow, and existing `/api/health` after deployment. Passwords must be delivered privately, never in the public intake page or source issue/PR.
