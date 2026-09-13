@@ -3,19 +3,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && esbuild services/api/src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:adm-zip --external:fast-xml-parser --external:pg",
+    "build": "tsc -p tsconfig.build.json && esbuild services/api/src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:adm-zip --external:fast-xml-parser --external:pg --external:sharp && node services/api/src/access/copy-assets.mjs",
     "import:demo": "tsx services/imports/src/demo.ts",
     "start": "node dist/server.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "clear:tenant": "tsx services/api/src/clearTenantData.ts"
+    "clear:tenant": "tsx services/api/src/clearTenantData.ts",
+    "dev:access": "tsx services/api/src/access/dev.ts"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
     "fast-xml-parser": "^4.5.3",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0",
     "@types/adm-zip": "^0.5.8",
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",

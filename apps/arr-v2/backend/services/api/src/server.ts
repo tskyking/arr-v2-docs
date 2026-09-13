@@ -26,6 +26,7 @@
  */
 
 import http from 'node:http';
+import { handleAccessRequest } from './access/handler.js';
 import { createReadStream } from 'node:fs';
 import { writeFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -248,6 +249,16 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   const rawPath = url.pathname.replace(/\/$/, '') || '/';
   const path = stripApiPrefix(rawPath).replace(/\/$/, '') || '/';
   const method = req.method ?? 'GET';
+
+  // Isolated, same-origin Access Request Review demo. Own auth, limits and tables;
+  // handle before ARR's permissive CORS routes so staff data never inherits them.
+  try {
+    if (await handleAccessRequest(req, res, path)) return;
+  } catch {
+    res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ error: 'Access demo temporarily unavailable.' }));
+    return;
+  }
 
   // OPTIONS preflight
   if (method === 'OPTIONS') {
