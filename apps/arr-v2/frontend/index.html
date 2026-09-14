@@ -7,6 +7,14 @@
     <title>ARR V2</title>
     <script>
       (function () {
+        // This hostname belongs to Access Request Review, not the financial SPA.
+        // Discard legacy hashes such as #/login rather than forwarding them.
+        if (window.location.hostname === 'access.arrweb.com') {
+          document.title = 'T-schutes ARR · Access Request Review';
+          document.documentElement.style.visibility = 'hidden';
+          window.location.replace('/api/access-demo/');
+          return;
+        }
         var path = window.location.pathname || '/';
         var search = window.location.search || '';
         var spaPrefixes = ['/import', '/dashboard', '/review', '/customers', '/customer-cube'];
