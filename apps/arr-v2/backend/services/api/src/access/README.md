@@ -4,7 +4,7 @@ A fictional, county-style **working demonstration**, hosted alongside ARR-V2 but
 
 ## Open
 
-- Intake: `/api/access-demo/`
+- Intake: `/api/access-demo/` (also reached automatically from the root of `access.arrweb.com`)
 - Staff workspace: `/api/access-demo/#staff`
 - Shared iPad: `/api/access-demo/#kiosk`
 - Health: `/api/access-demo/health`
@@ -106,6 +106,12 @@ between the frontend options and server validation.
 
 The browser check exercises both views on mobile/desktop and checks field,
 photo, and consent preservation before submitting a new department.
+
+The financial frontend redirects only the exact `access.arrweb.com` hostname
+to `/api/access-demo/` before rendering. Old hashes like `#/login` are discarded.
+The original DigitalOcean hostname retains its financial frontend. To restore
+the financial app on this custom hostname later, remove both the early HTML
+redirect and the hostname guard in the frontend React bootstrap.
 
 ## Deploy / rollback
 
