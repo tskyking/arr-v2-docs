@@ -26,6 +26,8 @@
  */
 
 import http from 'node:http';
+// REVIEW NOTE: logical routing separation below is not an infrastructure boundary.
+// County sandbox evaluation should use the access-only local runner, not financial routes.
 import { handleAccessRequest } from './access/handler.js';
 import { createReadStream } from 'node:fs';
 import { writeFile, unlink } from 'node:fs/promises';

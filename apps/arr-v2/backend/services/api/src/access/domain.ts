@@ -1,3 +1,9 @@
+/**
+ * REVIEW NOTE (2026-09-17): demonstration policy, not County-approved access policy.
+ * This module has no network or database side effects. It validates untrusted input
+ * and decides permitted transitions; handler/store perform authentication/persistence.
+ * All PROPOSED comments describe future work only. No control is enabled by a comment.
+ */
 import { randomBytes, randomUUID, createHash } from "node:crypto";
 
 export type Role = "reviewer" | "manager";
@@ -99,6 +105,8 @@ export const firstPageKeys = [
   "badge",
 ] as const;
 export type FirstPage = Pick<Intake, (typeof firstPageKeys)[number]>;
+// First-page allowlist: discard later-page fields and any caller-supplied roles.
+// Email syntax is checked; employee/sponsor identity is NOT verified by a directory.
 export function validateFirstPage(raw: unknown): FirstPage {
   if (!raw || typeof raw !== "object" || Array.isArray(raw))
     throw new AccessError(400, "Complete the requester information.");
@@ -129,6 +137,9 @@ export function validateFirstPage(raw: unknown): FirstPage {
       throw new AccessError(400, "Choose a valid " + key + ".");
   return out;
 }
+// Authoritative validation for final submissions; browser validation is convenience only.
+// Hard-coded choices are demo policy. PROPOSED: versioned, admin-approved form/routing
+// definitions shared with the UI, preserving the version used for each approval.
 export function validateIntake(raw: unknown): Intake {
   if (!raw || typeof raw !== "object")
     throw new AccessError(400, "Enter the request details.");
@@ -224,6 +235,9 @@ export function validateIntake(raw: unknown): Intake {
     );
   return out as Intake;
 }
+// Create a complete request only after validation. The random receipt is a bearer
+// capability; its public lookup reveals status, not the underlying personal record.
+// PROPOSED: bind approvals to an immutable request/scope version and an SSO identity.
 export function newRequest(
   data: Intake,
   photo: string | null,
@@ -270,6 +284,10 @@ export function newRequest(
     },
   };
 }
+// SECURITY: role + state + version checks are enforced server-side, under the store
+// row lock. Shared demo role labels are not person-attributable audit identities.
+// The provision action records a human assertion; it never calls a badge/door API.
+// PROPOSED: independent provisioner role and tamper-evident external audit sink.
 export function transition(
   record: RequestRecord,
   role: Role,

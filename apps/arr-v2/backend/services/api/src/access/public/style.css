@@ -1,3 +1,5 @@
+/* REVIEW NOTE: visual styling only. Status colors and hidden buttons are not
+   authorization controls; all decisions must pass the server-side policy checks. */
 :root {
   --ink: #183b40;
   --ink-dark: #112e33;

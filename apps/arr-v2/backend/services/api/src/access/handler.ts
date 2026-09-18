@@ -1,3 +1,9 @@
+/**
+ * Same-origin Access Request Review HTTP API and static asset handler.
+ * This is a functional demo, not security accreditation. Comments are explanatory;
+ * PROPOSED controls require separate authorization and County IT/security decisions.
+ * No SMTP, SSO, sponsor-directory, Smartsheet or physical-access API is called here.
+ */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
@@ -37,6 +43,8 @@ function json(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data));
 }
+// Bound the entire JSON body before parsing. This cap limits one request, not
+// aggregate CPU/memory/socket consumption; edge timeout/concurrency limits remain needed.
 async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
   if (!String(req.headers["content-type"] ?? "").startsWith("application/json"))
     throw new AccessError(415, "JSON content is required.");
@@ -59,6 +67,9 @@ async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
     throw new AccessError(400, "Invalid request data.");
   }
 }
+// Treat image bytes as hostile: decode with a pixel ceiling, resize and re-encode
+// to JPEG so EXIF/GPS is dropped. This is NOT malware scanning or proof of identity.
+// PROPOSED: approved quarantine/scanner and isolated decoding for real-data uploads.
 async function cleanPhoto(input: unknown): Promise<string | null> {
   if (!input) return null;
   if (
@@ -102,6 +113,9 @@ function safeRecord(record: Record<string, unknown>) {
   const { receiptHash: _receipt, photo, ...rest } = record;
   return { ...rest, hasPhoto: Boolean(photo) };
 }
+// HTTP trust boundary: public intake/receipt routes precede the staff-session gate.
+// The local flag permits non-Secure cookies for loopback testing only; never expose
+// that configuration as a County internet-facing service.
 export function createAccessHandler(
   store: AccessStore | undefined,
   local = false,
@@ -164,6 +178,8 @@ export function createAccessHandler(
         if (req.headers["sec-fetch-site"] === "cross-site")
           throw new AccessError(403, "Cross-origin requests are not allowed.");
       }
+      // DEMO ASSUMPTION: forwarding headers come from a trusted edge. Direct callers
+      // must not be able to spoof these headers to rotate a rate-limit identity.
       const ip = String(
         req.headers["cf-connecting-ip"] ??
           req.headers["x-forwarded-for"] ??
@@ -178,6 +194,8 @@ export function createAccessHandler(
         });
         return true;
       }
+      // First-page capture returns only timing metadata, never a confirmation number.
+      // Only validateFirstPage fields are retained; the client token is hashed.
       if (suffix === "drafts" && method === "POST") {
         await store.limit("draft:" + sha256(ip), 60, 3600);
         await store.limit("draft:global", 400, 3600);
@@ -196,6 +214,8 @@ export function createAccessHandler(
         json(res, 200, saved);
         return true;
       }
+      // Final submit validates again, cleans the image and atomically consumes the
+      // draft window. Validation/acknowledgment is not sponsor or identity verification.
       if (suffix === "requests" && method === "POST") {
         await store.limit("submit:" + sha256(ip), 30, 3600);
         // A global hourly ceiling bounds public demo storage even with rotating source IPs.
@@ -222,6 +242,8 @@ export function createAccessHandler(
         json(res, 201, result);
         return true;
       }
+      // Receipt lookup is deliberately public but requires a 256-bit capability.
+      // Keep URLs/fragments, receipt bodies and responses out of logs/analytics.
       if (suffix === "status" && method === "POST") {
         await store.limit("status:" + sha256(ip), 100, 600);
         const input = await body(req);
@@ -232,6 +254,9 @@ export function createAccessHandler(
         json(res, 200, found);
         return true;
       }
+      // DEMO ONLY: selecting a role does not grant it without that role password,
+      // but anyone knowing both passwords can act in both roles. No individual SSO.
+      // PROPOSED: County IdP + MFA, admin-assigned entitlements and separation of duties.
       if (suffix === "login" && method === "POST") {
         await store.limit("login:" + sha256(ip), 12, 900);
         await store.limit("login:global", 100, 900);
@@ -254,6 +279,8 @@ export function createAccessHandler(
         json(res, 200, { role });
         return true;
       }
+      // All following request-list, attachment and decision routes require a session.
+      // Access is role-wide, not facility/department/record-scoped.
       const role: Role | undefined = await store.session(sha256(token(req)));
       if (suffix === "session" && method === "GET") {
         json(res, 200, { role: role ?? null });
@@ -301,6 +328,8 @@ export function createAccessHandler(
     } catch (e) {
       if (e instanceof AccessError) json(res, e.status, { error: e.message });
       else {
+        // Access errors intentionally log only the exception class, not request data.
+        // Reverse-proxy, shared ARR routes and platform logging need separate review.
         console.error(
           "[T-schutes ARR] operation failed",
           e instanceof Error ? e.name : "Error",
