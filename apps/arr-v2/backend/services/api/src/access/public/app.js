@@ -71,6 +71,8 @@ let draftToken = null,
   timeoutNotice = "";
 let pageVersion = 0,
   photoVersion = 0;
+// Network writes are same-origin JSON. Never consider local UI role/state authoritative;
+// server authentication, validation and deadline checks decide the outcome.
 async function api(path, method = "GET", payload) {
   const response = await fetch(BASE + path, {
     method,
@@ -111,6 +113,8 @@ function clearStaff() {
   dialog.close();
   dialog.innerHTML = "";
 }
+// Shared-device/privacy reset clears in-memory values and invalidates photo callbacks.
+// It does not erase a page-one draft already saved on the server. No localStorage used.
 function clearIntake() {
   draftToken = null;
   draftDeadline = null;
@@ -200,6 +204,7 @@ const sheetIcon =
   '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 3h14l5 5v21H7z" fill="currentColor" opacity=".95"/><path d="M21 3v6h5M11 12h5M11 16h4M11 23h10" fill="none" stroke="#07345c" stroke-width="1.5"/><path d="m13 18 4 4 10-12" fill="none" stroke="#07345c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const webIcon =
   '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="5" width="26" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 11h26M8 8h1m3 0h1M8 16h8m-8 5h16" stroke="currentColor" stroke-width="2"/></svg>';
+// Presentation only: keep the same DOM and data rather than duplicating a second form.
 function applyFormView() {
   // Keep the actual form DOM intact: toggling never serializes or resets inputs.
   const surface = main.querySelector(".intake-surface");
@@ -287,6 +292,8 @@ function renderIntake() {
     renderIntake();
   });
 }
+// Browser resizing is a convenience, not the security boundary; the server decodes
+// and bounds the image independently. Photos are never sent in page-one drafts.
 async function loadPhoto(file) {
   if (!file) return;
   if (
@@ -336,6 +343,9 @@ async function loadPhoto(file) {
     if (button) button.disabled = false;
   }
 }
+// Page-one Continue durably saves the allowlisted snapshot, then starts the original
+// 20-minute window. Final submit is a separate operation with a full acknowledgment.
+// Network errors are not proof of a saved request; only a successful response is.
 async function submitStep(e) {
   e.preventDefault();
   if (submitting || photoBusy) return;
@@ -589,6 +599,8 @@ function renderQueue() {
     .querySelectorAll(".queue-row")
     .forEach((btn) => (btn.onclick = () => openDetail(btn.dataset.id)));
 }
+// Partial records are read-only UI entries; they have no final receipt or approval.
+// Completed-request action buttons reflect server rules but never replace them.
 function openDetail(id) {
   selected = records.find((r) => r.id === id);
   if (!selected) return;

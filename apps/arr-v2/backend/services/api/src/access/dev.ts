@@ -1,3 +1,8 @@
+/**
+ * LOCAL REVIEW RUNNER ONLY: loopback HTTP + embedded PGlite; no production database.
+ * Keep fictional data on a disposable workstation/VM. Local cookie settings are not
+ * suitable for a remotely shared sandbox without a separately approved deployment.
+ */
 // Local-only full-stack demo with an embedded PostgreSQL engine, never used in production.
 import { PGlite } from "@electric-sql/pglite";
 import { createServer } from "node:http";

@@ -7,6 +7,8 @@
     <title>ARR V2</title>
     <script>
       (function () {
+        // REVIEW NOTE: navigation convenience only, not protection of the financial
+        // application. Other hostnames/routes still require their own security review.
         // This hostname belongs to Access Request Review, not the financial SPA.
         // Discard legacy hashes such as #/login rather than forwarding them.
         if (window.location.hostname === 'access.arrweb.com') {

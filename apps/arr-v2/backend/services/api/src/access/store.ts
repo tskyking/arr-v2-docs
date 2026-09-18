@@ -1,3 +1,8 @@
+/**
+ * PostgreSQL persistence boundary. Parameterized SQL carries user data as values;
+ * transactions protect consistency, not separation from the co-hosted financial app.
+ * No real provisioning-system connection exists. See REVIEW NOTE / PROPOSED markers.
+ */
 import { Pool, type PoolClient } from "pg";
 import {
   AccessError,
@@ -10,6 +15,10 @@ import {
 export class AccessStore {
   private ready?: Promise<void>;
   constructor(private pool: Pool) {}
+  // Creates only prefixed demo tables. Naming is organization, NOT isolation:
+  // this pool still uses the shared DATABASE_URL account and infrastructure.
+  // PROPOSED: separate County-owned database/service account; migration identity
+  // owns DDL, runtime identity receives only necessary table permissions.
   async init() {
     if (!this.ready)
       this.ready = this.pool
@@ -51,6 +60,9 @@ export class AccessStore {
   }
   // Eligibility is computed with database time: closing a browser cannot prevent
   // an expired, durably stored first page from appearing in the staff queue.
+  // Queue is staff-only at the handler. Return metadata, not photo bytes or bearer
+  // tokens. Expired first-page drafts become visible through this query, with no cron.
+  // The newest-250 limit is not pagination, a reporting system, or a durable audit export.
   async list() {
     const { rows } = await this.pool.query(`
       SELECT record FROM (
@@ -67,6 +79,8 @@ export class AccessStore {
       ) queue ORDER BY sort_at DESC LIMIT 250`);
     return rows.map((r) => r.record);
   }
+  // Caller holds a random draft capability; only its hash is used to find the row.
+  // Retrying page one does not restart the database-issued 20-minute deadline.
   async saveDraft(hash: string, id: string, data: FirstPage) {
     const { rows } = await this.pool.query(
       `
@@ -84,6 +98,10 @@ export class AccessStore {
       );
     return { expiresAt: rows[0].expires_at, serverNow: rows[0].server_now };
   }
+  // Lock and commit completion atomically: a completed draft cannot also appear
+  // as a partial. Cached completion includes a plaintext receipt for retry recovery;
+  // unlike the request receiptHash, this cache must be treated as a stored secret.
+  // PROPOSED: short-lived/encrypted retry receipt cache under County key management.
   async completeDraft(hash: string, record: RequestRecord, receipt: string) {
     const client = await this.pool.connect();
     try {
@@ -148,6 +166,9 @@ export class AccessStore {
     );
     return rows[0];
   }
+  // SELECT FOR UPDATE serializes writers; the domain version check rejects stale
+  // staff decisions. Rollback prevents a half-written decision/history pair.
+  // History remains mutable JSONB to a sufficiently privileged DB writer.
   async update(id: string, fn: (record: RequestRecord) => RequestRecord) {
     const client: PoolClient = await this.pool.connect();
     try {
@@ -171,6 +192,8 @@ export class AccessStore {
       client.release();
     }
   }
+  // Session tokens are bearer credentials. Expiration is server-enforced; logout
+  // deletes one token. There is no user account, SSO, MFA, or per-person revocation.
   async session(hash: string): Promise<Role | undefined> {
     const { rows } = await this.pool.query(
       "SELECT role FROM tschutes_arr_sessions WHERE token_hash=$1 AND expires_at>now()",
@@ -190,6 +213,9 @@ export class AccessStore {
       [hash],
     );
   }
+  // Durable counter upsert avoids per-process rate-limit bypass. It does not
+  // substitute for edge resource limits or bot protection. Source IP is supplied
+  // by the handler; only a trusted proxy may establish authoritative client IP.
   async limit(key: string, maximum: number, seconds: number) {
     const { rows } = await this.pool.query(
       `INSERT INTO tschutes_arr_limits VALUES ($1,1,now()+($2 * interval '1 second'))
@@ -202,6 +228,9 @@ export class AccessStore {
     if (rows[0].count > maximum)
       throw new AccessError(429, "Too many attempts. Please try again later.");
   }
+  // Best-effort demo retention: called on API activity at most hourly, not at a
+  // guaranteed deletion instant. SQL deletion does not purge backups/WAL/logs.
+  // PROPOSED: approved records schedule, monitored deletion job and restore controls.
   async cleanup() {
     await this.pool.query(
       "DELETE FROM tschutes_arr_drafts WHERE started_at<now()-interval '7 days'",
@@ -218,6 +247,10 @@ export class AccessStore {
     );
   }
 }
+// SECURITY GAP: TLS is encrypted but certificate verification is disabled unless
+// TSCHUTES_DATABASE_CA is present; DATABASE_SSL=false disables TLS entirely.
+// PROPOSED: County-approved CA, fail-closed verification and separate credentials.
+// Do not change these settings or supply County infrastructure as part of this review.
 export function productionStore(): AccessStore | undefined {
   if (!process.env.DATABASE_URL) return undefined;
   const url = new URL(process.env.DATABASE_URL);
