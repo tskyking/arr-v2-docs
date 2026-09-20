@@ -169,3 +169,9 @@ Deployment follows main. Rollback reverts this feature's commit; new tables rema
 are no longer routed. Do not drop either namespace or rewrite old requests on rollback.
 The old financial project remains untouched. See LEGACY-0.1.md for its access-demo
 pre-enhancement behavior, and the prior security handoff for unresolved production gaps.
+
+Reproducible local browser check: set `TSCHUTES_WORKSPACE_CREDENTIAL_FILE` to a private
+JSON file with local owner `username` and `password`, optionally `CHROMIUM_PATH` and
+`TSCHUTES_EVIDENCE`, then run `node services/api/src/access/workspace/browser-check.mjs`.
+Use a fresh disposable database and the seeded form titles. The script intentionally
+refuses non-loopback targets; it creates test accounts/requests and completes approvals.
