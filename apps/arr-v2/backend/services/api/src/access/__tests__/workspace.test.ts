@@ -10,6 +10,7 @@ import {
   businessMinutes,
   secret,
   hashPassword,
+  verifyPassword,
   sha256,
   type Request,
 } from "../workspace/model.js";
@@ -437,4 +438,11 @@ describe("Pacific business calendar", () => {
       ),
     ).toBe(60);
   });
+});
+
+it("preserves intentional password spaces exactly", () => {
+  const p = "  a-long-test-password  ";
+  const h = hashPassword(p);
+  expect(verifyPassword(p, h)).toBe(true);
+  expect(verifyPassword(p.trim(), h)).toBe(false);
 });
