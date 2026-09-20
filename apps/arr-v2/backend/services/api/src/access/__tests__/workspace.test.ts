@@ -80,6 +80,39 @@ describe("Versioned request workspace", () => {
   afterAll(async () => {
     await db.close();
   });
+  it("binds setup identity to its token, not an existing different-account session", async () => {
+    for (const username of ["revr1", "revr2"]) {
+      await call("user-save", { username, email: username + "@example.com", role: "reviewer", forms: ["prr"], active: true });
+    }
+    const users = (await call("dashboard")).users;
+    const first = users.find((u: any) => u.username === "revr1");
+    const second = users.find((u: any) => u.username === "revr2");
+    const link1 = await call("setup-link", { id: first.id });
+    const token1 = link1.link.split("#activate=")[1];
+    await call("activate", { token: token1, password }, "");
+    const session1 = (await call("login", { username: "revr1", password }, "")).token;
+    const link2 = await call("setup-link", { id: second.id });
+    expect(link2.username).toBe("revr2");
+    const token2 = link2.link.split("#activate=")[1];
+    expect(await call("activation-info", { token: token2 }, session1)).toEqual({ username: "revr2" });
+    expect(await call("activation-info", { token: token2 }, "")).toEqual({ username: "revr2" });
+    const nextPassword = "different-password-for-second";
+    expect(await call("activate", { token: token2, password: nextPassword }, session1)).toEqual({ ok: true, username: "revr2" });
+    expect((await call("catalog", {}, session1)).user).toBeNull();
+    expect((await call("login", { username: "revr1", password }, "")).user.username).toBe("revr1");
+    expect((await call("login", { username: "revr2", password: nextPassword }, "")).user.username).toBe("revr2");
+    await expect(call("activation-info", { token: token2 }, "")).rejects.toThrow();
+    const replaced = await call("setup-link", { id: second.id });
+    await call("setup-link", { id: second.id });
+    await expect(call("activation-info", { token: replaced.link.split("#activate=")[1] }, "")).rejects.toThrow();
+    const expired = await call("setup-link", { id: second.id });
+    const expiredToken = expired.link.split("#activate=")[1];
+    await store.transaction(async (tx) => {
+      const a = await tx.get("activation", sha256(expiredToken));
+      await tx.put("activation", sha256(expiredToken), { ...a, expires: "2000-01-01T00:00:00.000Z" });
+    });
+    await expect(call("activation-info", { token: expiredToken }, "")).rejects.toThrow();
+  });
   async function submit(extra: any = {}) {
     const token = secret();
     const f = (await call("catalog")).forms.find((f: any) => f.id === "prr");

@@ -175,3 +175,22 @@ JSON file with local owner `username` and `password`, optionally `CHROMIUM_PATH`
 `TSCHUTES_EVIDENCE`, then run `node services/api/src/access/workspace/browser-check.mjs`.
 Use a fresh disposable database and the seeded form titles. The script intentionally
 refuses non-loopback targets; it creates test accounts/requests and completes approvals.
+
+## Named workspace password setup
+
+A+ manual link issuance labels the returned link with the server-selected username.
+Opening a setup link verifies its token with `activation-info` before displaying
+that username and the password form. Invalid, expired, consumed, inactive-account,
+or superseded links do not reveal an account or offer a password form. Username
+text supplied in a URL is not trusted or used to choose an account.
+
+Successful setup clears the browser's existing workspace session and presents a
+fresh sign-in prefilled with the account whose password was set. This avoids
+returning to a different account that was already signed in in that browser.
+
+The loopback-only `workspace/setup-link-browser-check.mjs` regression creates two
+fictional reviewers, verifies A+ and recipient labels, and sets up the second
+while the first is signed in. Start an isolated local runner with a disposable
+`TSCHUTES_DEV_DB`, `PORT=19339`, and a test-only `TSCHUTES_OWNER_PASSWORD`.
+Run the check with `TSCHUTES_TEST_OWNER_PASSWORD` set to that local password;
+optionally set `TSCHUTES_BASE` and `CHROMIUM_PATH`. Never use live credentials.
