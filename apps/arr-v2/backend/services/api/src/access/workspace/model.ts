@@ -28,8 +28,9 @@ export function email(v: unknown) {
   return s;
 }
 export function hashPassword(value: unknown) {
-  const p = text(value, 200);
-  check(p.length >= 14, "Use at least 14 characters for your password.");
+  text(value, 200); // Validate bounds/controls without silently trimming a password.
+  const p = value as string;
+  check(p.trim().length >= 14, "Use at least 14 characters for your password.");
   const salt = secret();
   return { salt, hash: scryptSync(p, salt, 64).toString("hex") };
 }
