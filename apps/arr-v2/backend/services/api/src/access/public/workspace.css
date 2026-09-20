@@ -1,0 +1,303 @@
+:root {
+  font-family: Arial, sans-serif;
+  color: #193b42;
+  background: #f6f4ed;
+  --accent: #176e70;
+  --soft: #e6f2ed;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+body.prr {
+  background: #f0edf8;
+  --accent: #634294;
+  --soft: #e9e0f7;
+  color: #302046;
+}
+header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 18px 4%;
+  background: white;
+  border-bottom: 4px solid var(--accent);
+}
+header a {
+  color: inherit;
+  text-decoration: none;
+}
+header strong {
+  font-size: 27px;
+}
+header label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.notice,
+footer {
+  padding: 14px 5%;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--soft);
+}
+main {
+  max-width: 1120px;
+  margin: 28px auto;
+  padding: 0 20px;
+}
+h1 {
+  font-family: Georgia, serif;
+  font-size: 36px;
+  margin: 0 0 10px;
+}
+h2 {
+  font-size: 21px;
+}
+h3 {
+  font-size: 17px;
+}
+button,
+a.button {
+  cursor: pointer;
+  border: 1px solid #bcc6c9;
+  border-radius: 7px;
+  background: white;
+  color: inherit;
+  padding: 10px 14px;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-block;
+}
+button.primary {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+button.danger {
+  color: #a52830;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 10px;
+  border: 1px solid #a9b6bd;
+  border-radius: 5px;
+  background: white;
+  color: #172b34;
+  max-width: 100%;
+}
+input:not([type="checkbox"]),
+textarea {
+  width: 100%;
+}
+textarea {
+  min-height: 85px;
+}
+select[multiple] {
+  min-height: 110px;
+}
+label.field {
+  display: block;
+  margin: 16px 0;
+  font-weight: 600;
+}
+label.field small {
+  display: block;
+  font-weight: 400;
+  margin: 6px 0;
+  color: #52626a;
+}
+label.field input,
+label.field select,
+label.field textarea {
+  display: block;
+  margin-top: 7px;
+}
+label.field input[type="checkbox"] {
+  display: inline;
+  width: auto;
+}
+.card {
+  background: white;
+  border: 1px solid #d6dce0;
+  border-radius: 14px;
+  padding: 24px;
+  margin: 18px 0;
+  box-shadow: 0 3px 10px #00000005;
+}
+.intake {
+  max-width: 760px;
+  margin: auto;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.badge {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: var(--soft);
+  font-weight: bold;
+  margin: 4px 6px 4px 0;
+}
+.muted {
+  color: #53626c;
+  font-size: 13px;
+}
+.warning {
+  background: #fff3cd;
+  color: #554317;
+  padding: 12px;
+  border-radius: 6px;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tabs .selected {
+  background: var(--accent);
+  color: white;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.queue-item {
+  width: 100%;
+  text-align: left;
+  margin: 5px 0;
+  display: block;
+}
+.history {
+  padding: 10px;
+  border-left: 3px solid var(--accent);
+  margin: 8px 0;
+  white-space: pre-wrap;
+}
+.answer {
+  padding: 9px 0;
+  border-bottom: 1px solid #edf0f2;
+  overflow-wrap: anywhere;
+}
+.answer b {
+  display: block;
+  font-size: 13px;
+}
+#message {
+  position: fixed;
+  bottom: 20px;
+  left: 5%;
+  right: 5%;
+  max-width: 1000px;
+  margin: auto;
+  padding: 14px;
+  background: #213b49;
+  color: white;
+  display: none;
+  z-index: 10;
+}
+.sheet {
+  background: #e8ecf2 !important;
+}
+.sheet header {
+  background: #082f52;
+  color: white;
+}
+.sheet header button {
+  color: #082f52;
+}
+.sheet .card {
+  border-radius: 2px;
+  box-shadow: none;
+}
+.sheet h1 {
+  font-family: Arial, sans-serif;
+  font-size: 28px;
+}
+.sheet label.field {
+  border-bottom: 1px solid #dbe1e8;
+  padding-bottom: 14px;
+}
+.sheet.prr header {
+  background: #412b68;
+}
+.editor-row {
+  border: 1px solid #c5d0d8;
+  padding: 14px;
+  margin: 12px 0;
+  border-radius: 5px;
+}
+.editor-row .grid {
+  gap: 9px;
+}
+.editor-row label {
+  font-size: 13px;
+}
+.editor-row textarea {
+  min-height: 55px;
+}
+.metric {
+  font-size: 32px;
+  font-weight: bold;
+}
+progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.photo {
+  max-width: 180px;
+  max-height: 180px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+details {
+  margin: 10px 0;
+}
+summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+@media (max-width: 650px) {
+  header {
+    gap: 8px;
+    padding: 12px;
+  }
+  header label {
+    margin: 0;
+    width: 100%;
+  }
+  main {
+    padding: 0 10px;
+  }
+  h1 {
+    font-size: 29px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .card {
+    padding: 17px;
+  }
+  button {
+    min-height: 42px;
+  }
+}

@@ -1,8 +1,8 @@
 /**
  * Same-origin Access Request Review HTTP API and static asset handler.
  * This is a functional demo, not security accreditation. Comments are explanatory;
- * PROPOSED controls require separate authorization and County IT/security decisions.
- * No SMTP, SSO, sponsor-directory, Smartsheet or physical-access API is called here.
+ * County SSO, sponsor-directory, Smartsheet and physical-access APIs remain out of scope.
+ * The owner-authorized workspace adds personal accounts and an optional email outbox.
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
@@ -21,6 +21,9 @@ import {
 } from "./domain.js";
 import { AccessStore, productionStore } from "./store.js";
 import credentials from "./credentials.json";
+import { WorkspaceStore } from "./workspace/store.js";
+import { WorkspaceService } from "./workspace/service.js";
+import { deliverMail } from "./workspace/mail.js";
 
 const derive = promisify(scrypt);
 const MAX_BYTES = 900_000;
@@ -36,6 +39,9 @@ for (const [file, type] of [
   ["index.html", "text/html; charset=utf-8"],
   ["app.js", "application/javascript; charset=utf-8"],
   ["style.css", "text/css; charset=utf-8"],
+  ["workspace.html", "text/html; charset=utf-8"],
+  ["workspace.js", "application/javascript; charset=utf-8"],
+  ["workspace.css", "text/css; charset=utf-8"],
 ]) {
   assets.set(file, { type, body: readFileSync(join(publicDir, file)) });
 }
@@ -120,8 +126,30 @@ export function createAccessHandler(
   store: AccessStore | undefined,
   local = false,
   auth = credentials,
+  workspaceEnabled = true,
 ) {
   let lastCleanup = 0;
+  const workspaceStore = store ? new WorkspaceStore(store.pool) : undefined;
+  const workspace = workspaceStore
+    ? new WorkspaceService(workspaceStore)
+    : undefined;
+  let sendingMail = false;
+  if (
+    workspaceStore &&
+    process.env.TSCHUTES_MAIL_API_KEY &&
+    process.env.TSCHUTES_MAIL_FROM
+  ) {
+    const timer = setInterval(() => {
+      if (sendingMail) return;
+      sendingMail = true;
+      void deliverMail(workspaceStore)
+        .catch(() => {})
+        .finally(() => {
+          sendingMail = false;
+        });
+    }, 10000);
+    timer.unref();
+  }
   return async function handle(
     req: IncomingMessage,
     res: ServerResponse,
@@ -150,7 +178,9 @@ export function createAccessHandler(
           res.end();
           return true;
         }
-        const asset = assets.get(suffix || "index.html")!;
+        const asset = assets.get(
+          suffix || (workspaceEnabled ? "workspace.html" : "index.html"),
+        )!;
         res.writeHead(200, { "Content-Type": asset.type });
         res.end(asset.body);
         return true;
@@ -185,6 +215,57 @@ export function createAccessHandler(
           req.headers["x-forwarded-for"] ??
           req.socket.remoteAddress,
       ).split(",")[0];
+      // New workspace is additive; legacy records and endpoints remain isolated.
+      if (suffix.startsWith("v2/") && workspace && workspaceStore) {
+        if (method !== "POST") throw new AccessError(405, "Use POST.");
+        const route = suffix.slice(3);
+        await store.limit(
+          "v2:" + route + ":" + sha256(ip),
+          ["login", "activate", "reset-request"].includes(route) ? 12 : 120,
+          900,
+        );
+        await store.limit("v2:global", 3000, 3600);
+        if (
+          ["login", "activate", "reset-request", "submit", "draft"].includes(
+            route,
+          )
+        )
+          await store.limit(
+            "v2:bounded:" + route,
+            route === "draft" ? 400 : 200,
+            3600,
+          );
+        const input = await body(req);
+        if (input.website)
+          throw new AccessError(400, "Unable to process request.");
+        const session =
+          req.headers.cookie
+            ?.split(";")
+            .map((v) => v.trim())
+            .find((v) => v.startsWith("tschutes_workspace="))
+            ?.slice(19) ?? "";
+        const photo =
+          route === "submit" ? await cleanPhoto(input.photo) : undefined;
+        const result = await workspace.execute(route, input, session, photo);
+        if (route === "login" || route === "logout" || route === "password") {
+          const value = route === "login" ? result.token : "";
+          res.setHeader(
+            "Set-Cookie",
+            `tschutes_workspace=${value}; HttpOnly; SameSite=Strict; Path=/api/access-demo; Max-Age=${value ? 14400 : 0}${local ? "" : "; Secure"}`,
+          );
+          delete result.token;
+        }
+        if (!sendingMail) {
+          sendingMail = true;
+          void deliverMail(workspaceStore)
+            .catch(() => {})
+            .finally(() => {
+              sendingMail = false;
+            });
+        }
+        json(res, 200, result);
+        return true;
+      }
       if (suffix === "health" && method === "GET") {
         json(res, 200, {
           status: "ok",
@@ -206,6 +287,19 @@ export function createAccessHandler(
           !/^[A-Za-z0-9_-]{43}$/.test(input.draftToken)
         )
           throw new AccessError(400, "Open the form and complete page one.");
+        // Preserve already-open legacy attempts, but prevent fresh intake on an
+        // archived version once the versioned workspace is the public entry.
+        if (workspaceEnabled) {
+          const existing = await store.pool.query(
+            "SELECT 1 FROM tschutes_arr_drafts WHERE token_hash=$1",
+            [sha256(input.draftToken)],
+          );
+          if (!existing.rows.length)
+            throw new AccessError(
+              409,
+              "This is the archived ARR 0.1 form. Open the main demo for the latest version.",
+            );
+        }
         const saved = await store.saveDraft(
           sha256(input.draftToken),
           randomUUID(),

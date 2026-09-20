@@ -14,7 +14,7 @@ import {
 // An independent namespace. No ARR imports, tenant data, or financial tables are queried.
 export class AccessStore {
   private ready?: Promise<void>;
-  constructor(private pool: Pool) {}
+  constructor(readonly pool: Pool) {}
   // Creates only prefixed demo tables. Naming is organization, NOT isolation:
   // this pool still uses the shared DATABASE_URL account and infrastructure.
   // PROPOSED: separate County-owned database/service account; migration identity
