@@ -198,7 +198,7 @@ describe("Access HTTP and PostgreSQL persistence", () => {
       query,
       connect: async () => ({ query, release() {} }),
     } as unknown as Pool);
-    const handle = createAccessHandler(store, true, auth);
+    const handle = createAccessHandler(store, true, auth, false);
     server = createServer(async (req, res) => {
       const path = new URL(req.url ?? "/", "http://local").pathname
         .replace(/^\/api/, "")
