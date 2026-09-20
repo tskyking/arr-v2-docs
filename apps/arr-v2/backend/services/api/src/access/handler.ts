@@ -221,12 +221,12 @@ export function createAccessHandler(
         const route = suffix.slice(3);
         await store.limit(
           "v2:" + route + ":" + sha256(ip),
-          ["login", "activate", "reset-request"].includes(route) ? 12 : 120,
+          ["login", "activate", "activation-info", "reset-request"].includes(route) ? 12 : 120,
           900,
         );
         await store.limit("v2:global", 3000, 3600);
         if (
-          ["login", "activate", "reset-request", "submit", "draft"].includes(
+          ["login", "activate", "activation-info", "reset-request", "submit", "draft"].includes(
             route,
           )
         )
@@ -247,7 +247,7 @@ export function createAccessHandler(
         const photo =
           route === "submit" ? await cleanPhoto(input.photo) : undefined;
         const result = await workspace.execute(route, input, session, photo);
-        if (route === "login" || route === "logout" || route === "password") {
+        if (route === "login" || route === "logout" || route === "password" || route === "activate") {
           const value = route === "login" ? result.token : "";
           res.setHeader(
             "Set-Cookie",

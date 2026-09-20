@@ -402,9 +402,10 @@ async function showReceipt() {
       intake();
     }, 45000);
 }
-function login() {
+function login(username = "") {
   app.innerHTML =
     '<section class="intake card"><h1>Staff workspace</h1><p>Use your approved personal account. A+ manages Admins; Admins manage their assigned reviewers.</p><form id="login"><label class="field">Username or email<input name="username" required autocomplete="username"></label><label class="field">Password<input name="password" type="password" required autocomplete="current-password"></label><button class="primary">Sign in</button></form><div id="recovery"></div><p class="muted">Roles: Reviewer · Manager · Admin · A+</p><a href="index.html#staff">Previous demo queue (legacy records)</a></section>';
+  $("#login [name=username]").value = username;
   $("#login").onsubmit = (e) => {
     e.preventDefault();
     run(async () => {
@@ -1120,7 +1121,7 @@ function editAccount(u) {
         async () => {
           if (
             !confirm(
-              "Verify the recipient separately, then deliver this link privately. Existing sessions and setup links will be invalidated. Continue?",
+              `Issue a setup link for ${u.username}? Verify the recipient separately and deliver privately. Existing sessions and setup links will be invalidated. Continue?`,
             )
           )
             return;
@@ -1128,9 +1129,12 @@ function editAccount(u) {
           const box = node(
             "div",
             "warning",
-            "Private one-hour setup link — share only with the verified account owner:",
+            `Private one-hour setup link for ${r.username} — share only with this verified account owner:`,
           );
+          box.id = "manual-setup-link";
+          area.querySelector("#manual-setup-link")?.remove();
           const t = document.createElement("textarea");
+          t.setAttribute("aria-label", `Setup link for ${r.username}`);
           t.readOnly = true;
           t.value = r.link;
           box.append(t);
@@ -1236,14 +1240,25 @@ async function route() {
   if (hash.startsWith("#activate=")) {
     const token = hash.slice(10);
     history.replaceState(null, "", location.pathname + "#activate");
+    app.innerHTML = '<section class="intake card"><h1>Checking setup link…</h1></section>';
+    let identity;
+    try {
+      identity = await api("activation-info", { token });
+    } catch (e) {
+      app.innerHTML = '<section class="intake card"><h1>Setup link unavailable</h1><p>Ask A+ for a fresh link for your account.</p></section>';
+      throw e;
+    }
     app.innerHTML =
-      '<section class="intake card"><h1>Set your personal password</h1><form id="activate"><label class="field">New password (14+ characters)<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Set password</button></form></section>';
+      '<section class="intake card"><h1>Set your personal password</h1><p>Account: <strong>' + esc(identity.username) + '</strong></p><p>If this is not your username, stop and ask A+ for the correct link.</p><form id="activate"><label class="field">New password (14+ characters)<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Set password</button></form></section>';
     $("#activate").onsubmit = (e) => {
       e.preventDefault();
       run(async () => {
-        await api("activate", { token, password: e.target.password.value });
-        msg("Password set. Sign in with your approved username.");
-        location.hash = "staff";
+        const result = await api("activate", { token, password: e.target.password.value });
+        user = null;
+        dash = null;
+        msg(`Password set for ${result.username}. Sign in with this username.`);
+        history.replaceState(null, "", location.pathname + "#staff");
+        login(result.username);
       });
     };
     return;

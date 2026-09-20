@@ -163,7 +163,7 @@ export class WorkspaceService {
         await tx.remove("session", sha256(token));
         return { ok: true };
       }
-      if (route === "activate") {
+      if (route === "activate" || route === "activation-info") {
         check(
           typeof input.token === "string" && input.token.length === 43,
           "Invalid setup link.",
@@ -181,11 +181,13 @@ export class WorkspaceService {
           "Account is inactive or link was replaced.",
           403,
         );
+        if (route === "activation-info") return { username: user.username };
         user.password = hashPassword(input.password);
         user.generation++;
         await tx.put("user", user.id, user);
         await tx.remove("activation", key);
-        return { ok: true };
+        await tx.remove("session", sha256(token));
+        return { ok: true, username: user.username };
       }
       if (route === "reset-request") {
         const name = text(input.username);
@@ -573,6 +575,7 @@ export class WorkspaceService {
             "; owner must verify recipient before private delivery",
         );
         return {
+          username: account.username,
           link:
             (process.env.TSCHUTES_PUBLIC_URL ||
               "https://access.arrweb.com/api/access-demo/") +
