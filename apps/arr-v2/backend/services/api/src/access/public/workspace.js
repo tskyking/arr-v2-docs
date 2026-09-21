@@ -12,6 +12,7 @@ const esc = (v) =>
       ],
   );
 let emailConfigured = false;
+let receiptName = "";
 let catalog = [],
   user = null,
   formId = "arr",
@@ -83,7 +84,19 @@ function actions(parent, items) {
   items.forEach(([label, fn, cls]) => a.append(button(label, fn, cls)));
   parent.append(a);
 }
+function identityLabel(name) {
+  $("#identity-band").textContent = name || "";
+}
 function theme() {
+  identityLabel(
+    location.hash === "#staff"
+      ? user?.username
+      : draft
+        ? data.name
+        : location.hash.startsWith("#receipt=")
+          ? receiptName
+          : "",
+  );
   document.body.classList.toggle("prr", formId === "prr");
   document.body.classList.toggle("sheet", sheet);
   $("#form-switch").value = formId;
@@ -94,6 +107,8 @@ function current() {
   return pinned || catalog.find((f) => f.id === formId);
 }
 function reset() {
+  receiptName = "";
+  identityLabel("");
   data = {};
   photo = null;
   page = 1;
@@ -336,6 +351,8 @@ async function showReceipt() {
   }
   formId = r.form;
   theme();
+  receiptName = r.requesterName || "";
+  identityLabel(receiptName);
   app.innerHTML = `<section class="intake card"><span class="badge">${esc(r.form.toUpperCase())} · 0.${r.formVersion}</span><h1>${esc(r.reference)}</h1><h2>${esc(r.status)}</h2>${!emailConfigured ? '<p class="warning">Email delivery is not configured yet. Your request is saved; keep this link to check it.</p>' : ""}<p>Your private link lets you check progress and comment before final approval. Do not share it publicly.</p>${r.latest !== r.formVersion ? '<p class="warning">A newer form is available. Your submitted version remains valid for review; an approver can ask for a new submission if needed.</p>' : ""}<div id="receipt-history"></div><div id="receipt-actions"></div></section>`;
   for (const h of r.history)
     $("#receipt-history").append(
@@ -403,6 +420,10 @@ async function showReceipt() {
     }, 45000);
 }
 function login(username = "") {
+  identityLabel("");
+  ticketState = null;
+  ticketFocus = null;
+  ticketSelection.clear();
   app.innerHTML =
     '<section class="intake card"><h1>Staff workspace</h1><p>Use your approved personal account. A+ manages Admins; Admins manage their assigned reviewers.</p><form id="login"><label class="field">Username or email<input name="username" required autocomplete="username"></label><label class="field">Password<input name="password" type="password" required autocomplete="current-password"></label><button class="primary">Sign in</button></form><div id="recovery"></div><p class="muted">Roles: Reviewer · Manager · Admin · A+</p><a href="index.html#staff">Previous demo queue (legacy records)</a></section>';
   $("#login [name=username]").value = username;
@@ -496,6 +517,12 @@ function renderStaff() {
   if (tab === "accounts") accounts();
   if (tab === "metrics") void metrics().catch((e) => msg(e.message));
   if (tab === "operations") operations();
+  const ticketsBox = node("section", "card ticket-section");
+  ticketsBox.id = "tickets";
+  app.append(ticketsBox);
+  void refreshTickets().catch((e) => {
+    ticketsBox.textContent = e.message;
+  });
 }
 function queue() {
   const panel = $("#panel");
@@ -1240,20 +1267,27 @@ async function route() {
   if (hash.startsWith("#activate=")) {
     const token = hash.slice(10);
     history.replaceState(null, "", location.pathname + "#activate");
-    app.innerHTML = '<section class="intake card"><h1>Checking setup link…</h1></section>';
+    app.innerHTML =
+      '<section class="intake card"><h1>Checking setup link…</h1></section>';
     let identity;
     try {
       identity = await api("activation-info", { token });
     } catch (e) {
-      app.innerHTML = '<section class="intake card"><h1>Setup link unavailable</h1><p>Ask A+ for a fresh link for your account.</p></section>';
+      app.innerHTML =
+        '<section class="intake card"><h1>Setup link unavailable</h1><p>Ask A+ for a fresh link for your account.</p></section>';
       throw e;
     }
     app.innerHTML =
-      '<section class="intake card"><h1>Set your personal password</h1><p>Account: <strong>' + esc(identity.username) + '</strong></p><p>If this is not your username, stop and ask A+ for the correct link.</p><form id="activate"><label class="field">New password (14+ characters)<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Set password</button></form></section>';
+      '<section class="intake card"><h1>Set your personal password</h1><p>Account: <strong>' +
+      esc(identity.username) +
+      '</strong></p><p>If this is not your username, stop and ask A+ for the correct link.</p><form id="activate"><label class="field">New password (14+ characters)<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Set password</button></form></section>';
     $("#activate").onsubmit = (e) => {
       e.preventDefault();
       run(async () => {
-        const result = await api("activate", { token, password: e.target.password.value });
+        const result = await api("activate", {
+          token,
+          password: e.target.password.value,
+        });
         user = null;
         dash = null;
         msg(`Password set for ${result.username}. Sign in with this username.`);

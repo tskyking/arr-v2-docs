@@ -40,6 +40,7 @@ for (const [file, type] of [
   ["app.js", "application/javascript; charset=utf-8"],
   ["style.css", "text/css; charset=utf-8"],
   ["workspace.html", "text/html; charset=utf-8"],
+  ["tickets.js", "application/javascript; charset=utf-8"],
   ["workspace.js", "application/javascript; charset=utf-8"],
   ["workspace.css", "text/css; charset=utf-8"],
 ]) {
@@ -245,7 +246,7 @@ export function createAccessHandler(
             .find((v) => v.startsWith("tschutes_workspace="))
             ?.slice(19) ?? "";
         const photo =
-          route === "submit" ? await cleanPhoto(input.photo) : undefined;
+          ["submit", "ticket-attach"].includes(route) ? await cleanPhoto(input.photo) : undefined;
         const result = await workspace.execute(route, input, session, photo);
         if (route === "login" || route === "logout" || route === "password" || route === "activate") {
           const value = route === "login" ? result.token : "";
