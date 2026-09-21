@@ -1,3 +1,4 @@
+import { tickets } from "./tickets.js";
 import legacySnapshot from "./legacy-v01.json";
 import bootstrap from "./owner-bootstrap.json";
 import { WorkspaceStore, WorkspaceTx } from "./store.js";
@@ -396,6 +397,7 @@ export class WorkspaceService {
         }
         return {
           reference: r.reference,
+          requesterName: r.data.name,
           status: r.status,
           form: r.form,
           formVersion: r.formVersion,
@@ -416,6 +418,7 @@ export class WorkspaceService {
         };
       }
       check(u, "Please sign in.", 401);
+      if (route.startsWith("ticket-")) return tickets(tx, u, route, input, photo);
       if (route === "dashboard") {
         const forms = await tx.list<Form>("form");
         const records = (await tx.list<Request>("request"))
