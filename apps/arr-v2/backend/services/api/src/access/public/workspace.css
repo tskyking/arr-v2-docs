@@ -368,6 +368,7 @@ body.prr #identity-band {
   object-fit: contain;
 }
 #ticket-detail:not(:empty),
+#ticket-inline-detail,
 #ticket-compose:not(:empty) {
   border-top: 2px solid #b0c5c5;
   margin-top: 24px;
@@ -413,7 +414,8 @@ body.prr #identity-band {
   outline: 2px solid white;
   outline-offset: 2px;
 }
-#ticket-detail:not(:empty) {
+#ticket-detail:not(:empty),
+#ticket-inline-detail {
   background: #eaf4ff;
   border: 2px solid #a2c6e7;
   border-radius: 10px;
@@ -433,3 +435,6 @@ body.prr #identity-band {
   border-color: #ccd0d2;
   cursor: not-allowed;
 }
+
+.ticket-detail-row > td { max-width: none; white-space: normal; }
+#ticket-inline-detail p { max-height: none; overflow: visible; white-space: pre-wrap; }

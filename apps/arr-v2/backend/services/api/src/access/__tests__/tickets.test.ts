@@ -354,3 +354,30 @@ it("quick decisions acknowledge revisions and reject atomically without deleting
     }),
   ).rejects.toThrow("implemented");
 });
+
+it("Owner completes only requested implementation without changing the batch", async () => {
+  let t = await create();
+  await expect(
+    call("ticket-complete", { id: t.id, revision: t.revision }),
+  ).rejects.toThrow("Only implementation-requested");
+  t = await save(t, { status: "approved" });
+  await call("ticket-batch", { ids: [t.id] });
+  t = (await call("ticket-list")).tickets.find((v: any) => v.id === t.id);
+  const before = await store.transaction((tx) => tx.list("ticket-batch"));
+  await expect(
+    call("ticket-complete", { id: t.id, revision: t.revision }, "alice"),
+  ).rejects.toThrow("Owner");
+  await expect(
+    call("ticket-complete", { id: t.id, revision: 0 }),
+  ).rejects.toThrow("changed");
+  await call("ticket-complete", { id: t.id, revision: t.revision });
+  const done = (await call("ticket-list")).tickets.find(
+    (v: any) => v.id === t.id,
+  );
+  expect(done.status).toBe("completed");
+  expect(done.locked).toBeTruthy();
+  expect(done.history.at(-1).action).toBe("Owner marked implemented");
+  expect(await store.transaction((tx) => tx.list("ticket-batch"))).toEqual(
+    before,
+  );
+});
