@@ -113,7 +113,7 @@ try {
     .getByLabel("Private Owner notes", { exact: true })
     .fill("Owner only note");
   await page
-    .locator("#ticket-detail")
+    .locator("#ticket-inline-detail")
     .getByLabel("Ticket status", { exact: true })
     .selectOption("approved");
   await page
@@ -193,7 +193,7 @@ try {
   await staff
     .getByRole("button", { name: "Refresh tickets", exact: true })
     .click();
-  await expect(staff.locator("#ticket-detail")).toContainText(
+  await expect(staff.locator("#ticket-inline-detail")).toContainText(
     "Locked in an implementation batch",
   );
   await expect(
@@ -220,7 +220,7 @@ try {
   await staff
     .getByRole("button", { name: "Shared comparison", exact: true })
     .click();
-  await expect(staff.locator("#ticket-detail")).toContainText(
+  await expect(staff.locator("#ticket-inline-detail")).toContainText(
     "Shared read-only view",
   );
   await staff.evaluate(() => {
@@ -230,7 +230,7 @@ try {
   await expect(staff.locator("#ticket-table")).not.toContainText(
     "Shared comparison",
   );
-  await expect(staff.locator("#ticket-detail")).toBeEmpty();
+  await expect(staff.locator("#ticket-inline-detail")).toHaveCount(0);
   await page.screenshot({ path: "/tmp/arr-tickets-owner.png", fullPage: true });
   await staff.setViewportSize({ width: 390, height: 844 });
   await staff.reload();

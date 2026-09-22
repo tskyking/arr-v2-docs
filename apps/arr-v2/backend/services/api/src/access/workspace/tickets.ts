@@ -131,6 +131,30 @@ export async function tickets(
         : [],
     };
   // One transaction: reject stale/mixed locked selections before touching any ticket.
+  // Completion is an explicit Owner acknowledgment, separate from batch creation.
+  if (route === "ticket-complete") {
+    check(owner, "Owner only.", 403);
+    const t = all.find((t) => t.id === input.id);
+    check(t, "Ticket unavailable.", 404);
+    check(
+      t.revision === input.revision,
+      "Ticket changed. Refresh before acting.",
+      409,
+    );
+    check(
+      t.status === "implementation requested",
+      "Only implementation-requested tickets can be marked Implemented.",
+      409,
+    );
+    t.status = "completed";
+    history(
+      t,
+      "Owner marked implemented",
+      "Completed manually; saved brief and archive dates unchanged.",
+    );
+    await save(t);
+    return { ok: true };
+  }
   if (route === "ticket-quick-action") {
     check(owner, "Owner only.", 403);
     check(["approved", "rejected"].includes(input.status), "Invalid action.");

@@ -43,3 +43,8 @@ Review-first handoff: upload the Word brief with any edits/additional instructio
 Batch 1cda865b-a048-465b-89ba-f5a62427ae0d: Sign out is left of the username in the colored identity band; Change password is below it for all personal-account roles. The old workspace buttons are removed; public requester pages have no account controls.
 
 Owner row Approve/Reject controls sit below the selection checkbox. Approve (including Approve selected) acknowledges the current submitter revision and retains existing Owner requirements. Reject changes status without deleting; Hide Rejected controls visibility. Rejection asks for confirmation with exact selected count/titles. Bulk operations validate every selected revision/lock before any changes; stale or locked selections are not partially processed or silently skipped. Both quick actions are disabled for batched/in-progress/completed tickets, with server enforcement. Detailed Owner editing remains available for tracking status afterward. The open detail/review panel has a light-blue background and border.
+
+## Inline review and manual completion
+- Click a ticket title to expand its light-blue details immediately below its row. Only one ticket is expanded; click its title again or Collapse to close it.
+- Owner sees Implemented beneath the status only for implementation-requested tickets. This explicit acknowledgment changes status to completed and records an attributed history event; Hide Completed remains checked by default.
+- Completion preserves the locked requirements snapshot and does not infer or change archive implementation dates. The server enforces Owner access, expected revision, and the exact source status.

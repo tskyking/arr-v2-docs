@@ -46,16 +46,23 @@ try {
     wording: "Changed",
   });
   await p.getByRole("button", { name: "Refresh tickets", exact: true }).click();
-  const row = (id) => p.locator(`tr[data-ticket-id="${id}"]`);
+  const row = (id) =>
+    p.locator(`tr[data-ticket-id="${id}"]:not(.ticket-detail-row)`);
   await expect(row(a.id)).toContainText("Owner review required");
   await row(a.id).getByRole("button", { name: "Approve", exact: true }).click();
   await expect(row(a.id)).not.toContainText("Owner review required");
   await expect(row(a.id)).toContainText("approved");
   await p.getByRole("button", { name: "Quick A", exact: true }).click();
-  await expect(p.locator("#ticket-detail")).toHaveCSS(
+  await expect(p.locator("#ticket-inline-detail")).toHaveCSS(
     "background-color",
     "rgb(234, 244, 255)",
   );
+  await expect(p.locator(".ticket-detail-row")).toHaveCount(1);
+  await expect(row(a.id).locator("+ tr")).toHaveClass("ticket-detail-row");
+  await p.getByRole("button", { name: "Quick B", exact: true }).click();
+  await expect(row(c.id).locator("+ tr")).toHaveClass("ticket-detail-row");
+  await p.getByRole("button", { name: "Collapse", exact: true }).click();
+  await expect(p.locator(".ticket-detail-row")).toHaveCount(0);
   await row(a.id).getByRole("checkbox").check();
   await row(c.id).getByRole("checkbox").check();
   p.once("dialog", async (d) => {
@@ -81,6 +88,15 @@ try {
   await expect(
     p.getByRole("button", { name: "Reject Selected", exact: true }),
   ).toBeDisabled();
+  await row(a.id)
+    .getByRole("button", { name: "Implemented", exact: true })
+    .click();
+  await expect(row(a.id)).toHaveCount(0);
+  await p.getByLabel("Hide Completed", { exact: true }).uncheck();
+  await expect(row(a.id)).toContainText("completed");
+  await expect(
+    row(a.id).getByRole("button", { name: "Implemented", exact: true }),
+  ).toHaveCount(0);
   // Personal account navigation is identical for all staff roles.
   for (const role of ["admin", "reviewer", "manager"]) {
     const username = role + "quick" + Date.now();

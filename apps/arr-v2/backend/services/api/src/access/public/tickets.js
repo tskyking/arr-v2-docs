@@ -237,8 +237,8 @@ function renderTickets() {
     const first = cell("");
     first.append(
       button(t.title, () => {
-        ticketFocus = t.id;
-        ticketDetail(t.id);
+        ticketFocus = ticketFocus === t.id ? null : t.id;
+        renderTickets();
       }),
       node("small", "", `${t.kind} · ${t.id}`),
       node("p", "", t.wording),
@@ -259,6 +259,15 @@ function renderTickets() {
     const state = cell(
       `${t.status}\n${new Date(t.updatedAt).toLocaleString()}${t.locked ? "\nLocked in batch" : ""}`,
     );
+    if (owner && t.status === "implementation requested")
+      state.append(
+        button("Implemented", async () => {
+          await api("ticket-complete", { id: t.id, revision: t.revision });
+          ticketSelection.delete(t.id);
+          await refreshTickets();
+          msg("Ticket marked Completed.");
+        }),
+      );
     if (t.authorRevision !== t.reviewedRevision)
       state.append(node("p", "warning", "Owner review required"));
     if (owner) {
@@ -315,6 +324,18 @@ function renderTickets() {
       selectionCell.append(quick);
     }
     table.tBodies[0].append(tr);
+    if (ticketFocus === t.id) {
+      const detailRow = document.createElement("tr");
+      detailRow.dataset.ticketId = t.id;
+      detailRow.className = "ticket-detail-row";
+      const detailCell = document.createElement("td");
+      detailCell.colSpan = owner ? 7 : 5;
+      const detail = node("div");
+      detail.id = "ticket-inline-detail";
+      detailCell.append(detail);
+      detailRow.append(detailCell);
+      table.tBodies[0].append(detailRow);
+    }
   }
   $("#ticket-table").append(table);
   if (!rows.length)
@@ -482,7 +503,7 @@ function renderTickets() {
       $("#ticket-sharing").append(
         node("p", "muted", `Your sharing request: ${r.note} · ${r.status}`),
       );
-  if (ticketFocus && ticketState.tickets.some((t) => t.id === ticketFocus))
+  if (ticketFocus && rows.some((t) => t.id === ticketFocus))
     ticketDetail(ticketFocus);
   updateQuickSelection();
   ticketTick();
@@ -742,8 +763,15 @@ function ticketUploads(parent, photos) {
 function ticketDetail(id) {
   const t = ticketState.tickets.find((t) => t.id === id);
   if (!t) return;
-  const box = $("#ticket-detail");
+  const box = $("#ticket-inline-detail");
+  if (!box) return;
   box.replaceChildren(node("h3", "", `${t.title} · ${t.id}`));
+  box.append(
+    button("Collapse", () => {
+      ticketFocus = null;
+      renderTickets();
+    }),
+  );
   box.dataset.ticketId = t.id;
   if (t.sharedUntil) {
     const c = node("p", "warning");
@@ -939,6 +967,7 @@ setInterval(() => {
     !busy &&
     !$("#tickets").contains(document.activeElement) &&
     !$("#ticket-detail")?.textContent &&
+    !$("#ticket-inline-detail")?.textContent &&
     !$("#ticket-compose")?.textContent
   )
     void refreshTickets().catch(() => {});
