@@ -87,12 +87,15 @@ function actions(parent, items) {
 function identityLabel(name) {
   const band = $("#identity-band");
   band.replaceChildren();
+  $("#account-below-band").replaceChildren();
   if (name && user && location.hash === "#staff") {
     const account = node("div", "account-links");
     const username = node("span", "account-name", name);
     account.append(
       button("Sign out", signOut, "account-link account-signout"),
       username,
+    );
+    $("#account-below-band").append(
       button(
         "Change password",
         changePassword,

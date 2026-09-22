@@ -68,7 +68,7 @@ a.button {
   border: 1px solid #bcc6c9;
   border-radius: 7px;
   background: white;
-  color: inherit;
+  color: #1559a6;
   padding: 10px 14px;
   font-size: 14px;
   text-decoration: none;
@@ -436,9 +436,68 @@ body.prr #identity-band {
   cursor: not-allowed;
 }
 
-.ticket-detail-row > td { max-width: none; white-space: normal; }
-#ticket-inline-detail p { max-height: none; overflow: visible; white-space: pre-wrap; }
+.ticket-detail-row > td {
+  max-width: none;
+  white-space: normal;
+}
+#ticket-inline-detail p {
+  max-height: none;
+  overflow: visible;
+  white-space: pre-wrap;
+}
 
 /* Match the quick-action gap; Delete always follows the complete status content. */
-.ticket-status-content { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-.ticket-status-content > .warning { margin: 0; }
+.ticket-status-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.ticket-status-content > .warning {
+  margin: 0;
+}
+
+.account-name {
+  font-size: 1.1em;
+}
+#account-below-band {
+  text-align: right;
+  padding: 0 16px;
+}
+#account-below-band:empty {
+  display: none;
+}
+#account-below-band .account-link {
+  border: 0;
+  background: transparent;
+  color: #1559a6;
+  text-decoration: underline;
+  padding: 6px 3px;
+}
+button.danger:not(:disabled) {
+  color: #1559a6;
+}
+button:disabled:not(.primary) {
+  color: #72777a;
+}
+.ticket-compare {
+  margin: 12px 0;
+}
+.ticket-compare summary {
+  cursor: pointer;
+  color: #1559a6;
+  font-weight: bold;
+}
+.ticket-compare p {
+  white-space: pre-wrap;
+}
+.ticket-compare mark {
+  background: #fff09c;
+  color: #182b35;
+}
+.ticket-compare del {
+  text-decoration: line-through;
+}
+.ticket-upload:focus {
+  outline: 2px solid #1559a6;
+}

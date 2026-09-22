@@ -292,11 +292,17 @@ function renderTickets() {
     cell(t.ownerText);
     cell(t.forms.map((f) => f.toUpperCase()).join(", "));
     const state = node("div", "ticket-status-content");
-    state.append(node("span", "", `${t.status}\n${new Date(t.updatedAt).toLocaleString()}${t.locked ? "\nLocked in batch" : ""}`));
+    state.append(
+      node(
+        "span",
+        "",
+        `${t.status}\n${new Date(t.updatedAt).toLocaleString()}${t.locked ? "\nLocked in batch" : ""}`,
+      ),
+    );
     cell("").append(state);
     if (owner && t.status === "implementation requested")
       state.append(
-        button("Implemented", async () => {
+        button("Implemented ?", async () => {
           await api("ticket-complete", { id: t.id, revision: t.revision });
           ticketSelection.delete(t.id);
           await refreshTickets();
@@ -314,28 +320,8 @@ function renderTickets() {
     if (owner) {
       const moves = cell("");
       actions(moves, [
-        [
-          "↑",
-          async () => {
-            await api("ticket-move", {
-              id: t.id,
-              revision: t.revision,
-              direction: -1,
-            });
-            await refreshTickets();
-          },
-        ],
-        [
-          "↓",
-          async () => {
-            await api("ticket-move", {
-              id: t.id,
-              revision: t.revision,
-              direction: 1,
-            });
-            await refreshTickets();
-          },
-        ],
+        ["↑", () => moveTicketAnimated(t, -1)],
+        ["↓", () => moveTicketAnimated(t, 1)],
       ]);
       const selectionCell = cell("");
       const c = ticketCheck(
@@ -511,6 +497,7 @@ function renderTickets() {
     for (const b of ticketState.batches) {
       const row = node("article", "history");
       row.append(
+        batchMetricNode(b),
         node("strong", "", b.title),
         node("p", "", b.summary || b.title),
         node(
@@ -562,9 +549,30 @@ async function downloadWordBrief(id) {
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
+function batchMetricNode(b) {
+  const e = node("p", "batch-metrics", batchMetrics(b));
+  e.dataset.batchId = b.id;
+  return e;
+}
+function batchMetrics(b) {
+  const elapsed = b.approvalStartedAt
+    ? Math.max(
+        0,
+        Math.floor(
+          ((b.completedAt
+            ? Date.parse(b.completedAt)
+            : Date.now() + ticketClockOffset) -
+            Date.parse(b.approvalStartedAt)) /
+            3600000,
+        ),
+      )
+    : null;
+  return `Approval → implementation: ${elapsed === null ? "Unavailable" : elapsed + " h"}${b.completedAt ? " (final)" : ""} · Longest submission → approval: ${b.submissionApprovalHours == null ? "Unavailable" : b.submissionApprovalHours + " h"}`;
+}
 function showBrief(b) {
   const box = $("#ticket-detail");
   box.replaceChildren(
+    batchMetricNode(b),
     node("h3", "", b.title),
     node(
       "p",
@@ -790,6 +798,34 @@ function ticketUploads(parent, photos) {
       previews.append(wrap);
     }
   };
+  area.append(
+    button("Paste image from clipboard", async () => {
+      if (!navigator.clipboard?.read) {
+        area.focus();
+        msg(
+          "Click the dashed paste area and press Ctrl/Cmd+V, or choose a file on this device.",
+        );
+        return;
+      }
+      try {
+        const items = await navigator.clipboard.read();
+        const images = [];
+        for (const item of items)
+          for (const type of item.types.filter((t) => t.startsWith("image/"))) {
+            images.push(await item.getType(type));
+            break;
+          }
+        if (!images.length) throw Error("No image found in clipboard.");
+        await add(images);
+      } catch (e) {
+        area.focus();
+        msg(
+          "Clipboard access unavailable or no image found. Click the dashed area and press Ctrl/Cmd+V, or choose a file.",
+          true,
+        );
+      }
+    }),
+  );
   file.onchange = () => run(() => add([...file.files]));
   parent.onpaste = (e) => {
     const files = [...e.clipboardData.items]
@@ -800,6 +836,98 @@ function ticketUploads(parent, photos) {
       run(() => add(files));
     }
   };
+}
+// Compare only inert text nodes: submitted markup never becomes executable HTML.
+function compareTokens(before, after) {
+  const a = before.match(/\s+|[^\s]+/g) || [],
+    b = after.match(/\s+|[^\s]+/g) || [];
+  const removed = new Set(),
+    added = new Set();
+  if (a.length * b.length > 1000000) {
+    let head = 0,
+      tail = 0;
+    while (head < a.length && head < b.length && a[head] === b[head]) head++;
+    while (
+      tail < a.length - head &&
+      tail < b.length - head &&
+      a[a.length - 1 - tail] === b[b.length - 1 - tail]
+    )
+      tail++;
+    for (let i = head; i < a.length - tail; i++) removed.add(i);
+    for (let i = head; i < b.length - tail; i++) added.add(i);
+  } else {
+    const dp = Array.from(
+      { length: a.length + 1 },
+      () => new Uint16Array(b.length + 1),
+    );
+    for (let i = a.length - 1; i >= 0; i--)
+      for (let j = b.length - 1; j >= 0; j--)
+        dp[i][j] =
+          a[i] === b[j]
+            ? 1 + dp[i + 1][j + 1]
+            : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    let i = 0,
+      j = 0;
+    while (i < a.length || j < b.length) {
+      if (i < a.length && j < b.length && a[i] === b[j]) {
+        i++;
+        j++;
+      } else if (
+        i < a.length &&
+        (j === b.length || dp[i + 1][j] >= dp[i][j + 1])
+      )
+        removed.add(i++);
+      else added.add(j++);
+    }
+  }
+  return { a, b, removed, added };
+}
+function comparisonSection(label, tokens, added, removed, open) {
+  const d = document.createElement("details");
+  d.className = "ticket-compare";
+  d.open = open;
+  d.append(node("summary", "", label));
+  const p = node("p");
+  tokens.forEach((token, i) => {
+    if (removed.has(i)) {
+      const m = node("mark");
+      m.append(node("del", "", token));
+      p.append(m);
+    } else if (added.has(i)) p.append(node("mark", "", token));
+    else p.append(document.createTextNode(token));
+  });
+  d.append(p);
+  return d;
+}
+async function moveTicketAnimated(t, direction) {
+  const positions = new Map(
+    [...document.querySelectorAll(".ticket-table tbody > tr")].map((e) => [
+      e.dataset.ticketId + (e.className || ""),
+      e.getBoundingClientRect().top,
+    ]),
+  );
+  await api("ticket-move", { id: t.id, revision: t.revision, direction });
+  await refreshTickets();
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const animations = [];
+  for (const e of document.querySelectorAll(".ticket-table tbody > tr")) {
+    const previous = positions.get(e.dataset.ticketId + (e.className || ""));
+    if (previous === undefined) continue;
+    const delta = previous - e.getBoundingClientRect().top;
+    if (!delta) continue;
+    animations.push(
+      e
+        .animate(
+          [
+            { transform: `translateY(${delta}px)`, background: "#eaf4ff" },
+            { transform: "translateY(0)", background: "#ffffff" },
+          ],
+          { duration: 1100, easing: "ease-in-out" },
+        )
+        .finished.catch(() => {}),
+    );
+  }
+  await Promise.all(animations);
 }
 function ticketDetail(id) {
   const t = ticketState.tickets.find((t) => t.id === id);
@@ -819,10 +947,35 @@ function ticketDetail(id) {
     c.dataset.ticketExpiry = t.sharedUntil;
     box.append(c);
   }
+  const currentDiff = compareTokens(t.original, t.wording),
+    ownerDiff = compareTokens(t.wording, t.ownerText);
   box.append(
-    answer("Original submission", t.original),
-    answer("Current submitter wording", t.wording),
-    answer("Owner requirements", t.ownerText),
+    comparisonSection(
+      "Original submission",
+      currentDiff.a,
+      new Set(),
+      currentDiff.removed,
+      t.original !== t.wording,
+    ),
+    comparisonSection(
+      "Current submitter wording",
+      currentDiff.b,
+      currentDiff.added,
+      ownerDiff.removed,
+      t.original !== t.wording || t.wording !== t.ownerText,
+    ),
+    comparisonSection(
+      "Owner requirements",
+      ownerDiff.b,
+      ownerDiff.added,
+      new Set(),
+      true,
+    ),
+    node(
+      "small",
+      "muted",
+      "Yellow shows differences; strikethrough shows text removed in the next version. Original → Current → Owner. Comments are listed separately.",
+    ),
   );
   if (t.related) box.append(answer("Related ticket", t.related));
   for (const image of t.images) {
@@ -981,6 +1134,10 @@ function ticketTick() {
     e.textContent = `Shared read-only access: ${Math.floor(left / 3600)}h ${Math.floor((left % 3600) / 60)}m ${left % 60}s remaining`;
   });
   if (!ticketState) return;
+  document.querySelectorAll(".batch-metrics[data-batch-id]").forEach((e) => {
+    const b = ticketState.batches.find((b) => b.id === e.dataset.batchId);
+    if (b) e.textContent = batchMetrics(b);
+  });
   const expired = ticketState.tickets.filter(
     (t) => t.sharedUntil && Date.parse(t.sharedUntil) <= clock,
   );
