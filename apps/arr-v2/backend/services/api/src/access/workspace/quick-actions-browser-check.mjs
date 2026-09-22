@@ -101,13 +101,13 @@ try {
     p.getByRole("button", { name: "Reject Selected", exact: true }),
   ).toBeDisabled();
   await row(a.id)
-    .getByRole("button", { name: "Implemented", exact: true })
+    .getByRole("button", { name: "Implemented ?", exact: true })
     .click();
   await expect(row(a.id)).toHaveCount(0);
   await p.getByLabel("Hide Completed", { exact: true }).uncheck();
   await expect(row(a.id)).toContainText("completed");
   await expect(
-    row(a.id).getByRole("button", { name: "Implemented", exact: true }),
+    row(a.id).getByRole("button", { name: "Implemented ?", exact: true }),
   ).toHaveCount(0);
   // Personal account navigation is identical for all staff roles.
   for (const role of ["admin", "reviewer", "manager"]) {

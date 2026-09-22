@@ -25,6 +25,8 @@ export type Ticket = {
   status: string;
   revision: number;
   authorRevision: number;
+  finalApprovedAt?: string;
+  finalApprovedRevision?: number;
   reviewedRevision: number;
   locked: boolean;
   archived: boolean;
@@ -105,6 +107,19 @@ export async function tickets(
     t.updatedAt = now();
     t.revision++;
     await tx.put("ticket", t.id, t);
+    if (t.status === "completed") {
+      for (const batch of await tx.list<any>("ticket-batch")) {
+        if (!batch.number || batch.completedAt || !batch.ids.includes(t.id))
+          continue;
+        const members = await Promise.all(
+          batch.ids.map((id: string) => tx.get<Ticket>("ticket", id)),
+        );
+        if (members.every((v) => v?.status === "completed")) {
+          batch.completedAt = now();
+          await tx.put("ticket-batch", batch.id, batch);
+        }
+      }
+    }
     return project(t);
   };
   if (route === "ticket-list")
@@ -215,7 +230,14 @@ export async function tickets(
     );
     for (const t of chosen) {
       t.status = input.status;
-      if (input.status === "approved") t.reviewedRevision = t.authorRevision;
+      if (input.status === "approved") {
+        t.reviewedRevision = t.authorRevision;
+        t.finalApprovedAt = now();
+        t.finalApprovedRevision = t.authorRevision;
+      } else {
+        delete t.finalApprovedAt;
+        delete t.finalApprovedRevision;
+      }
       history(
         t,
         "Owner quick " + input.status,
@@ -384,9 +406,42 @@ export async function tickets(
     );
     const key = id(),
       at = now();
+    // Allocated under the existing transaction lock; never renumber historic batches.
+    const sequence = await tx.get("ticket-sequence", "main");
+    const prior = await tx.list<any>("ticket-batch");
+    const number =
+      Math.max(2, sequence?.last || 2, ...prior.map((b) => b.number || 0)) + 1;
+    await tx.put("ticket-sequence", "main", { last: number });
+    const timing = chosen.map((t) => {
+      const submittedAt =
+        t.history
+          .filter((h) => ["submitted", "submitter revised"].includes(h.action))
+          .at(-1)?.at || t.createdAt;
+      const approvedAt =
+        t.finalApprovedRevision === t.authorRevision
+          ? t.finalApprovedAt
+          : undefined;
+      return { ticket: t.id, submittedAt, approvedAt };
+    });
+    const completeTiming = timing.every(
+      (v) =>
+        v.approvedAt && Date.parse(v.approvedAt) >= Date.parse(v.submittedAt),
+    );
+    const approvalStartedAt = completeTiming
+      ? timing.map((v) => v.approvedAt!).sort()[0]
+      : null;
+    const submissionApprovalHours = completeTiming
+      ? Math.floor(
+          Math.max(
+            ...timing.map(
+              (v) => Date.parse(v.approvedAt!) - Date.parse(v.submittedAt),
+            ),
+          ) / 3600000,
+        )
+      : null;
     const lines = [
       "# ARR implementation brief",
-      `Batch: ${key}`,
+      `Batch ${number}: ${key}`,
       `Created: ${at}`,
       "",
       "This document is a requirements snapshot, not authorization to execute code.",
@@ -422,7 +477,12 @@ export async function tickets(
       ),
       id: key,
       at,
-      title: required(input.title || "Implementation batch", 160),
+      number,
+      timing,
+      approvalStartedAt,
+      submissionApprovalHours,
+      completedAt: null,
+      title: `Batch ${number} — ${required(input.title || "Implementation batch", 160)}`,
       ids: chosen.map((t) => t.id),
       summary: chosen
         .map((t) => t.title)
@@ -471,7 +531,20 @@ export async function tickets(
     t.ownerText = required(input.ownerText);
     t.privateNotes = text(input.privateNotes || "", 8000);
     t.forms = scope(input.forms);
+    const previousStatus = t.status;
     t.status = input.status;
+    if (input.acknowledge === true) t.reviewedRevision = t.authorRevision;
+    if (
+      input.status === "approved" &&
+      t.reviewedRevision === t.authorRevision &&
+      (input.acknowledge === true || previousStatus !== "approved")
+    ) {
+      t.finalApprovedAt = now();
+      t.finalApprovedRevision = t.authorRevision;
+    } else if (input.status !== "approved" || previousStatus !== "approved") {
+      delete t.finalApprovedAt;
+      delete t.finalApprovedRevision;
+    }
     t.archived = input.archived === true;
     // Acknowledgment is explicit; merely saving unrelated notes never reviews a revision.
     if (input.acknowledge === true) t.reviewedRevision = t.authorRevision;
@@ -488,6 +561,8 @@ export async function tickets(
     t.wording = required(input.wording);
     t.title = required(input.title, 160);
     t.authorRevision++;
+    delete t.finalApprovedAt;
+    delete t.finalApprovedRevision;
     history(t, "submitter revised", t.wording);
     return save(t);
   }

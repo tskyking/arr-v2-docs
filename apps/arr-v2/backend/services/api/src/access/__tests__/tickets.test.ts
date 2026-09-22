@@ -377,9 +377,13 @@ it("Owner completes only requested implementation without changing the batch", a
   expect(done.status).toBe("completed");
   expect(done.locked).toBeTruthy();
   expect(done.history.at(-1).action).toBe("Owner marked implemented");
-  expect(await store.transaction((tx) => tx.list("ticket-batch"))).toEqual(
-    before,
-  );
+  const after = await store.transaction((tx) => tx.list("ticket-batch"));
+  for (const old of before) {
+    const updated = after.find((b: any) => b.id === old.id)!;
+    expect(updated.brief).toBe(old.brief);
+    expect(updated.implementations).toEqual(old.implementations);
+    if (old.ids.includes(t.id)) expect(updated.completedAt).toBeTruthy();
+  }
 });
 
 it("deletion requires Owner confirmation and removes only eligible unbatched tickets", async () => {
@@ -431,4 +435,59 @@ it("deletion requires Owner confirmation and removes only eligible unbatched tic
   await expect(
     call("ticket-delete", { id: t.id, revision: t.revision, confirm: true }),
   ).rejects.toThrow("cannot be deleted");
+});
+
+it("numbers batches sequentially from three and freezes complete-batch timing", async () => {
+  // Existing test batches have already consumed numbers; fresh floor is checked by the earliest one.
+  const existing = await store.transaction((tx) => tx.list("ticket-batch"));
+  expect(
+    Math.min(...existing.filter((b) => b.number).map((b) => b.number)),
+  ).toBe(3);
+  const one = await save(await create(), {
+    status: "approved",
+    acknowledge: true,
+  });
+  const two = await save(await create(), {
+    status: "approved",
+    acknowledge: true,
+  });
+  await store.transaction(async (tx) => {
+    for (const [ticket, submitted, approved] of [
+      [one, "2026-09-20T00:00:00Z", "2026-09-20T03:59:00Z"],
+      [two, "2026-09-20T01:00:00Z", "2026-09-20T06:01:00Z"],
+    ] as const) {
+      const t = await tx.get("ticket", ticket.id);
+      t.history.push({
+        action: "submitter revised",
+        at: submitted,
+        by: "alice",
+        text: t.wording,
+      });
+      t.finalApprovedAt = approved;
+      t.finalApprovedRevision = t.authorRevision;
+      await tx.put("ticket", t.id, t);
+    }
+  });
+  const batch = await call("ticket-batch", { ids: [one.id, two.id] });
+  expect(batch.submissionApprovalHours).toBe(5);
+  expect(batch.approvalStartedAt).toBe("2026-09-20T03:59:00Z");
+  expect(batch.number).toBe(
+    Math.max(...existing.map((b) => b.number || 0)) + 1,
+  );
+  expect(batch.title).toContain(`Batch ${batch.number}`);
+  const finish = async (id: string) => {
+    const t = (await call("ticket-list")).tickets.find((v: any) => v.id === id);
+    await call("ticket-complete", { id, revision: t.revision });
+  };
+  await finish(one.id);
+  expect(
+    (await call("ticket-batch-download", { id: batch.id })).completedAt,
+  ).toBeNull();
+  await finish(two.id);
+  const done = await call("ticket-batch-download", { id: batch.id });
+  expect(done.completedAt).toBeTruthy();
+  expect(
+    (await call("ticket-batch-download", { id: batch.id })).completedAt,
+  ).toBe(done.completedAt);
+  expect(done.brief).toBe(batch.brief);
 });
