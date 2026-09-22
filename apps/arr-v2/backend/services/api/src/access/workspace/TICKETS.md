@@ -13,8 +13,8 @@ Available at the bottom of every signed-in workspace tab; never on the login or 
 - Explicitly acknowledge revisions before batching (either adapt requirements or keep your wording). Approving status alone does not acknowledge revisions.
 - Move tickets up/down; global order persists separately from filters. Initially tickets are in submission order. New tickets append.
 - Select tickets in the rightmost column. Approve, then prepare an implementation batch. Generation requires all selected tickets to be approved, reviewed, unarchived and not already locked in a batch.
-- Review and download a self-contained HTML brief with requirements and screenshots. Private notes are excluded unless explicitly checked. The saved snapshot never changes when a ticket changes later.
-- Downloading a brief does not execute code or contact an agent. Send the reviewed brief to Sky with an explicit “Please implement this brief.”
+- Review and download an editable Word brief (or optional HTML copy) with requirements and screenshots. Private notes are excluded unless explicitly checked. The saved snapshot never changes when a ticket changes later.
+- Downloading a brief does not execute code or contact an agent. Send the brief to Sky for clarification review first, then explicitly authorize implementation when ready.
 - Share selected tickets with a named active account for 1 minute through 9h 59m. Regranting sets a new expiry; revoke ends server access immediately. This never grants form access. Shared images require a fresh authorization check.
 
 ## Filters and status
@@ -31,3 +31,10 @@ Server transactions serialize mutations; revision checks reject stale writes. Ow
 - `npm run build`
 - `node services/api/src/access/workspace/tickets-browser-check.mjs` against isolated local dev port 19331 with the fixture password specified in that local-only test; never point it at production.
 - Existing workspace browser test exercises requester submission, account activation and approvals.
+
+## Editable Word briefs and archive
+The Owner archive sits at the bottom of the ticket section on every A+ workspace tab. Each batch has a short editable headline summary, creation timestamp and zero or more Owner-recorded implementation dates/notes. No date is inferred from exporting, downloading or status. Recording a date does not change ticket status or archived requirements. Stale metadata updates are rejected.
+
+Download Word (.docx) generates a real, macro-free OOXML document with editable requirements and embedded screenshots. No external image URLs, scripts or macros are included. Older saved batches can also be exported to Word. The saved requirements remain fixed; editing a downloaded file does not upload or alter the archived copy. Subsequent downloads include current archive metadata and dates alongside the unchanged requirements.
+
+Review-first handoff: upload the Word brief with any edits/additional instructions; ask Sky to identify ambiguities and ask useful clarification questions before coding. Explicit Owner authorization is still required to implement. This adds no OCR or content-screening system and does not restrict outside screenshot references.
