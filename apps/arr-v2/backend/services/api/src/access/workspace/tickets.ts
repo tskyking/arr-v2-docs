@@ -132,6 +132,33 @@ export async function tickets(
     };
   // One transaction: reject stale/mixed locked selections before touching any ticket.
   // Completion is an explicit Owner acknowledgment, separate from batch creation.
+  if (route === "ticket-delete") {
+    check(owner, "Owner only.", 403);
+    const t = all.find((t) => t.id === input.id);
+    check(t, "Ticket unavailable.", 404);
+    check(
+      t.revision === input.revision,
+      "Ticket changed. Refresh before deleting.",
+      409,
+    );
+    check(input.confirm === true, "Confirm deletion.");
+    const batches = await tx.list<any>("ticket-batch");
+    check(
+      !t.locked &&
+        ["new", "approved", "deferred", "rejected"].includes(t.status) &&
+        !batches.some((b) => b.ids?.includes(t.id)),
+      "Batched or implemented tickets cannot be deleted.",
+      409,
+    );
+    // Images, comments, and history are held within the ticket aggregate.
+    await tx.remove("ticket", t.id);
+    for (const g of grants.filter((g) => g.ticket === t.id))
+      await tx.remove("ticket-share", g.id);
+    await tx.put("ticket-order", "main", {
+      ids: order.filter((id) => id !== t.id),
+    });
+    return { ok: true };
+  }
   if (route === "ticket-complete") {
     check(owner, "Owner only.", 403);
     const t = all.find((t) => t.id === input.id);

@@ -88,6 +88,41 @@ function downloadBrief(b) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+function confirmTicketDelete(t) {
+  const dialog = document.createElement("dialog");
+  dialog.setAttribute("aria-label", "Delete ticket confirmation");
+  dialog.append(
+    node("h3", "", "Delete ticket?"),
+    node("p", "", t.title),
+    node(
+      "p",
+      "",
+      "Are you sure you want to delete? This permanently removes this ticket, its comments, history and screenshots from the system. Downloaded copies and backups are not erased.",
+    ),
+  );
+  const close = () => {
+    dialog.close();
+    dialog.remove();
+  };
+  const no = button("No", close);
+  const yes = button("Yes", async () => {
+    await api("ticket-delete", {
+      id: t.id,
+      revision: t.revision,
+      confirm: true,
+    });
+    close();
+    ticketSelection.delete(t.id);
+    if (ticketFocus === t.id) ticketFocus = null;
+    await refreshTickets();
+    msg("Ticket deleted.");
+  });
+  dialog.append(no, yes);
+  dialog.addEventListener("cancel", () => dialog.remove());
+  document.body.append(dialog);
+  dialog.showModal();
+  no.focus();
+}
 function ticketQuickLocked(t) {
   return (
     t.locked ||
@@ -268,6 +303,12 @@ function renderTickets() {
           msg("Ticket marked Completed.");
         }),
       );
+    if (
+      owner &&
+      !t.locked &&
+      ["new", "approved", "deferred", "rejected"].includes(t.status)
+    )
+      state.append(button("Delete", () => confirmTicketDelete(t)));
     if (t.authorRevision !== t.reviewedRevision)
       state.append(node("p", "warning", "Owner review required"));
     if (owner) {

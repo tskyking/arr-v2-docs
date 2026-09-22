@@ -381,3 +381,54 @@ it("Owner completes only requested implementation without changing the batch", a
     before,
   );
 });
+
+it("deletion requires Owner confirmation and removes only eligible unbatched tickets", async () => {
+  for (const status of ["new", "approved", "deferred", "rejected"]) {
+    const t = await save(await create(), { status });
+    const input = { id: t.id, revision: t.revision, confirm: true };
+    await expect(call("ticket-delete", input, "alice")).rejects.toThrow(
+      "Owner",
+    );
+    await expect(
+      call("ticket-delete", { ...input, confirm: false }),
+    ).rejects.toThrow("Confirm");
+    await expect(
+      call("ticket-delete", { ...input, revision: 0 }),
+    ).rejects.toThrow("changed");
+    await store.transaction(async (tx) => {
+      await tx.put("ticket-share", "delete-grant", {
+        id: "delete-grant",
+        ticket: t.id,
+        user: "bob",
+        expires: "2099-01-01",
+      });
+      await tx.put("ticket-order", "main", { ids: [t.id] });
+    });
+    await call("ticket-delete", input);
+    expect(
+      await store.transaction((tx) => tx.get("ticket", t.id)),
+    ).toBeUndefined();
+    expect(
+      await store.transaction((tx) => tx.get("ticket-share", "delete-grant")),
+    ).toBeUndefined();
+    expect(
+      (await store.transaction((tx) => tx.get("ticket-order", "main"))).ids,
+    ).not.toContain(t.id);
+  }
+  for (const status of [
+    "implementation requested",
+    "in progress",
+    "completed",
+  ]) {
+    const t = await save(await create(), { status });
+    await expect(
+      call("ticket-delete", { id: t.id, revision: t.revision, confirm: true }),
+    ).rejects.toThrow("cannot be deleted");
+  }
+  let t = await save(await create(), { status: "approved" });
+  await call("ticket-batch", { ids: [t.id] });
+  t = (await call("ticket-list")).tickets.find((v: any) => v.id === t.id);
+  await expect(
+    call("ticket-delete", { id: t.id, revision: t.revision, confirm: true }),
+  ).rejects.toThrow("cannot be deleted");
+});

@@ -48,3 +48,7 @@ Owner row Approve/Reject controls sit below the selection checkbox. Approve (inc
 - Click a ticket title to expand its light-blue details immediately below its row. Only one ticket is expanded; click its title again or Collapse to close it.
 - Owner sees Implemented beneath the status only for implementation-requested tickets. This explicit acknowledgment changes status to completed and records an attributed history event; Hide Completed remains checked by default.
 - Completion preserves the locked requirements snapshot and does not infer or change archive implementation dates. The server enforces Owner access, expected revision, and the exact source status.
+
+## Owner deletion
+Only A+ sees Delete in Status/activity for unlocked New, Approved, Deferred or Rejected tickets. Yes/No confirmation defaults focus to No. The server checks Owner permission, revision, confirmation, status, lock and batch membership before permanently removing the ticket aggregate (including images/history/comments), grants and priority entry. Saved batches cannot be deleted this way; external downloads and backups are not erased.
+Submitters may replace editable wording with “Delete” to ask the Owner to remove a ticket. This is ordinary text, never automatic deletion. Locked tickets may use a follow-up comment instead.
