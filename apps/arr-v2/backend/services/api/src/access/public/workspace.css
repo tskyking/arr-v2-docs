@@ -379,3 +379,57 @@ body.prr #identity-band {
 .ticket-section fieldset {
   margin: 12px 0;
 }
+
+.account-links {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 14px;
+  justify-content: end;
+  align-items: center;
+}
+.account-signout {
+  grid-column: 1;
+  grid-row: 1;
+}
+.account-name {
+  grid-column: 2;
+  grid-row: 1;
+}
+.account-password {
+  grid-column: 2;
+  grid-row: 2;
+}
+#identity-band .account-link {
+  border: 0;
+  background: transparent;
+  color: white;
+  text-decoration: underline;
+  padding: 3px;
+  font: inherit;
+  font-weight: normal;
+  min-height: 32px;
+}
+#identity-band .account-link:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+#ticket-detail:not(:empty) {
+  background: #eaf4ff;
+  border: 2px solid #a2c6e7;
+  border-radius: 10px;
+  padding: 18px;
+  margin-top: 24px;
+  color: #193b42;
+}
+.ticket-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+.ticket-quick-actions button:disabled {
+  background: #e4e5e6;
+  color: #72777a;
+  border-color: #ccd0d2;
+  cursor: not-allowed;
+}
