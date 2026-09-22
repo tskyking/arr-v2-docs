@@ -30,6 +30,15 @@ const safe = (r: Request) => {
   const { receiptHash, photo, ...rest } = r;
   return { ...rest, hasPhoto: !!photo };
 };
+const accountDate = (at: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  }).format(new Date(at));
+const suspendedMessage = (u: User) =>
+  `Suspended Role ${accountDate(u.suspendedAt!)} - Contact Owner Admin`;
 export class WorkspaceService {
   private lastCleanup = 0;
   constructor(public store: WorkspaceStore) {}
@@ -125,6 +134,17 @@ export class WorkspaceService {
         this.lastCleanup = Date.now();
       }
       const u = await this.user(tx, token);
+      if (route === "session-state") {
+        const session = await tx.get("session", sha256(token));
+        const account =
+          session && session.expires > now()
+            ? await tx.get<User>("user", session.user)
+            : undefined;
+        return {
+          active: !!u,
+          notice: account?.suspendedAt ? suspendedMessage(account) : null,
+        };
+      }
       if (route === "catalog")
         return {
           forms: (await tx.list<Form>("form"))
@@ -148,17 +168,31 @@ export class WorkspaceService {
             v.email === String(input.username).toLowerCase(),
         );
         check(
-          found?.active && verifyPassword(input.password, found.password),
+          found && verifyPassword(input.password, found.password),
           "Username or password is incorrect.",
           401,
         );
+        check(
+          !found.suspendedAt,
+          found.suspendedAt ? suspendedMessage(found) : "Account unavailable.",
+          403,
+        );
+        check(found.active, "Username or password is incorrect.", 401);
+        const notice =
+          found.resumeNotice && found.resumedAt
+            ? `Okay, suspension has been retracted on ${accountDate(found.resumedAt)}`
+            : null;
+        if (found.resumeNotice) {
+          delete found.resumeNotice;
+          await tx.put("user", found.id, found);
+        }
         const session = secret();
         await tx.put("session", sha256(session), {
           user: found.id,
           generation: found.generation,
           expires: until(4 * 3600000),
         });
-        return { token: session, user: publicUser(found) };
+        return { token: session, user: publicUser(found), notice };
       }
       if (route === "logout") {
         await tx.remove("session", sha256(token));
@@ -183,6 +217,11 @@ export class WorkspaceService {
           403,
         );
         if (route === "activation-info") return { username: user.username };
+        if (input.passwordConfirm !== undefined)
+          check(
+            input.password === input.passwordConfirm,
+            "Passwords do not match.",
+          );
         user.password = hashPassword(input.password);
         user.generation++;
         await tx.put("user", user.id, user);
@@ -418,7 +457,8 @@ export class WorkspaceService {
         };
       }
       check(u, "Please sign in.", 401);
-      if (route.startsWith("ticket-")) return tickets(tx, u, route, input, photo);
+      if (route.startsWith("ticket-"))
+        return tickets(tx, u, route, input, photo);
       if (route === "dashboard") {
         const forms = await tx.list<Form>("form");
         const records = (await tx.list<Request>("request"))
@@ -494,6 +534,57 @@ export class WorkspaceService {
         });
         return { ok: true };
       }
+      if (["user-suspend", "user-resume", "user-delete"].includes(route)) {
+        check(u.role === "owner", "Owner only.", 403);
+        const target = await tx.get<User>("user", text(input.id));
+        check(target, "Account not found.", 404);
+        check(target.role !== "owner", "A+ Owner accounts are protected.", 403);
+        check(
+          target.generation === input.generation,
+          "Account changed. Refresh before acting.",
+          409,
+        );
+        if (route === "user-delete") {
+          check(input.confirm === true, "Confirm account deletion.");
+          await tx.put("username-reservation", target.username, {
+            base: target.usernameBase || target.username,
+            sequence: target.usernameSequence || 1,
+          });
+          for (const kind of ["session", "activation", "reset"])
+            await tx.removeForUser(kind, target.id);
+          await tx.remove("access", target.id);
+          await tx.remove("user", target.id);
+          await this.event(tx, u, "account deleted", target.username);
+        } else {
+          check(
+            route === "user-suspend"
+              ? !target.suspendedAt
+              : !!target.suspendedAt,
+            "Account state changed.",
+            409,
+          );
+          target.generation++;
+          if (route === "user-suspend") {
+            target.active = false;
+            target.suspendedAt = now();
+            delete target.resumeNotice;
+          } else {
+            target.active = true;
+            target.resumedAt = now();
+            target.resumeNotice = true;
+            delete target.suspendedAt;
+          }
+          await tx.removeForUser("activation", target.id);
+          await tx.put("user", target.id, target);
+          await this.event(
+            tx,
+            u,
+            route === "user-suspend" ? "account suspended" : "account resumed",
+            target.username,
+          );
+        }
+        return { ok: true };
+      }
       if (route === "user-save") {
         check(["owner", "admin"].includes(u.role), "Not permitted.", 403);
         const old = input.id
@@ -501,7 +592,7 @@ export class WorkspaceService {
           : undefined;
         check(!input.id || old, "Account not found.");
         check(
-          !old || old.id !== "owner",
+          !old || old.role !== "owner",
           "A+ cannot be disabled or reassigned here.",
         );
         const role = input.role;
@@ -523,8 +614,9 @@ export class WorkspaceService {
             "Admins may only manage reviewers for their own forms.",
             403,
           );
-        const username = text(input.username, 80).toLowerCase(),
-          mail = email(input.email);
+        let username = text(input.username, 80).toLowerCase();
+        const requestedUsername = username;
+        const mail = email(input.email);
         check(
           /^[a-z0-9._-]{3,80}$/.test(username),
           "Use a username with letters, digits, dot, dash or underscore.",
@@ -536,23 +628,62 @@ export class WorkspaceService {
           ),
           "Username or email already exists.",
         );
+        let usernameBase = old?.usernameBase || requestedUsername,
+          usernameSequence = old?.usernameSequence || 1;
+        if (!old || old.username !== username) {
+          const reservation = await tx.get("username-reservation", username);
+          usernameBase = reservation?.base || requestedUsername;
+          usernameSequence = 1;
+          if (reservation) {
+            usernameSequence = 2;
+            const users = await tx.list<User>("user");
+            while (
+              (await tx.get(
+                "username-reservation",
+                `${usernameBase.slice(0, 70)}-${usernameSequence}`,
+              )) ||
+              users.some(
+                (v) =>
+                  v.username ===
+                  `${usernameBase.slice(0, 70)}-${usernameSequence}`,
+              )
+            )
+              usernameSequence++;
+            username = `${usernameBase.slice(0, 70)}-${usernameSequence}`;
+          }
+        }
         const user: User = {
           id: old?.id ?? id(),
           username,
+          usernameBase,
+          usernameSequence,
+          ...(old?.suspendedAt ? { suspendedAt: old.suspendedAt } : {}),
+          ...(old?.resumedAt
+            ? { resumedAt: old.resumedAt, resumeNotice: old.resumeNotice }
+            : {}),
           email: mail,
           role,
           forms,
-          active: input.active === true,
+          active: !old?.suspendedAt && input.active === true,
           generation: (old?.generation ?? 0) + 1,
           ...(old?.password && old.email === mail
             ? { password: old.password }
             : {}),
         };
+        if (old && old.username !== username)
+          await tx.put("username-reservation", old.username, {
+            base: old.usernameBase || old.username,
+            sequence: old.usernameSequence || 1,
+          });
+        await tx.put("username-reservation", username, {
+          base: usernameBase,
+          sequence: usernameSequence,
+        });
         await tx.put("user", user.id, user);
         await tx.remove("access", user.id);
         if (user.active && !user.password) await this.activation(tx, user);
         await this.event(tx, u, "account updated", username);
-        return { ok: true };
+        return { ok: true, username };
       }
       if (route === "setup-link") {
         check(
@@ -603,6 +734,11 @@ export class WorkspaceService {
           "Current password incorrect.",
           401,
         );
+        if (input.passwordConfirm !== undefined)
+          check(
+            input.password === input.passwordConfirm,
+            "Passwords do not match.",
+          );
         u.password = hashPassword(input.password);
         u.generation++;
         await tx.put("user", u.id, u);

@@ -41,6 +41,7 @@ try {
   await worker.goto(base+'#activate='+links[i].split('#activate=')[1]);
   await expect(worker.locator('#app')).toContainText('Account: '+names[i]);
   await worker.locator('#activate [name=password]').fill(password);
+  await worker.locator('#activate [name=passwordConfirm]').fill(password);
   await worker.getByRole('button',{name:'Set password',exact:true}).click();
   await expect(worker.locator('#login [name=username]')).toHaveValue(names[i]);
   const cookies=await worker.context().cookies();

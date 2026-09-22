@@ -222,10 +222,10 @@ export function createAccessHandler(
         const route = suffix.slice(3);
         await store.limit(
           "v2:" + route + ":" + sha256(ip),
-          ["login", "activate", "activation-info", "reset-request"].includes(route) ? 12 : 120,
+          ["login", "activate", "activation-info", "reset-request"].includes(route) ? 12 : route === "session-state" ? 1200 : 120,
           900,
         );
-        await store.limit("v2:global", 3000, 3600);
+        await store.limit(route === "session-state" ? "v2:session-state:global" : "v2:global", route === "session-state" ? 120000 : 3000, 3600);
         if (
           ["login", "activate", "activation-info", "reset-request", "submit", "draft"].includes(
             route,

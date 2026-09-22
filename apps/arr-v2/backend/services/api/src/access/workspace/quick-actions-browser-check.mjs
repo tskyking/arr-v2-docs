@@ -152,6 +152,7 @@ try {
       .click();
     await s.locator("[name=current]").fill("quick-test-password");
     await s.locator("[name=password]").fill("changed-test-password");
+    await s.locator("[name=passwordConfirm]").fill("changed-test-password");
     await s.getByRole("button", { name: "Save password", exact: true }).click();
     await expect(s.locator("#login")).toBeVisible();
     await expect(s.locator("#identity-band")).toBeEmpty();
