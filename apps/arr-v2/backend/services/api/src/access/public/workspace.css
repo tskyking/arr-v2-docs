@@ -501,3 +501,24 @@ button:disabled:not(.primary) {
 .ticket-upload:focus {
   outline: 2px solid #1559a6;
 }
+
+#ticket-filters {
+  margin-bottom: 16px;
+}
+#ticket-batches:not(:empty) {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 3px solid #111;
+}
+#ticket-batches > h3 {
+  font-size: 1.6rem;
+  color: #111;
+}
+.batch-details > summary {
+  cursor: pointer;
+  color: #1559a6;
+  margin: 10px 0;
+}
+.ticket-scroll {
+  overflow-anchor: none;
+}

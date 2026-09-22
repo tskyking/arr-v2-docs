@@ -173,6 +173,7 @@ try {
   await expect(page.locator("#ticket-batches")).toContainText(
     "Queue layout improvements",
   );
+  await page.locator("#ticket-batches .batch-details summary").first().click();
   const wd = page.waitForEvent("download");
   await page
     .locator("#ticket-batches")

@@ -491,3 +491,50 @@ it("numbers batches sequentially from three and freezes complete-batch timing", 
   ).toBe(done.completedAt);
   expect(done.brief).toBe(batch.brief);
 });
+
+it("backfills legacy metrics on Owner reads without rewriting requirements or titles", async () => {
+  let t = await create();
+  await call("ticket-quick-action", {
+    tickets: [{ id: t.id, revision: t.revision }],
+    status: "approved",
+  });
+  const b = await call("ticket-batch", { ids: [t.id] });
+  t = (await call("ticket-list")).tickets.find((v: any) => v.id === t.id);
+  await call("ticket-complete", { id: t.id, revision: t.revision });
+  await store.transaction(async (tx) => {
+    const legacy = await tx.get("ticket-batch", b.id);
+    for (const key of [
+      "timing",
+      "number",
+      "approvalStartedAt",
+      "submissionApprovalHours",
+      "completedAt",
+      "timingRecoveryVersion",
+    ])
+      delete legacy[key];
+    legacy.title = "Manual historic title";
+    await tx.put("ticket-batch", b.id, legacy);
+    const ticket = await tx.get("ticket", t.id);
+    delete ticket.finalApprovedAt;
+    delete ticket.finalApprovedRevision;
+    await tx.put("ticket", t.id, ticket);
+  });
+  await call("ticket-list", {}, "alice");
+  expect(
+    (await store.transaction((tx) => tx.get("ticket-batch", b.id)))
+      .approvalStartedAt,
+  ).toBeUndefined();
+  const list = await call("ticket-list");
+  const recovered = list.batches.find((v: any) => v.id === b.id);
+  expect(recovered.approvalStartedAt).toBeTruthy();
+  expect(recovered.completedAt).toBeTruthy();
+  expect(recovered.submissionApprovalHours).toBe(0);
+  const saved = await store.transaction((tx) => tx.get("ticket-batch", b.id));
+  expect(saved.brief).toBe(b.brief);
+  expect(saved.title).toBe("Manual historic title");
+  expect(saved.number).toBeUndefined();
+  await call("ticket-list");
+  expect(await store.transaction((tx) => tx.get("ticket-batch", b.id))).toEqual(
+    saved,
+  );
+});

@@ -3,9 +3,16 @@
 let ticketState = null,
   ticketSelection = new Set(),
   ticketFocus = null;
+function ticketDefaultDates() {
+  const today = new Date(),
+    start = new Date();
+  start.setDate(today.getDate() - 14);
+  const day = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { from: day(start), to: day(today) };
+}
 let ticketFilters = {
-  from: new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10),
-  to: new Date().toISOString().slice(0, 10),
+  ...ticketDefaultDates(),
   completed: true,
   rejected: true,
   archived: false,
@@ -232,11 +239,20 @@ function renderTickets() {
     };
   }
   filters.append(
-    button("All dates", () => {
-      ticketFilters.from = "";
-      ticketFilters.to = "";
-      renderTickets();
-    }),
+    button(
+      !ticketFilters.from && !ticketFilters.to
+        ? "Restore Date Range"
+        : "All dates",
+      () => {
+        if (!ticketFilters.from && !ticketFilters.to) {
+          Object.assign(ticketFilters, ticketDefaultDates());
+        } else {
+          ticketFilters.from = "";
+          ticketFilters.to = "";
+        }
+        renderTickets();
+      },
+    ),
   );
   const rows = ticketState.tickets.filter((t) => {
     const d = new Date(t.updatedAt);
@@ -305,6 +321,10 @@ function renderTickets() {
         button("Implemented ?", async () => {
           await api("ticket-complete", { id: t.id, revision: t.revision });
           ticketSelection.delete(t.id);
+          if (ticketFilters.completed) {
+            await collapseCompletedTicket(t.id);
+            if (ticketFocus === t.id) ticketFocus = null;
+          }
           await refreshTickets();
           msg("Ticket marked Completed.");
         }),
@@ -500,6 +520,11 @@ function renderTickets() {
         batchMetricNode(b),
         node("strong", "", b.title),
         node("p", "", b.summary || b.title),
+      );
+      const details = document.createElement("details");
+      details.className = "batch-details";
+      details.append(node("summary", "", "Batch details"));
+      details.append(
         node(
           "small",
           "",
@@ -513,7 +538,7 @@ function renderTickets() {
               "Not recorded"),
         ),
       );
-      actions(row, [
+      actions(details, [
         ["Download Word (.docx)", () => downloadWordBrief(b.id)],
         [
           "View / record implementation",
@@ -524,6 +549,7 @@ function renderTickets() {
           },
         ],
       ]);
+      row.append(details);
       archive.append(row);
     }
   } else
@@ -555,19 +581,20 @@ function batchMetricNode(b) {
   return e;
 }
 function batchMetrics(b) {
-  const elapsed = b.approvalStartedAt
-    ? Math.max(
-        0,
-        Math.floor(
-          ((b.completedAt
-            ? Date.parse(b.completedAt)
-            : Date.now() + ticketClockOffset) -
-            Date.parse(b.approvalStartedAt)) /
-            3600000,
-        ),
-      )
-    : null;
-  return `Approval → implementation: ${elapsed === null ? "Unavailable" : elapsed + " h"}${b.completedAt ? " (final)" : ""} · Longest submission → approval: ${b.submissionApprovalHours == null ? "Unavailable" : b.submissionApprovalHours + " h"}`;
+  const elapsed =
+    b.approvalStartedAt && !(b.allCompleted && !b.completedAt)
+      ? Math.max(
+          0,
+          Math.floor(
+            ((b.completedAt
+              ? Date.parse(b.completedAt)
+              : Date.now() + ticketClockOffset) -
+              Date.parse(b.approvalStartedAt)) /
+              3600000,
+          ),
+        )
+      : null;
+  return `Approval → implementation: ${elapsed === null ? b.approvalTimingMissing || (b.allCompleted && !b.completedAt ? "Implementation time not recorded" : "Approval time not recorded") : elapsed + " h"}${b.completedAt ? " (final)" : ""} · Longest submission → approval: ${b.submissionApprovalHours == null ? b.submissionTimingMissing || "Approval time not recorded" : b.submissionApprovalHours + " h"}`;
 }
 function showBrief(b) {
   const box = $("#ticket-detail");
@@ -898,6 +925,37 @@ function comparisonSection(label, tokens, added, removed, open) {
   });
   d.append(p);
   return d;
+}
+// Animate real layout height after successful completion, including inline details.
+async function collapseCompletedTicket(id) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const rows = [
+    ...document.querySelectorAll(".ticket-table tbody > tr"),
+  ].filter((e) => e.dataset.ticketId === id);
+  if (!rows.length) return;
+  const height = rows.reduce(
+    (sum, e) => sum + e.getBoundingClientRect().height,
+    0,
+  );
+  const placeholder = document.createElement("tr"),
+    cell = document.createElement("td"),
+    gap = document.createElement("div");
+  cell.colSpan = rows[0].children.length;
+  cell.style.cssText = "padding:0;border:0;background:white";
+  gap.style.cssText = `height:${height}px;overflow:hidden;background:white`;
+  cell.append(gap);
+  placeholder.append(cell);
+  rows[0].before(placeholder);
+  rows.forEach((e) => e.remove());
+  try {
+    await gap.animate([{ height: `${height}px` }, { height: "0px" }], {
+      duration: 1000,
+      easing: "ease-in-out",
+      fill: "forwards",
+    }).finished;
+  } finally {
+    placeholder.remove();
+  }
 }
 async function moveTicketAnimated(t, direction) {
   const positions = new Map(

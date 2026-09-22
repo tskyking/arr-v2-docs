@@ -1,3 +1,4 @@
+import { recoverBatchTiming } from "./batch-timing.js";
 import { briefDocx, REVIEW_INSTRUCTION } from "./brief-docx.js";
 import { check, id, now, text, type User, type Form } from "./model.js";
 import type { WorkspaceTx } from "./store.js";
@@ -122,6 +123,16 @@ export async function tickets(
     }
     return project(t);
   };
+  // Owner reads perform an idempotent timing-only migration of historic batches.
+  const recover = async (b: any) => {
+    const recovered = recoverBatchTiming(b, all);
+    if (JSON.stringify(recovered) !== JSON.stringify(b))
+      await tx.put("ticket-batch", b.id, recovered);
+    return recovered;
+  };
+  if (owner && route === "ticket-list") {
+    for (const b of await tx.list("ticket-batch")) await recover(b);
+  }
   if (route === "ticket-list")
     return {
       tickets: ordered.filter(visible).map(project),
@@ -310,8 +321,9 @@ export async function tickets(
     ].includes(route)
   ) {
     check(owner, "Owner only.", 403);
-    const b = await tx.get("ticket-batch", text(input.id));
+    let b = await tx.get("ticket-batch", text(input.id));
     check(b, "Batch not found.", 404);
+    b = await recover(b);
     if (route === "ticket-batch-word")
       return {
         filename: `ARR-implementation-${b.id}.docx`,
