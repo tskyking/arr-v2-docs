@@ -290,3 +290,67 @@ it("exports real editable Word with embedded images and owner-only archive metad
     (await call("ticket-batch-word", { id: "legacy-brief" })).base64,
   ).toBeTruthy();
 });
+
+it("quick decisions acknowledge revisions and reject atomically without deleting or touching locked tickets", async () => {
+  let a = await create(),
+    b = await create();
+  a = await call(
+    "ticket-edit",
+    { id: a.id, revision: a.revision, title: a.title, wording: "New details" },
+    "alice",
+  );
+  const selected = [
+    { id: a.id, revision: a.revision },
+    { id: b.id, revision: b.revision },
+  ];
+  await expect(
+    call(
+      "ticket-quick-action",
+      { tickets: selected, status: "approved" },
+      "alice",
+    ),
+  ).rejects.toThrow("Owner");
+  await call("ticket-quick-action", { tickets: selected, status: "approved" });
+  let rows = (await call("ticket-list")).tickets;
+  a = rows.find((t: any) => t.id === a.id);
+  b = rows.find((t: any) => t.id === b.id);
+  expect(a.ownerText).toBe("Please show age");
+  expect(a.reviewedRevision).toBe(a.authorRevision);
+  await expect(
+    call("ticket-quick-action", {
+      tickets: [
+        { id: a.id, revision: a.revision },
+        { id: b.id, revision: 0 },
+      ],
+      status: "rejected",
+    }),
+  ).rejects.toThrow("changed");
+  expect(
+    (await call("ticket-list")).tickets.find((t: any) => t.id === a.id).status,
+  ).toBe("approved");
+  await call("ticket-batch", { ids: [b.id] });
+  rows = (await call("ticket-list")).tickets;
+  b = rows.find((t: any) => t.id === b.id);
+  await expect(
+    call("ticket-quick-action", {
+      tickets: [
+        { id: a.id, revision: a.revision },
+        { id: b.id, revision: b.revision },
+      ],
+      status: "rejected",
+    }),
+  ).rejects.toThrow("Batched");
+  await call("ticket-quick-action", {
+    tickets: [{ id: a.id, revision: a.revision }],
+    status: "rejected",
+  });
+  rows = (await call("ticket-list")).tickets;
+  expect(rows.find((t: any) => t.id === a.id).status).toBe("rejected");
+  const completed = await save(await create(), { status: "completed" });
+  await expect(
+    call("ticket-quick-action", {
+      tickets: [{ id: completed.id, revision: completed.revision }],
+      status: "approved",
+    }),
+  ).rejects.toThrow("implemented");
+});

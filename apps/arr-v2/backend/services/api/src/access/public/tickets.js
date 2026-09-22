@@ -88,6 +88,50 @@ function downloadBrief(b) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+function ticketQuickLocked(t) {
+  return (
+    t.locked ||
+    ["implementation requested", "in progress", "completed"].includes(t.status)
+  );
+}
+async function ticketQuickAction(chosen, status) {
+  if (!chosen.length) throw Error("Select tickets first.");
+  if (chosen.some(ticketQuickLocked))
+    throw Error(
+      "Deselect batched or implemented tickets; quick actions cannot change them.",
+    );
+  if (
+    status === "rejected" &&
+    !confirm(
+      `Reject exactly ${chosen.length} selected ticket(s)? They will not be deleted.\n${chosen.map((t) => t.title).join("\n")}`,
+    )
+  )
+    return;
+  await api("ticket-quick-action", {
+    tickets: chosen.map((t) => ({ id: t.id, revision: t.revision })),
+    status,
+  });
+  chosen.forEach((t) => ticketSelection.delete(t.id));
+  if (
+    status === "rejected" &&
+    ticketFilters.rejected &&
+    chosen.some((t) => t.id === ticketFocus)
+  )
+    ticketFocus = null;
+  await refreshTickets();
+  msg(`${chosen.length} ticket(s) ${status}.`);
+}
+function updateQuickSelection() {
+  const selected = ticketState.tickets.filter((t) => ticketSelection.has(t.id));
+  document.querySelectorAll("#ticket-batch-actions button").forEach((b) => {
+    if (["Approve selected", "Reject Selected"].includes(b.textContent)) {
+      b.disabled = !selected.length || selected.some(ticketQuickLocked);
+      b.title = b.disabled
+        ? "Select only unlocked, unimplemented tickets."
+        : "";
+    }
+  });
+}
 function renderTickets() {
   const section = $("#tickets");
   if (!section || !ticketState) return;
@@ -243,15 +287,32 @@ function renderTickets() {
           },
         ],
       ]);
+      const selectionCell = cell("");
       const c = ticketCheck(
-        cell(""),
+        selectionCell,
         "Select " + t.title,
         ticketSelection.has(t.id),
       );
       c.setAttribute("aria-label", "Select ticket " + t.title);
       c.onchange = () => {
         c.checked ? ticketSelection.add(t.id) : ticketSelection.delete(t.id);
+        updateQuickSelection();
       };
+      const quick = node("div", "ticket-quick-actions");
+      for (const [label, status] of [
+        ["Approve", "approved"],
+        ["Reject", "rejected"],
+      ]) {
+        const b = button(label, () => ticketQuickAction([t], status));
+        b.disabled = ticketQuickLocked(t);
+        b.title = b.disabled
+          ? "Already batched or implemented; quick actions are unavailable."
+          : status === "approved"
+            ? "Accept latest revision using existing Owner requirements."
+            : "Reject without deleting.";
+        quick.append(b);
+      }
+      selectionCell.append(quick);
     }
     table.tBodies[0].append(tr);
   }
@@ -265,26 +326,29 @@ function renderTickets() {
       ),
     );
   if (owner) {
+    $("#ticket-batch-actions").append(
+      node(
+        "p",
+        "muted",
+        "Approve accepts the latest submitter revision with your existing Owner requirements unchanged. Open the ticket first if wording needs editing.",
+      ),
+    );
     actions($("#ticket-batch-actions"), [
       [
         "Approve selected",
-        async () => {
-          const chosen = ticketState.tickets.filter((t) =>
-            ticketSelection.has(t.id),
-          );
-          if (!chosen.length) throw Error("Select tickets first.");
-          for (const t of chosen)
-            await api("ticket-owner-save", {
-              id: t.id,
-              revision: t.revision,
-              ownerText: t.ownerText,
-              privateNotes: t.privateNotes,
-              forms: t.forms,
-              status: "approved",
-              archived: t.archived,
-            });
-          await refreshTickets();
-        },
+        () =>
+          ticketQuickAction(
+            ticketState.tickets.filter((t) => ticketSelection.has(t.id)),
+            "approved",
+          ),
+      ],
+      [
+        "Reject Selected",
+        () =>
+          ticketQuickAction(
+            ticketState.tickets.filter((t) => ticketSelection.has(t.id)),
+            "rejected",
+          ),
       ],
       [
         "Prepare implementation brief",
@@ -420,6 +484,7 @@ function renderTickets() {
       );
   if (ticketFocus && ticketState.tickets.some((t) => t.id === ticketFocus))
     ticketDetail(ticketFocus);
+  updateQuickSelection();
   ticketTick();
 }
 async function downloadWordBrief(id) {

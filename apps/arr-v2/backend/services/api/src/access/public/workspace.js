@@ -85,7 +85,45 @@ function actions(parent, items) {
   parent.append(a);
 }
 function identityLabel(name) {
-  $("#identity-band").textContent = name || "";
+  const band = $("#identity-band");
+  band.replaceChildren();
+  if (name && user && location.hash === "#staff") {
+    const account = node("div", "account-links");
+    const username = node("span", "account-name", name);
+    account.append(
+      button("Sign out", signOut, "account-link account-signout"),
+      username,
+      button(
+        "Change password",
+        changePassword,
+        "account-link account-password",
+      ),
+    );
+    band.append(account);
+  } else band.textContent = name || "";
+}
+async function signOut() {
+  await api("logout");
+  user = null;
+  dash = null;
+  login();
+}
+function changePassword() {
+  const box = node("form", "card");
+  box.innerHTML =
+    '<h2>Change password</h2><label class="field">Current password<input name="current" type="password" required autocomplete="current-password"></label><label class="field">New password<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Save password</button>';
+  box.onsubmit = (e) => {
+    e.preventDefault();
+    run(async () => {
+      await api("password", Object.fromEntries(new FormData(box)));
+      user = null;
+      dash = null;
+      login();
+    });
+  };
+  $("#panel").replaceChildren(box);
+  box.scrollIntoView({ block: "nearest" });
+  box.querySelector("input").focus();
 }
 function theme() {
   identityLabel(
@@ -108,7 +146,7 @@ function current() {
 }
 function reset() {
   receiptName = "";
-  identityLabel("");
+  identityLabel(location.hash === "#staff" ? user?.username : "");
   data = {};
   photo = null;
   page = 1;
@@ -488,30 +526,7 @@ function renderStaff() {
         tab === t ? "selected" : "",
       ),
     );
-  tabs.append(
-    button("Refresh", refreshStaff),
-    button("Change password", () => {
-      const box = node("form", "card");
-      box.innerHTML =
-        '<label class="field">Current password<input name="current" type="password" required autocomplete="current-password"></label><label class="field">New password<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Save password</button>';
-      box.onsubmit = (e) => {
-        e.preventDefault();
-        run(async () => {
-          await api("password", Object.fromEntries(new FormData(box)));
-          user = null;
-          dash = null;
-          login();
-        });
-      };
-      $("#panel").replaceChildren(box);
-    }),
-    button("Sign out", async () => {
-      await api("logout");
-      user = null;
-      dash = null;
-      login();
-    }),
-  );
+  tabs.append(button("Refresh", refreshStaff));
   if (tab === "queue") queue();
   if (tab === "forms") forms();
   if (tab === "accounts") accounts();

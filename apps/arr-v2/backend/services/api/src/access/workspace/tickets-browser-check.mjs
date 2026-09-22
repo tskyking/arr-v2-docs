@@ -37,7 +37,7 @@ try {
   await expect(page.locator("#tickets h2")).toHaveText(
     "Enhancement & bug tickets",
   );
-  await expect(page.locator("#identity-band")).toHaveText("owner");
+  await expect(page.locator("#identity-band .account-name")).toHaveText("owner");
   const username = "ticketuser" + Date.now();
   await api(page, "user-save", {
     username,
@@ -177,6 +177,7 @@ try {
   await page
     .locator("#ticket-batches")
     .getByRole("button", { name: "Download Word (.docx)", exact: true })
+    .first()
     .click();
   await (await wd).saveAs("/tmp/arr-word-brief.docx");
   const { default: AdmZip } = await import("adm-zip");

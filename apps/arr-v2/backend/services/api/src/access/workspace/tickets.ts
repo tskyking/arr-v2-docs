@@ -130,6 +130,52 @@ export async function tickets(
           )
         : [],
     };
+  // One transaction: reject stale/mixed locked selections before touching any ticket.
+  if (route === "ticket-quick-action") {
+    check(owner, "Owner only.", 403);
+    check(["approved", "rejected"].includes(input.status), "Invalid action.");
+    check(
+      Array.isArray(input.tickets) &&
+        input.tickets.length > 0 &&
+        input.tickets.length <= 100,
+      "Select 1–100 tickets.",
+    );
+    const chosen: Ticket[] = input.tickets.map((v: any) => {
+      const t = all.find((t) => t.id === v.id);
+      check(t, "Ticket unavailable.", 404);
+      check(
+        t.revision === v.revision,
+        "Ticket changed. Refresh before acting.",
+        409,
+      );
+      check(
+        !t.locked &&
+          !["implementation requested", "in progress", "completed"].includes(
+            t.status,
+          ),
+        "Batched or implemented tickets cannot use quick actions.",
+        409,
+      );
+      return t;
+    });
+    check(
+      new Set(chosen.map((t) => t.id)).size === chosen.length,
+      "Duplicate selection.",
+    );
+    for (const t of chosen) {
+      t.status = input.status;
+      if (input.status === "approved") t.reviewedRevision = t.authorRevision;
+      history(
+        t,
+        "Owner quick " + input.status,
+        input.status === "approved"
+          ? "Reviewed latest submitter revision; existing Owner requirements retained unchanged."
+          : "Rejected without deleting ticket.",
+      );
+      await save(t);
+    }
+    return { ok: true, count: chosen.length };
+  }
   if (route === "ticket-share-request") {
     const key = id();
     await tx.put("ticket-share-request", key, {
