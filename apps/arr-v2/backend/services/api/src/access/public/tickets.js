@@ -371,18 +371,48 @@ function renderTickets() {
       );
       $("#ticket-sharing").append(row);
     }
-    if (ticketState.batches.length)
-      $("#ticket-batches").append(
-        node("h3", "", "Saved implementation briefs"),
-      );
-    for (const b of ticketState.batches)
-      $("#ticket-batches").append(
-        button(
-          `${b.title} · ${new Date(b.at).toLocaleString()} · ${b.ids.length} tickets`,
-          async () =>
-            showBrief(await api("ticket-batch-download", { id: b.id })),
+    const archive = $("#ticket-batches");
+    archive.append(
+      node("h3", "", "Implementation brief archive"),
+      node(
+        "p",
+        "muted",
+        "Saved requirements remain unchanged. Word copies can be edited after download. Implementation dates are recorded by Owner, not inferred from downloads.",
+      ),
+    );
+    if (!ticketState.batches.length)
+      archive.append(node("p", "", "No saved briefs yet."));
+    for (const b of ticketState.batches) {
+      const row = node("article", "history");
+      row.append(
+        node("strong", "", b.title),
+        node("p", "", b.summary || b.title),
+        node(
+          "small",
+          "",
+          `Created ${new Date(b.at).toLocaleString()} · ${b.ids.length} tickets`,
+        ),
+        node(
+          "p",
+          "",
+          "Implementation dates: " +
+            ((b.implementations || []).map((r) => r.date).join(", ") ||
+              "Not recorded"),
         ),
       );
+      actions(row, [
+        ["Download Word (.docx)", () => downloadWordBrief(b.id)],
+        [
+          "View / record implementation",
+          async () => {
+            ticketFocus = null;
+            showBrief(await api("ticket-batch-download", { id: b.id }));
+            $("#ticket-detail").scrollIntoView({ block: "nearest" });
+          },
+        ],
+      ]);
+      archive.append(row);
+    }
   } else
     for (const r of ticketState.shareRequests)
       $("#ticket-sharing").append(
@@ -392,6 +422,19 @@ function renderTickets() {
     ticketDetail(ticketFocus);
   ticketTick();
 }
+async function downloadWordBrief(id) {
+  const r = await api("ticket-batch-word", { id });
+  const bytes = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0));
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(
+    new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }),
+  );
+  link.download = r.filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
 function showBrief(b) {
   const box = $("#ticket-detail");
   box.replaceChildren(
@@ -399,19 +442,63 @@ function showBrief(b) {
     node(
       "p",
       "warning",
-      "Review this brief, then upload it to Sky with “Please implement this brief.” Downloading alone does not authorize implementation.",
+      "Download and edit the Word copy if needed. Ask Sky to review it and ask clarification questions before coding. Uploading alone does not authorize implementation. Local edits do not change this archived snapshot.",
     ),
   );
   const preview = ticketField(box, "Saved brief", b.brief, "textarea");
   preview.readOnly = true;
   preview.rows = 16;
   actions(box, [
-    ["Download brief", () => downloadBrief(b)],
+    ["Download Word (.docx)", () => downloadWordBrief(b.id)],
+    ["Download HTML copy", () => downloadBrief(b)],
     [
       "Copy brief",
       async () => {
         await navigator.clipboard.writeText(b.brief);
         msg("Brief copied.");
+      },
+    ],
+  ]);
+  box.append(node("h4", "", "Archive summary and implementation record"));
+  const summary = ticketField(box, "Headline summary", b.summary || b.title);
+  summary.maxLength = 300;
+  const date = ticketField(
+    box,
+    "Implementation date (leave blank to update summary only)",
+    "",
+    "date",
+  );
+  const note = ticketField(
+    box,
+    "Implementation note / release reference",
+    "",
+    "textarea",
+  );
+  for (const r of b.implementations || [])
+    box.append(
+      node(
+        "p",
+        "history",
+        `${r.date} · ${r.note || "Implementation recorded"} · recorded by ${r.by}`,
+      ),
+    );
+  actions(box, [
+    [
+      "Save archive record",
+      async () => {
+        const updated = await api("ticket-batch-record", {
+          id: b.id,
+          revision: b.metadataRevision || 0,
+          summary: summary.value,
+          date: date.value,
+          note: note.value,
+        });
+        ticketFocus = null;
+        await refreshTickets();
+        showBrief(updated);
+        msg(
+          "Archive record saved. Ticket requirements and status were not changed.",
+        );
       },
     ],
   ]);

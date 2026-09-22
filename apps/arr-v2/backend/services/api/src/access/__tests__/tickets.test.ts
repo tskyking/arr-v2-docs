@@ -195,3 +195,98 @@ it("persists global priority order, stale revision protection and no request ret
   await store.transaction((tx) => tx.cleanup());
   expect((await call("ticket-list")).tickets.length).toBe(rows.length);
 });
+
+it("exports real editable Word with embedded images and owner-only archive metadata", async () => {
+  const { default: AdmZip } = await import("adm-zip");
+  const { default: sharp } = await import("sharp");
+  const { XMLValidator } = await import("fast-xml-parser");
+  let t = await create("alice", {
+    title: "Word & <layout>",
+    wording: "Keep editable requirements & spacing",
+  });
+  const image = await sharp({
+    create: { width: 30, height: 15, channels: 3, background: "#118888" },
+  })
+    .jpeg()
+    .toBuffer();
+  t = await s.execute(
+    "ticket-attach",
+    { id: t.id, revision: t.revision },
+    tokens.alice,
+    "data:image/jpeg;base64," + image.toString("base64"),
+  );
+  t = await save(t, {
+    status: "approved",
+    acknowledge: true,
+    privateNotes: "NEVER_EXPORT_THIS",
+  });
+  const b = await call("ticket-batch", { ids: [t.id] });
+  expect(b.summary).toBe("Word & <layout>");
+  expect(b.implementations).toEqual([]);
+  await expect(
+    call("ticket-batch-word", { id: b.id }, "alice"),
+  ).rejects.toThrow("Owner");
+  await expect(
+    call(
+      "ticket-batch-record",
+      { id: b.id, summary: "x", revision: 0 },
+      "alice",
+    ),
+  ).rejects.toThrow("Owner");
+  const recorded = await call("ticket-batch-record", {
+    id: b.id,
+    revision: 0,
+    summary: "Improve layout",
+    date: "2026-09-21",
+    note: "First release",
+  });
+  expect(recorded.brief).toBe(b.brief);
+  expect(recorded.implementations[0].date).toBe("2026-09-21");
+  await expect(
+    call("ticket-batch-record", { id: b.id, revision: 0, summary: "old" }),
+  ).rejects.toThrow("changed");
+  await expect(
+    call("ticket-batch-record", {
+      id: b.id,
+      revision: 1,
+      summary: "bad",
+      date: "2026-02-30",
+    }),
+  ).rejects.toThrow("valid");
+  const doc = await call("ticket-batch-word", { id: b.id });
+  expect(doc.filename).toMatch(/\.docx$/);
+  const zip = new AdmZip(Buffer.from(doc.base64, "base64"));
+  const content = zip.readAsText("word/document.xml");
+  expect(content).toContain("Keep editable requirements &amp; spacing");
+  expect(content).toContain("Ask those questions before coding");
+  expect(content).toContain("First release");
+  expect(content).not.toContain("NEVER_EXPORT_THIS");
+  expect(
+    zip.getEntries().filter((e) => e.entryName.startsWith("word/media/")),
+  ).toHaveLength(1);
+  for (const e of zip
+    .getEntries()
+    .filter(
+      (e) => e.entryName.endsWith(".xml") || e.entryName.endsWith(".rels"),
+    ))
+    expect(XMLValidator.validate(e.getData().toString())).toBe(true);
+  expect(zip.getEntries().some((e) => /vba|macro/i.test(e.entryName))).toBe(
+    false,
+  );
+  expect(zip.readAsText("word/_rels/document.xml.rels")).not.toContain(
+    'TargetMode="External"',
+  );
+  // Legacy snapshots without archive metadata remain exportable and are never rewritten.
+  await store.transaction((tx) =>
+    tx.put("ticket-batch", "legacy-brief", {
+      id: "legacy-brief",
+      title: "Old brief",
+      brief: "Old requirements",
+      ids: [],
+      at: "2026-09-19T00:00:00Z",
+    }),
+  );
+  expect(
+    (await call("ticket-batch-word", { id: "legacy-brief" })).base64,
+  ).toBeTruthy();
+});

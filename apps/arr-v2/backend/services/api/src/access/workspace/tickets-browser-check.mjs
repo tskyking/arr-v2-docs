@@ -145,7 +145,7 @@ try {
     throw Error("Brief snapshot privacy failure");
   const download = page.waitForEvent("download");
   await page
-    .getByRole("button", { name: "Download brief", exact: true })
+    .getByRole("button", { name: "Download HTML copy", exact: true })
     .click();
   const file = await download;
   await file.saveAs("/tmp/arr-ticket-brief.html");
@@ -156,6 +156,39 @@ try {
     saved.includes("Owner only note")
   )
     throw Error("Screenshot export/privacy failure");
+  await page
+    .getByLabel("Headline summary", { exact: true })
+    .fill("Queue layout improvements");
+  await page
+    .getByLabel("Implementation date (leave blank to update summary only)")
+    .fill("2026-09-21");
+  await page
+    .getByLabel("Implementation note / release reference")
+    .fill("Fictional test release");
+  await page
+    .getByRole("button", { name: "Save archive record", exact: true })
+    .click();
+  await expect(page.locator("#ticket-batches")).toContainText("2026-09-21");
+  await page.reload();
+  await expect(page.locator("#ticket-batches")).toContainText(
+    "Queue layout improvements",
+  );
+  const wd = page.waitForEvent("download");
+  await page
+    .locator("#ticket-batches")
+    .getByRole("button", { name: "Download Word (.docx)", exact: true })
+    .click();
+  await (await wd).saveAs("/tmp/arr-word-brief.docx");
+  const { default: AdmZip } = await import("adm-zip");
+  const wordZip = new AdmZip("/tmp/arr-word-brief.docx");
+  const wordXml = wordZip.readAsText("word/document.xml");
+  if (
+    !wordXml.includes("Owner approved scope") ||
+    !wordXml.includes("Fictional test release") ||
+    wordZip.getEntries().filter((e) => e.entryName.startsWith("word/media/"))
+      .length !== 2
+  )
+    throw Error("Word archive export failed");
   await staff
     .getByRole("button", { name: "Refresh tickets", exact: true })
     .click();
