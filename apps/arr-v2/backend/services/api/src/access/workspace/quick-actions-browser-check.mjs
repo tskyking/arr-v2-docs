@@ -37,6 +37,18 @@ try {
   await p.getByRole("button", { name: "Queue", exact: true }).click();
   const make = (title) =>
     api("ticket-create", { title, wording: "Demo scope", forms: ["arr"] });
+  const doomed = await make("Deletion test");
+  await p.getByRole("button", { name: "Refresh tickets", exact: true }).click();
+  const doomedRow = p.locator(
+    `tr[data-ticket-id="${doomed.id}"]:not(.ticket-detail-row)`,
+  );
+  await doomedRow.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(p.getByRole("dialog")).toBeVisible();
+  await p.getByRole("button", { name: "No", exact: true }).click();
+  await expect(doomedRow).toHaveCount(1);
+  await doomedRow.getByRole("button", { name: "Delete", exact: true }).click();
+  await p.getByRole("button", { name: "Yes", exact: true }).click();
+  await expect(doomedRow).toHaveCount(0);
   const a = await make("Quick A"),
     c = await make("Quick B");
   await api("ticket-edit", {
