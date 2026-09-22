@@ -438,3 +438,7 @@ body.prr #identity-band {
 
 .ticket-detail-row > td { max-width: none; white-space: normal; }
 #ticket-inline-detail p { max-height: none; overflow: visible; white-space: pre-wrap; }
+
+/* Match the quick-action gap; Delete always follows the complete status content. */
+.ticket-status-content { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.ticket-status-content > .warning { margin: 0; }
