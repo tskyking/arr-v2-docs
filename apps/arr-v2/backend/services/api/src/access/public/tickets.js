@@ -291,9 +291,9 @@ function renderTickets() {
     }
     cell(t.ownerText);
     cell(t.forms.map((f) => f.toUpperCase()).join(", "));
-    const state = cell(
-      `${t.status}\n${new Date(t.updatedAt).toLocaleString()}${t.locked ? "\nLocked in batch" : ""}`,
-    );
+    const state = node("div", "ticket-status-content");
+    state.append(node("span", "", `${t.status}\n${new Date(t.updatedAt).toLocaleString()}${t.locked ? "\nLocked in batch" : ""}`));
+    cell("").append(state);
     if (owner && t.status === "implementation requested")
       state.append(
         button("Implemented", async () => {
@@ -303,14 +303,14 @@ function renderTickets() {
           msg("Ticket marked Completed.");
         }),
       );
+    if (t.authorRevision !== t.reviewedRevision)
+      state.append(node("p", "warning", "Owner review required"));
     if (
       owner &&
       !t.locked &&
       ["new", "approved", "deferred", "rejected"].includes(t.status)
     )
       state.append(button("Delete", () => confirmTicketDelete(t)));
-    if (t.authorRevision !== t.reviewedRevision)
-      state.append(node("p", "warning", "Owner review required"));
     if (owner) {
       const moves = cell("");
       actions(moves, [
