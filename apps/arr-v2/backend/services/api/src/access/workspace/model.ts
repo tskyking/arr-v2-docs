@@ -54,19 +54,18 @@ export type User = {
   forms: string[];
   password?: { salt: string; hash: string };
   generation: number;
+  suspendedAt?: string;
+  resumedAt?: string;
+  resumeNotice?: boolean;
+  usernameBase?: string;
+  usernameSequence?: number;
 };
 export type Field = {
   key: string;
   label: string;
   help: string;
   type:
-    | "text"
-    | "textarea"
-    | "email"
-    | "date"
-    | "select"
-    | "multi"
-    | "checkbox";
+    "text" | "textarea" | "email" | "date" | "select" | "multi" | "checkbox";
   page: number;
   required: boolean;
   options: string[];
@@ -485,7 +484,7 @@ export function businessMinutes(
     b = Date.parse(end);
   if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return 0;
   let sum = 0;
-  for (let t = a; t < b; ) {
+  for (let t = a; t < b;) {
     const next = Math.min(b, Math.floor(t / 60000) * 60000 + 60000);
     const p = Object.fromEntries(
       pacific.formatToParts(new Date(t)).map((p) => [p.type, p.value]),

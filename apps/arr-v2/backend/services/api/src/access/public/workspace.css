@@ -522,3 +522,56 @@ button:disabled:not(.primary) {
 .ticket-scroll {
   overflow-anchor: none;
 }
+
+.password-control {
+  position: relative;
+  display: block;
+}
+.password-control input {
+  width: 100%;
+  padding-right: 48px;
+  box-sizing: border-box;
+}
+.password-eye {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+}
+.password-mismatch {
+  color: #b42318;
+  border-color: #b42318;
+}
+.password-matched {
+  color: #18733d;
+  border-color: #18733d;
+}
+.account-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.account-table td,
+.account-table th {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ccd5d5;
+}
+.account-actions {
+  text-align: right !important;
+}
+.account-actions button {
+  margin: 3px;
+}
+.account-suspended {
+  color: #b42318;
+  font-weight: bold;
+}
+button.resume-account {
+  border: 2px solid #b42318;
+}
+#account-list {
+  overflow-x: auto;
+}

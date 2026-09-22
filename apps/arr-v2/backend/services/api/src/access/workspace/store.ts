@@ -61,6 +61,12 @@ export class WorkspaceTx {
       [kind, id, JSON.stringify(data)],
     );
   }
+  async removeForUser(kind: string, user: string) {
+    await this.db.query(
+      "DELETE FROM tschutes_v2_documents WHERE kind=$1 AND data->>'user'=$2",
+      [kind, user],
+    );
+  }
   async remove(kind: string, id: string) {
     await this.db.query(
       "DELETE FROM tschutes_v2_documents WHERE kind=$1 AND id=$2",

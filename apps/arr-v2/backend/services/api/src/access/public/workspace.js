@@ -111,10 +111,130 @@ async function signOut() {
   dash = null;
   login();
 }
+function passwordControls(form, confirmNew = false) {
+  if (confirmNew) {
+    const label = node("label", "field", "Confirm new password");
+    const input = document.createElement("input");
+    input.name = "passwordConfirm";
+    input.type = "password";
+    input.required = true;
+    input.autocomplete = "new-password";
+    label.append(input);
+    form.querySelector("button.primary").before(label);
+    const status = node("small", "password-match");
+    status.setAttribute("role", "status");
+    label.append(status);
+    const first = form.elements.password,
+      submit = form.querySelector("button.primary");
+    const update = () => {
+      const same = input.value === first.value,
+        valid = first.value.trim().length >= 14 && first.value.length <= 200;
+      input.classList.toggle("password-mismatch", !!input.value && !same);
+      input.classList.toggle("password-matched", !!input.value && same);
+      status.textContent = !input.value
+        ? ""
+        : same
+          ? "Passwords match"
+          : "Passwords do not match";
+      input.setCustomValidity(
+        input.value && !same ? "Passwords do not match" : "",
+      );
+      submit.disabled = !input.value || !same || !valid;
+    };
+    first.addEventListener("input", update);
+    input.addEventListener("input", update);
+    first.addEventListener("change", update);
+    input.addEventListener("change", update);
+    update();
+  }
+  for (const input of form.querySelectorAll('input[type="password"]')) {
+    input.setAttribute(
+      "aria-label",
+      input.closest("label").firstChild.textContent.trim(),
+    );
+    input.maxLength = 200;
+    const wrap = node("span", "password-control");
+    input.before(wrap);
+    wrap.append(input);
+    const title =
+      input.name === "current"
+        ? "current password"
+        : input.name === "passwordConfirm"
+          ? "password confirmation"
+          : "password";
+    const eye = button(
+      "👁",
+      () => {
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        eye.setAttribute("aria-label", `${show ? "Hide" : "Show"} ${title}`);
+        eye.setAttribute("aria-pressed", String(show));
+      },
+      "password-eye",
+    );
+    eye.type = "button";
+    eye.setAttribute("aria-label", `Show ${title}`);
+    eye.setAttribute("aria-pressed", "false");
+    wrap.append(eye);
+  }
+}
+let sessionChecking = false;
+async function checkStaffSession() {
+  if (!user || location.hash !== "#staff" || sessionChecking) return;
+  sessionChecking = true;
+  try {
+    const state = await api("session-state");
+    if (!state.active) {
+      user = null;
+      dash = null;
+      login();
+      msg(state.notice || "Your session has ended. Please sign in again.");
+    }
+  } catch {
+  } finally {
+    sessionChecking = false;
+  }
+}
+setInterval(checkStaffSession, 2000);
+window.addEventListener("focus", checkStaffSession);
+function confirmAccountDelete(u) {
+  const dialog = document.createElement("dialog");
+  dialog.setAttribute("aria-label", "Delete account confirmation");
+  dialog.append(
+    node("h3", "", "Delete account?"),
+    node(
+      "p",
+      "",
+      `Are you sure you want to delete ${u.username}? Access and setup links will be removed. Historical signoffs, comments and tickets will remain.`,
+    ),
+  );
+  const close = () => {
+    dialog.close();
+    dialog.remove();
+  };
+  const no = button("No", close),
+    yes = button("Yes", async () => {
+      await api("user-delete", {
+        id: u.id,
+        generation: u.generation,
+        confirm: true,
+      });
+      close();
+      await refreshStaff();
+      accounts();
+      msg("Account deleted; history retained.");
+    });
+  dialog.append(no, yes);
+  dialog.addEventListener("cancel", () => dialog.remove());
+  document.body.append(dialog);
+  dialog.showModal();
+  no.focus();
+}
 function changePassword() {
   const box = node("form", "card");
   box.innerHTML =
     '<h2>Change password</h2><label class="field">Current password<input name="current" type="password" required autocomplete="current-password"></label><label class="field">New password<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Save password</button>';
+  passwordControls(box, true);
   box.onsubmit = (e) => {
     e.preventDefault();
     run(async () => {
@@ -467,13 +587,15 @@ function login(username = "") {
   ticketSelection.clear();
   app.innerHTML =
     '<section class="intake card"><h1>Staff workspace</h1><p>Use your approved personal account. A+ manages Admins; Admins manage their assigned reviewers.</p><form id="login"><label class="field">Username or email<input name="username" required autocomplete="username"></label><label class="field">Password<input name="password" type="password" required autocomplete="current-password"></label><button class="primary">Sign in</button></form><div id="recovery"></div><p class="muted">Roles: Reviewer · Manager · Admin · A+</p><a href="index.html#staff">Previous demo queue (legacy records)</a></section>';
+  passwordControls($("#login"));
   $("#login [name=username]").value = username;
   $("#login").onsubmit = (e) => {
     e.preventDefault();
     run(async () => {
       const values = Object.fromEntries(new FormData(e.target));
-      await api("login", values);
+      const result = await api("login", values);
       await refreshStaff();
+      if (result.notice) msg(result.notice);
     });
   };
   actions($("#recovery"), [
@@ -1050,14 +1172,46 @@ function accounts() {
   const panel = $("#panel");
   panel.innerHTML =
     '<div class="card"><h2>Accounts and form assignments</h2><p>Inactive accounts lose access immediately. New accounts need an approved one-time setup link. Passwords are never displayed.</p><div id="account-list"></div><div id="account-editor"></div><div id="account-more"></div></div>';
-  for (const u of dash.users)
-    $("#account-list").append(
-      button(
-        `${u.username} · ${u.role} · ${u.active ? "active" : "inactive"} · ${u.forms.join(", ")}`,
-        () => editAccount(u),
-        "queue-item",
+  const table = document.createElement("table");
+  table.className = "account-table";
+  table.innerHTML =
+    "<thead><tr><th>Account / role / forms</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>";
+  for (const u of dash.users) {
+    const row = document.createElement("tr");
+    row.dataset.accountId = u.id;
+    const identity = node("td"),
+      status = node(
+        "td",
+        u.suspendedAt ? "account-suspended" : "",
+        u.suspendedAt ? "suspended" : u.active ? "active" : "inactive",
+      ),
+      controls = node("td", "account-actions");
+    identity.append(
+      button(`${u.username} · ${u.role} · ${u.forms.join(", ")}`, () =>
+        editAccount(u),
       ),
     );
+    if (user.role === "owner" && u.role !== "owner") {
+      controls.append(
+        button(
+          u.suspendedAt ? "Unsuspend/Resume" : "Suspend",
+          async () => {
+            await api(u.suspendedAt ? "user-resume" : "user-suspend", {
+              id: u.id,
+              generation: u.generation,
+            });
+            await refreshStaff();
+            accounts();
+          },
+          u.suspendedAt ? "resume-account" : "",
+        ),
+        button("Delete", () => confirmAccountDelete(u)),
+      );
+    }
+    row.append(identity, status, controls);
+    table.tBodies[0].append(row);
+  }
+  $("#account-list").append(table);
   actions($("#account-more"), [
     ["Add account", () => editAccount(null)],
     ...(user.role === "admin"
@@ -1149,6 +1303,10 @@ function editAccount(u) {
   form.email.value = u?.email || "";
   form.role.value = u?.role || (user.role === "owner" ? "admin" : "reviewer");
   form.active.checked = u?.active ?? true;
+  if (u?.suspendedAt) {
+    form.active.disabled = true;
+    form.active.title = "Use Owner Unsuspend/Resume to restore access.";
+  }
   for (const f of dash.forms) {
     const l = node("label", "field", f.id.toUpperCase()),
       c = document.createElement("input");
@@ -1191,7 +1349,7 @@ function editAccount(u) {
     e.preventDefault();
     run(async () => {
       const v = new FormData(form);
-      await api("user-save", {
+      const savedAccount = await api("user-save", {
         id: u?.id,
         username: v.get("username"),
         email: v.get("email"),
@@ -1200,7 +1358,9 @@ function editAccount(u) {
         forms: v.getAll("forms"),
       });
       await refreshStaff();
-      msg("Account saved. Setup email queued if needed.");
+      msg(
+        `Account saved as ${savedAccount.username}. Setup email queued if needed.`,
+      );
     });
   };
 }
@@ -1299,12 +1459,14 @@ async function route() {
       '<section class="intake card"><h1>Set your personal password</h1><p>Account: <strong>' +
       esc(identity.username) +
       '</strong></p><p>If this is not your username, stop and ask A+ for the correct link.</p><form id="activate"><label class="field">New password (14+ characters)<input name="password" type="password" minlength="14" required autocomplete="new-password"></label><button class="primary">Set password</button></form></section>';
+    passwordControls($("#activate"), true);
     $("#activate").onsubmit = (e) => {
       e.preventDefault();
       run(async () => {
         const result = await api("activate", {
           token,
           password: e.target.password.value,
+          passwordConfirm: e.target.passwordConfirm.value,
         });
         user = null;
         dash = null;

@@ -111,6 +111,7 @@ try {
     await worker
       .locator("#activate [name=password]")
       .fill("Browser-test-password-2026");
+    await worker.locator("#activate [name=passwordConfirm]").fill("Browser-test-password-2026");
     await worker
       .getByRole("button", { name: "Set password", exact: true })
       .click();
