@@ -55,6 +55,13 @@ export class WorkspaceTx {
     );
     return r.rows.map((r) => r.data);
   }
+  async entries(kind: string): Promise<{ key: string; data: any }[]> {
+    const result = await this.db.query(
+      "SELECT id AS key,data FROM tschutes_v2_documents WHERE kind=$1",
+      [kind],
+    );
+    return result.rows;
+  }
   async put(kind: string, id: string, data: unknown) {
     await this.db.query(
       "INSERT INTO tschutes_v2_documents(kind,id,data) VALUES($1,$2,$3) ON CONFLICT(kind,id) DO UPDATE SET data=EXCLUDED.data",
@@ -74,9 +81,7 @@ export class WorkspaceTx {
     );
   }
   async cleanup() {
-    await this.db.query(
-      "DELETE FROM tschutes_v2_documents WHERE kind IN ('request','draft','mail','event','visit') AND created_at < now()-interval '7 days'",
-    );
+    // Business records are retained until explicit Owner purge. Only capabilities expire here.
     await this.db.query(
       "DELETE FROM tschutes_v2_documents WHERE kind IN ('session','activation') AND (data->>'expires')::timestamptz < now()",
     );

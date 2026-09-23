@@ -272,7 +272,7 @@ export function createAccessHandler(
           status: "ok",
           storage: "postgres",
           demo: true,
-          retentionDays: 7,
+          retentionDays: null,
         });
         return true;
       }

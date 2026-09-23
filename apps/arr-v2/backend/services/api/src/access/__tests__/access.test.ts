@@ -387,7 +387,7 @@ describe("Access HTTP and PostgreSQL persistence", () => {
       ).status,
     ).toBe(413);
   });
-  it("enforces rate limits durably and removes expired data", async () => {
+  it("enforces rate limits durably and retains old business records", async () => {
     await store.limit("test-limit", 1, 3600);
     await expect(store.limit("test-limit", 1, 3600)).rejects.toThrow(
       "Too many",
@@ -399,7 +399,7 @@ describe("Access HTTP and PostgreSQL persistence", () => {
       [record.id],
     );
     await store.cleanup();
-    expect(await store.get(record.id)).toBeUndefined();
+    expect(await store.get(record.id)).toBeDefined();
   });
 
   it("stores only validated page one, hides active drafts, and exposes expired partials without receipts", async () => {
@@ -564,7 +564,7 @@ describe("Access HTTP and PostgreSQL persistence", () => {
           [sha256(draftToken)],
         )
       ).rows,
-    ).toHaveLength(0);
+    ).toHaveLength(1);
   });
   it("invalidates a staff session on logout", async () => {
     expect((await call("logout", "POST", {}, reviewer)).status).toBe(200);

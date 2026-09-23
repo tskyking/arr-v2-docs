@@ -816,17 +816,69 @@ async function selectQueueRequest(id) {
     }
     const box = node("div", "queue-details");
     box.id = "queue-request-details";
-    header.after(box);
+    (header.closest(".queue-row") || header).after(box);
     detail(box);
     await animateDisclosure(box, true);
   }
   return true;
 }
+function queueDefaultDates() {
+  const end = new Date(),
+    start = new Date();
+  start.setDate(start.getDate() - 14);
+  const local = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { from: local(start), to: local(end) };
+}
+let queueDates = queueDefaultDates(),
+  queueView = "main",
+  queueHideDeleted = true;
+const queueSelection = new Map();
+function queueCan(r, action) {
+  const manage = user.role === "owner" || user.role === "admin";
+  if (action === "purge")
+    return user.role === "owner" && !!(r.deletedAt || r.archived);
+  return (
+    manage &&
+    r.kind === "draft" &&
+    (action === "restore" ? !!r.deletedAt : !r.deletedAt)
+  );
+}
+async function queueLifecycleAction(action, records) {
+  if (!records.length || !allowRequestNavigation()) return;
+  const message =
+    action === "purge"
+      ? `Are you sure you want to permanently delete ${records.length} record(s)? Their stored answers, photos and history will be removed. This cannot be undone. Downloaded copies and backups are not erased.`
+      : action === "delete"
+        ? `Are you sure you want to delete ${records.length} partial form(s)? They will move to Deleted and can be restored.`
+        : `Restore ${records.length} partial form(s) from Deleted?`;
+  if (!confirm(message)) return;
+  await api("queue-lifecycle", {
+    action,
+    confirm: true,
+    targets: records.map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      revision: r.revision,
+    })),
+  });
+  queueSelection.clear();
+  requestEditBaseline.clear();
+  selected = null;
+  await refreshStaff();
+  msg(
+    action === "purge"
+      ? "Records permanently deleted."
+      : action === "delete"
+        ? "Partial forms moved to Deleted."
+        : "Partial forms restored.",
+  );
+}
 function queue() {
   const panel = $("#panel");
   requestEditBaseline.clear();
   panel.innerHTML =
-    '<div class="card"><label>Status <select id="status-filter"><option value="all">All</option>' +
+    '<div class="card"><div class="queue-filters"><label>View <select id="queue-view"><option value="main">Main queue</option><option value="archive">Archive</option></select></label><label>Status <select id="status-filter"><option value="all">All</option>' +
     [
       "pending",
       "clarification",
@@ -835,30 +887,165 @@ function queue() {
       "provisioned",
       "partial",
     ]
-      .map((s) => `<option>${s}</option>`)
+      .map((x) => `<option>${x}</option>`)
       .join("") +
-    '</select></label><p class="muted">Showing the selected form only. Switch forms at the top. Bold version = latest published version.</p><div id="queue-list"></div></div>';
+    '</select></label><label>Last activity from <input id="queue-from" type="date"></label><label>Through <input id="queue-to" type="date"></label><button id="queue-all-dates" type="button"></button><label><input id="queue-hide-deleted" type="checkbox"> Hide Deleted</label></div><p class="muted">Showing the selected form. Dates filter last activity; use All Dates to find older items. Archive contains partials and closed requests after 60 days without activity; requests awaiting action stay in Main queue.</p><div id="queue-bulk" class="actions"></div><div class="queue-scroll"><div id="queue-list"></div></div></div>';
   $("#status-filter").value = filter;
-  $("#status-filter").onchange = (e) => {
-    const next = e.target.value;
-    e.target.value = filter;
-    void run(async () => {
-      if (!(await selectQueueRequest(null))) return;
-      filter = next;
+  $("#queue-view").value = queueView;
+  $("#queue-from").value = queueDates.from;
+  $("#queue-to").value = queueDates.to;
+  $("#queue-hide-deleted").checked = queueHideDeleted;
+  // Restore visible controls on cancellation without replacing unsaved request details.
+  const bind = (selector, read, restore, apply) => {
+    $(selector).onchange = (e) => {
+      const value = read(e.target);
+      restore(e.target);
+      void run(async () => {
+        if (!allowRequestNavigation()) return;
+        await selectQueueRequestWithoutWarning();
+        apply(value);
+        queueSelection.clear();
+        queue();
+      });
+    };
+  };
+  bind(
+    "#status-filter",
+    (e) => e.value,
+    (e) => (e.value = filter),
+    (v) => (filter = v),
+  );
+  bind(
+    "#queue-view",
+    (e) => e.value,
+    (e) => (e.value = queueView),
+    (v) => {
+      queueView = v;
+      queueDates = v === "archive" ? { from: "", to: "" } : queueDefaultDates();
+    },
+  );
+  for (const side of ["from", "to"])
+    bind(
+      "#queue-" + side,
+      (e) => e.value,
+      (e) => (e.value = queueDates[side]),
+      (v) => {
+        queueDates[side] = v;
+      },
+    );
+  bind(
+    "#queue-hide-deleted",
+    (e) => e.checked,
+    (e) => (e.checked = queueHideDeleted),
+    (v) => (queueHideDeleted = v),
+  );
+  const all = $("#queue-all-dates");
+  all.textContent =
+    !queueDates.from && !queueDates.to ? "Restore Date Range" : "All Dates";
+  all.onclick = () =>
+    run(async () => {
+      if (!allowRequestNavigation()) return;
+      await selectQueueRequestWithoutWarning();
+      queueDates =
+        !queueDates.from && !queueDates.to
+          ? queueDefaultDates()
+          : { from: "", to: "" };
+      queueSelection.clear();
       queue();
     });
-  };
+  const low = queueDates.from
+    ? new Date(queueDates.from + "T00:00:00").getTime()
+    : -Infinity;
+  const high = queueDates.to
+    ? new Date(queueDates.to + "T23:59:59.999").getTime()
+    : Infinity;
+  if (low > high)
+    $("#queue-list").append(
+      node("p", "warning", "Choose an end date on or after the start date."),
+    );
   const rows = dash.requests.filter(
-    (r) => r.form === formId && (filter === "all" || r.status === filter),
+    (r) =>
+      r.form === formId &&
+      (filter === "all" || r.status === filter) &&
+      !!r.archived === (queueView === "archive") &&
+      (!queueHideDeleted || !r.deletedAt) &&
+      Date.parse(r.updatedAt || r.createdAt) >= low &&
+      Date.parse(r.updatedAt || r.createdAt) <= high,
   );
-  if (!rows.length) $("#queue-list").textContent = "No matching requests.";
+  for (const key of queueSelection.keys())
+    if (!rows.some((r) => r.id === key)) queueSelection.delete(key);
+  const bulk = $("#queue-bulk");
+  const controls = [];
+  if (["owner", "admin"].includes(user.role)) {
+    bulk.append(
+      button("Select eligible visible", () => {
+        for (const r of rows)
+          if (["delete", "restore", "purge"].some((a) => queueCan(r, a)))
+            queueSelection.set(r.id, r);
+        for (const cb of panel.querySelectorAll(".queue-pick input"))
+          cb.checked = true;
+        updateBulk();
+      }),
+      button("Clear selection", () => {
+        queueSelection.clear();
+        for (const cb of panel.querySelectorAll(".queue-pick input"))
+          cb.checked = false;
+        updateBulk();
+      }),
+    );
+    for (const [action, label] of [
+      ["delete", "Delete selected"],
+      ["restore", "Restore selected"],
+      ...(user.role === "owner"
+        ? [["purge", "Permanently delete selected"]]
+        : []),
+    ]) {
+      const b = button(label, () =>
+        queueLifecycleAction(action, [...queueSelection.values()]),
+      );
+      controls.push([action, b]);
+      bulk.append(b);
+    }
+  }
+  const updateBulk = () => {
+    for (const [action, b] of controls)
+      b.disabled =
+        !queueSelection.size ||
+        ![...queueSelection.values()].every((r) => queueCan(r, action));
+  };
+  updateBulk();
+  if (!rows.length)
+    $("#queue-list").append(
+      node(
+        "p",
+        "",
+        "No matching requests. Check the view, dates, status and Hide Deleted filters.",
+      ),
+    );
   for (const r of rows) {
+    const row = node("div", "queue-row"),
+      pick = node("span", "queue-pick"),
+      tools = node("span", "queue-row-actions");
+    row.dataset.queueRow = r.id;
+    if (["delete", "restore", "purge"].some((a) => queueCan(r, a))) {
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = queueSelection.has(r.id);
+      cb.setAttribute(
+        "aria-label",
+        `Select request ${r.data.name || r.reference}`,
+      );
+      cb.onchange = () => {
+        cb.checked ? queueSelection.set(r.id, r) : queueSelection.delete(r.id);
+        updateBulk();
+      };
+      pick.append(cb);
+    }
     const b = button(
       "",
       () => selectQueueRequest(selected === r.id ? null : r.id),
       "queue-item",
     );
-    const latest = dash.forms.find((f) => f.id === r.form)?.published;
     b.dataset.requestId = r.id;
     b.setAttribute("aria-expanded", String(selected === r.id));
     b.setAttribute("aria-controls", "queue-request-details");
@@ -867,19 +1054,52 @@ function queue() {
         ? null
         : (r.history || []).filter((h) => h.action === "submitted").at(-1)
             ?.at || r.createdAt;
-    const submission = submittedAt
-      ? new Date(submittedAt).toLocaleString()
-      : "Not submitted";
-    b.innerHTML = `<strong>${esc(r.data.name)}</strong> — ${esc(r.reference)} · ${esc(r.status)} · ${r.formVersion === latest ? "<b>" : ""}0.${r.formVersion}${r.formVersion === latest ? "</b>" : ""} · <span class="queue-submitted">${esc(submission)}</span> ${r.attempt ? "· attempt " + r.attempt : ""}`;
-    $("#queue-list").append(b);
+    const fields = [
+      [r.data.name, "queue-name"],
+      [r.reference, "queue-reference"],
+      [r.deletedAt ? "Deleted" : r.status, "queue-status"],
+      [`0.${r.formVersion}`, "queue-version"],
+      [
+        submittedAt ? new Date(submittedAt).toLocaleString() : "Not submitted",
+        "queue-submitted",
+      ],
+      [r.attempt ? `attempt ${r.attempt}` : "—", "queue-attempt"],
+    ];
+    for (const [value, cls] of fields) {
+      const cell = node("span", cls, String(value || "—"));
+      cell.title = String(value || "—");
+      b.append(cell);
+    }
+    if (r.formVersion === dash.forms.find((f) => f.id === r.form)?.published)
+      b.querySelector(".queue-version").classList.add("latest-version");
+    for (const [action, label] of [
+      ["delete", "Delete"],
+      ["restore", "Restore"],
+      ["purge", "Purge"],
+    ])
+      if (queueCan(r, action)) {
+        const actionButton = button(label, () =>
+          queueLifecycleAction(action, [r]),
+        );
+        actionButton.title =
+          action === "purge" ? "Permanently delete record" : label;
+        tools.append(actionButton);
+      }
+    row.append(pick, b, tools);
+    $("#queue-list").append(row);
     if (selected === r.id) {
       const box = node("div", "queue-details");
       box.id = "queue-request-details";
-      b.after(box);
+      row.after(box);
       detail(box);
     }
   }
   if (!rows.some((r) => r.id === selected)) selected = null;
+}
+async function selectQueueRequestWithoutWarning() {
+  // Caller has already obtained discard confirmation.
+  requestEditBaseline.clear();
+  return selectQueueRequest(null);
 }
 function detail(panel) {
   const r = dash.requests.find((r) => r.id === selected);
@@ -889,6 +1109,16 @@ function detail(panel) {
     return;
   }
   panel.innerHTML = `<article class="card"><span class="badge">${esc(r.form.toUpperCase())} · 0.${r.formVersion}</span><h2>${esc(r.reference)} — ${esc(r.status)}</h2><p>${r.locked ? "Answers locked after first approval." : ""} ${r.steps && r.step < r.steps.length ? "Current step: " + esc(r.steps[r.step].label) + " (" + esc(r.steps[r.step].role) + ")" : ""}</p><div id="answers"></div><h3>History</h3><div id="history"></div><div id="request-actions"></div></article>`;
+  panel
+    .querySelector("article")
+    .insertBefore(
+      node(
+        "p",
+        "muted",
+        `Created: ${new Date(r.createdAt).toLocaleString()} · Last activity: ${new Date(r.updatedAt || r.createdAt).toLocaleString()}${r.archived ? " · Archived (read-only)" : ""}${r.deletedAt ? " · Deleted (recoverable)" : ""}`,
+      ),
+      panel.querySelector("#answers"),
+    );
   for (const [key, v] of Object.entries(r.data))
     $("#answers").append(
       answer(r.definition?.fields.find((f) => f.key === key)?.label || key, v),
@@ -930,7 +1160,7 @@ function detail(panel) {
       ],
     ]);
   actions(a, [["← Queue", () => selectQueueRequest(null)]]);
-  if (r.status === "partial") return;
+  if (r.status === "partial" || r.archived || r.deletedAt) return;
   const note = document.createElement("textarea");
   note.placeholder = "Comment / decision reason";
   a.append(note);
@@ -1535,7 +1765,7 @@ function editAccount(u) {
 async function metrics() {
   const m = await api("metrics"),
     p = $("#panel");
-  p.innerHTML = `<div class="card"><h2>A+ metrics</h2><p class="muted">Pacific business hours: Mon–Fri, 8–5; holidays excluded. Counts cover retained records (seven days), not lifetime totals. Views are page views, not unique people.</p><div class="grid"><div>Unique request families<div class="metric">${m.uniqueRequests}</div></div><div>Total submitted attempts<div class="metric">${m.totalAttempts}</div></div><div>Unapproved / unrejected<div class="metric">${m.pending}</div></div><div>Form views<div class="metric">${m.views.reduce((a, v) => a + v.views, 0)}</div></div></div><div id="charts"></div><h3>Per-attempt and per-approver timing</h3><div id="timings"></div><label class="field">Excluded holidays (one YYYY-MM-DD per line)<textarea id="holidays"></textarea></label><div id="calendar-actions"></div></div>`;
+  p.innerHTML = `<div class="card"><h2>A+ metrics</h2><p class="muted">Pacific business hours: Mon–Fri, 8–5; holidays excluded. Counts cover retained records, including archived records but excluding permanently deleted records. Views are page views, not unique people.</p><div class="grid"><div>Unique request families<div class="metric">${m.uniqueRequests}</div></div><div>Total submitted attempts<div class="metric">${m.totalAttempts}</div></div><div>Unapproved / unrejected<div class="metric">${m.pending}</div></div><div>Form views<div class="metric">${m.views.reduce((a, v) => a + v.views, 0)}</div></div></div><div id="charts"></div><h3>Per-attempt and per-approver timing</h3><div id="timings"></div><label class="field">Excluded holidays (one YYYY-MM-DD per line)<textarea id="holidays"></textarea></label><div id="calendar-actions"></div></div>`;
   for (const f of m.byForm) {
     const box = node(
       "div",

@@ -605,3 +605,65 @@ button.resume-account {
 .ticket-share-request > button {
   margin-inline-start: 12px;
 }
+
+.queue-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.queue-filters input[type="date"] {
+  width: 145px;
+}
+.queue-scroll {
+  overflow-x: auto;
+}
+.queue-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 130px;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border, #c6d3d7);
+  border-radius: 8px;
+  height: 42px;
+  margin: 5px 0;
+  min-width: 760px;
+}
+.queue-row .queue-item {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.7fr 0.35fr 1.55fr 0.55fr;
+  gap: 10px;
+  margin: 0;
+  border: 0;
+  height: 40px;
+  min-width: 0;
+  padding: 8px 4px;
+  background: transparent;
+}
+.queue-row .queue-item > span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.queue-name,
+.latest-version {
+  font-weight: bold;
+}
+.queue-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-right: 5px;
+}
+.queue-row-actions button {
+  padding: 5px 7px;
+  font-size: 12px;
+}
+.queue-pick {
+  text-align: center;
+}
+.queue-scroll .queue-details {
+  min-width: 760px;
+}

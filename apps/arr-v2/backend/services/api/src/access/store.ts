@@ -228,17 +228,8 @@ export class AccessStore {
     if (rows[0].count > maximum)
       throw new AccessError(429, "Too many attempts. Please try again later.");
   }
-  // Best-effort demo retention: called on API activity at most hourly, not at a
-  // guaranteed deletion instant. SQL deletion does not purge backups/WAL/logs.
-  // PROPOSED: approved records schedule, monitored deletion job and restore controls.
+  // Preserve legacy business records too; expired credentials/rate counters still expire.
   async cleanup() {
-    await this.pool.query(
-      "DELETE FROM tschutes_arr_drafts WHERE started_at<now()-interval '7 days'",
-    );
-    // Demo retention: remove entire submissions, including images, after seven days.
-    await this.pool.query(
-      "DELETE FROM tschutes_arr_requests WHERE created_at<now()-interval '7 days'",
-    );
     await this.pool.query(
       "DELETE FROM tschutes_arr_sessions WHERE expires_at<now()",
     );
