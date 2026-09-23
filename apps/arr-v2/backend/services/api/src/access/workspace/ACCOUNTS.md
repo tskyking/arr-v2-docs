@@ -11,3 +11,13 @@ Password fields have independent accessible visibility toggles. Setup/reset/chan
 Session-state polling has separate bounded rate limits so ordinary polling does not consume the general action budget. Live browser updates depend on connectivity and browser scheduling; server revocation does not.
 
 Verification: account-controls.test.ts and batch4-browser-check.mjs, plus quick-actions and ticket browser regressions. All browser fixtures are local fictional accounts; deployment does not suspend/delete any production users.
+
+## Usage status (Batch 5)
+
+Usage labels never affect authorization, account enablement, or suspension. Login records a server-side last-login/last-interaction timestamp. Trusted visible-page clicks, typing, scrolling and pointer/touch movement send a bounded activity update (at most once per minute); no typed content, coordinates or event stream is stored. Session checks and dashboard refreshes do not count. Updates use server time and require a valid session; they do not extend session expiry.
+
+Logged in means at least one unexpired session with the account's current generation. Sign-out removes that session; closing a tab does not itself sign out. Under 48 elapsed hours, valid-session users are green active, or green idle after more than one hour; signed-out users are mustard active. At 48 hours they are mustard inactive. After 240 hours they are red not active. Hours are floored, non-red hour counts are black, red counts are red. Suspended always takes precedence. Disabled, password-pending and accounts without recorded activity are red not active. Unknown history is not fabricated: existing users acquire timestamps on their next login or interaction.
+
+The Accounts view refreshes usage cells every minute while visible, without replacing in-progress account edits. Hovering a usage cell explains the last recorded interaction or missing history. Account edits preserve activity timestamps; newly recreated identities start fresh. Actions heading aligns right above controls.
+
+Verification: account-activity.test.ts, lifecycle integration test, and batch5-browser-check.mjs cover boundaries, session validity, polling exclusion, throttled real browser input, colors, counts and mobile layout.

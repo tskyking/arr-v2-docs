@@ -575,3 +575,19 @@ button.resume-account {
 #account-list {
   overflow-x: auto;
 }
+
+.account-table th.account-actions-heading {
+  text-align: right;
+}
+.activity-green {
+  color: #18733d;
+}
+.activity-mustard {
+  color: #806000;
+}
+.activity-red {
+  color: #b42318;
+}
+.activity-hours {
+  color: #000;
+}

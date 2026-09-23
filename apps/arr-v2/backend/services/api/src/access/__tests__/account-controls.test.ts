@@ -154,3 +154,42 @@ it("editing suspended accounts cannot bypass resume and mismatching password con
     call("login", { username: u.username, password }, ""),
   ).rejects.toThrow("Suspended Role");
 });
+
+it("tracks login and interaction, excludes polling, preserves edits and considers only valid sessions", async () => {
+  const { u, token } = await make("usage-check");
+  expect((await get(u.username)).activityStatus.label).toBe("active");
+  const past = new Date(Date.now() - 2 * 3600000).toISOString();
+  await store.transaction(async (tx) => {
+    const current = await tx.get("user", u.id);
+    current.lastActivityAt = past;
+    await tx.put("user", u.id, current);
+  });
+  await call("session-state", {}, token);
+  let current = await get(u.username);
+  expect(current.lastActivityAt).toBe(past);
+  expect(current.activityStatus).toEqual({
+    label: "idle",
+    tone: "green",
+    hours: 2,
+  });
+  await call("activity", { at: "2099-01-01T00:00:00Z", id: "owner" }, token);
+  current = await get(u.username);
+  expect(Date.parse(current.lastActivityAt)).toBeLessThanOrEqual(Date.now());
+  expect(current.activityStatus).toEqual({
+    label: "active",
+    tone: "green",
+    hours: 0,
+  });
+  await call("logout", {}, token);
+  expect((await get(u.username)).activityStatus.tone).toBe("mustard");
+  await expect(call("activity", {}, token)).rejects.toThrow("Please sign in");
+  await call("user-save", {
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    role: u.role,
+    forms: u.forms,
+    active: true,
+  });
+  expect((await get(u.username)).lastActivityAt).toBe(current.lastActivityAt);
+});
