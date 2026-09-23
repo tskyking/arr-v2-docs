@@ -54,6 +54,8 @@ export type User = {
   forms: string[];
   password?: { salt: string; hash: string };
   generation: number;
+  lastActivityAt?: string;
+  lastLoginAt?: string;
   suspendedAt?: string;
   resumedAt?: string;
   resumeNotice?: boolean;
@@ -521,4 +523,23 @@ export function can(user: User, form: string, roles: Role[]) {
 export function publicUser(u: User) {
   const { password, ...rest } = u;
   return rest;
+}
+
+/** Usage labels are informational; never use them for authorization. */
+export function accountActivity(u: User, loggedIn: boolean, at = Date.now()) {
+  const last = Date.parse(u.lastActivityAt || "");
+  const hours = Number.isFinite(last)
+    ? Math.max(0, Math.floor((at - last) / 3600000))
+    : null;
+  if (u.suspendedAt) return { label: "suspended", tone: "red", hours: null };
+  if (!u.active || !u.password || hours === null || at - last > 240 * 3600000)
+    return { label: "not active", tone: "red", hours };
+  if (at - last >= 48 * 3600000)
+    return { label: "inactive", tone: "mustard", hours };
+  if (!loggedIn) return { label: "active", tone: "mustard", hours };
+  return {
+    label: at - last > 3600000 ? "idle" : "active",
+    tone: "green",
+    hours,
+  };
 }

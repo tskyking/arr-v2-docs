@@ -18,6 +18,7 @@ import {
   applicable,
   can,
   publicUser,
+  accountActivity,
   businessMinutes,
   type User,
   type Form,
@@ -186,6 +187,9 @@ export class WorkspaceService {
           delete found.resumeNotice;
           await tx.put("user", found.id, found);
         }
+        found.lastLoginAt = now();
+        found.lastActivityAt = found.lastLoginAt;
+        await tx.put("user", found.id, found);
         const session = secret();
         await tx.put("session", sha256(session), {
           user: found.id,
@@ -457,9 +461,17 @@ export class WorkspaceService {
         };
       }
       check(u, "Please sign in.", 401);
+      if (route === "activity") {
+        // Server time only; no click/key contents or client-supplied timestamps.
+        u.lastActivityAt = now();
+        await tx.put("user", u.id, u);
+        return { ok: true };
+      }
       if (route.startsWith("ticket-"))
         return tickets(tx, u, route, input, photo);
       if (route === "dashboard") {
+        const sessions = await tx.list("session");
+        const measuredAt = Date.now();
         const forms = await tx.list<Form>("form");
         const records = (await tx.list<Request>("request"))
           .filter((r) => u.role === "owner" || u.forms.includes(r.form))
@@ -496,7 +508,19 @@ export class WorkspaceService {
                     (["reviewer", "manager"].includes(v.role) &&
                       v.forms.every((f) => u.forms.includes(f))),
                 )
-                .map(publicUser)
+                .map((v) => ({
+                  ...publicUser(v),
+                  activityStatus: accountActivity(
+                    v,
+                    sessions.some(
+                      (s) =>
+                        s.user === v.id &&
+                        s.generation === v.generation &&
+                        Date.parse(s.expires) > measuredAt,
+                    ),
+                    measuredAt,
+                  ),
+                }))
             : [],
           resets: u.role === "owner" ? await tx.list("reset") : [],
           accessRequests: u.role === "owner" ? await tx.list("access") : [],
@@ -657,6 +681,10 @@ export class WorkspaceService {
           username,
           usernameBase,
           usernameSequence,
+          ...(old?.lastActivityAt
+            ? { lastActivityAt: old.lastActivityAt }
+            : {}),
+          ...(old?.lastLoginAt ? { lastLoginAt: old.lastLoginAt } : {}),
           ...(old?.suspendedAt ? { suspendedAt: old.suspendedAt } : {}),
           ...(old?.resumedAt
             ? { resumedAt: old.resumedAt, resumeNotice: old.resumeNotice }

@@ -197,6 +197,92 @@ async function checkStaffSession() {
 }
 setInterval(checkStaffSession, 2000);
 window.addEventListener("focus", checkStaffSession);
+// Record only trusted human interaction, never background session polling.
+let activityDirty = false,
+  activitySentAt = 0,
+  activitySending = false;
+async function flushStaffActivity() {
+  if (
+    !user ||
+    !activityDirty ||
+    activitySending ||
+    Date.now() - activitySentAt < 60000
+  )
+    return;
+  activitySending = true;
+  activityDirty = false;
+  activitySentAt = Date.now();
+  try {
+    await api("activity");
+  } catch {
+    activityDirty = true;
+  } finally {
+    activitySending = false;
+  }
+}
+for (const event of [
+  "click",
+  "keydown",
+  "scroll",
+  "pointermove",
+  "touchstart",
+  "touchmove",
+]) {
+  document.addEventListener(
+    event,
+    (e) => {
+      if (!e.isTrusted || !user || document.visibilityState !== "visible")
+        return;
+      activityDirty = true;
+      void flushStaffActivity();
+    },
+    { passive: true, capture: true },
+  );
+}
+setInterval(() => {
+  if (!user) {
+    activityDirty = false;
+    activitySentAt = 0;
+    return;
+  }
+  void flushStaffActivity();
+}, 5000);
+function accountStatusCell(cell, account) {
+  const state = account.activityStatus || {
+    label: "not active",
+    tone: "red",
+    hours: null,
+  };
+  cell.replaceChildren(node("span", `activity-${state.tone}`, state.label));
+  if (state.hours !== null)
+    cell.append(
+      node(
+        "span",
+        state.tone === "red" ? "activity-red" : "activity-hours",
+        ` (${state.hours})`,
+      ),
+    );
+  cell.title = account.lastActivityAt
+    ? `Last interaction: ${new Date(account.lastActivityAt).toLocaleString()}`
+    : "No activity recorded yet; tracking begins with login or interaction.";
+}
+setInterval(async () => {
+  if (
+    !user ||
+    !document.querySelector("#account-list") ||
+    document.visibilityState !== "visible"
+  )
+    return;
+  try {
+    const latest = await api("dashboard");
+    for (const account of latest.users) {
+      const row = [
+        ...document.querySelectorAll("#account-list tr[data-account-id]"),
+      ].find((r) => r.dataset.accountId === account.id);
+      if (row) accountStatusCell(row.querySelector(".account-usage"), account);
+    }
+  } catch {}
+}, 60000);
 function confirmAccountDelete(u) {
   const dialog = document.createElement("dialog");
   dialog.setAttribute("aria-label", "Delete account confirmation");
@@ -1171,20 +1257,16 @@ function drawEditor() {
 function accounts() {
   const panel = $("#panel");
   panel.innerHTML =
-    '<div class="card"><h2>Accounts and form assignments</h2><p>Inactive accounts lose access immediately. New accounts need an approved one-time setup link. Passwords are never displayed.</p><div id="account-list"></div><div id="account-editor"></div><div id="account-more"></div></div>';
+    '<div class="card"><h2>Accounts and form assignments</h2><p>Activity colors describe usage only; they do not change access. Suspended or disabled accounts cannot sign in. New accounts need an approved one-time setup link. Passwords are never displayed in this list.</p><div id="account-list"></div><div id="account-editor"></div><div id="account-more"></div></div>';
   const table = document.createElement("table");
   table.className = "account-table";
   table.innerHTML =
-    "<thead><tr><th>Account / role / forms</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>";
+    "<thead><tr><th>Account / role / forms</th><th>Status</th><th class='account-actions-heading'>Actions</th></tr></thead><tbody></tbody>";
   for (const u of dash.users) {
     const row = document.createElement("tr");
     row.dataset.accountId = u.id;
     const identity = node("td"),
-      status = node(
-        "td",
-        u.suspendedAt ? "account-suspended" : "",
-        u.suspendedAt ? "suspended" : u.active ? "active" : "inactive",
-      ),
+      status = node("td", "account-usage"),
       controls = node("td", "account-actions");
     identity.append(
       button(`${u.username} · ${u.role} · ${u.forms.join(", ")}`, () =>
@@ -1208,6 +1290,7 @@ function accounts() {
         button("Delete", () => confirmAccountDelete(u)),
       );
     }
+    accountStatusCell(status, u);
     row.append(identity, status, controls);
     table.tBodies[0].append(row);
   }
