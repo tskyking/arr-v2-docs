@@ -437,6 +437,7 @@ body.prr #identity-band {
 }
 
 .ticket-detail-row > td {
+  padding: 0;
   max-width: none;
   white-space: normal;
 }

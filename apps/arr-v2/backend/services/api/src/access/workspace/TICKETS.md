@@ -67,3 +67,15 @@ Submitters may replace editable wording with “Delete” to ask the Owner to re
 - The archive has a bold divider and larger heading. Each entry keeps metrics/title/summary visible; Batch details starts collapsed and reveals creation/recorded dates/download and record controls.
 - Owner list/download access idempotently recovers timing-only batch metadata from explicit quick-approval and implemented history or saved timestamp snapshots. Generic Owner-edit events cannot establish approval and invalidate earlier ambiguous approval candidates. Day-only manually entered archive dates never establish completion. Original brief text, names, numbers and implementation annotations are preserved. Backfill occurs on Owner access, not through a credential reset or direct production write.
 - Missing approval, submission and completion times have distinct explanations. A known completion timestamp freezes the first clock; a completed batch with unknown completion time never shows a falsely growing live clock. Exact recovery provenance is stored per timing member.
+
+## Batch 8: consistent staff views and approved requirements
+
+Admin, Reviewer and Manager use the same ticket table, text/button styles and inline detail panel as Owner, without Owner-only controls. Selecting another ticket closes the old panel for one second, then opens the next for one second. Collapse, ← Queue and the ticket-list Queue button close details. Reduced-motion preferences skip animation. Unsaved inline comments, edits and selected screenshots require confirmation before switching; filters also preserve edits on cancellation. Existing ARR/PRR request queue behavior remains shared across roles.
+
+Authors retain access to their own tickets (including completed tickets) without a sharing grant. Existing default filters may hide older/completed tickets; change the filters to see them. Other users' tickets still require an unexpired grant; private Owner notes and Owner controls remain excluded.
+
+Approval freezes the submitter title, wording and requirement attachments on the server, not only in the UI. A persistent submitter lock survives later deferral/rejection. Historic tickets already approved, batched or completed are treated as locked. A+ retains its separate review controls and pre-batch screenshot controls. Saved brief snapshots remain immutable.
+
+Dated comments are discussion only for both author and A+: they do not increment the requirements revision, invalidate approval, change requirements, or rewrite a brief. New implementation requests should be related follow-up tickets. A shared read-only recipient cannot comment on another person's ticket.
+
+Validation: `npm test`, `npm run build`, `node services/api/src/access/workspace/batch8-browser-check.mjs` against a fictional local database on port 19331. The browser check creates unique local staff accounts and tests both form types, sequential animation, unsaved notes, approval lock controls, completed-ticket access, grant revocation, mobile and reduced motion.

@@ -31,11 +31,30 @@ export type Ticket = {
   reviewedRevision: number;
   locked: boolean;
   archived: boolean;
+  submitterLocked?: boolean;
   createdAt: string;
   updatedAt: string;
   images: { id: string; by: string; at: string; photo: string }[];
   history: { at: string; by: string; action: string; text: string }[];
 };
+// Approval permanently freezes submitter requirements, including historic approvals.
+export const ticketRequirementsLocked = (t: Ticket) =>
+  !!(
+    t.submitterLocked ||
+    t.locked ||
+    t.finalApprovedAt ||
+    [
+      "approved",
+      "implementation requested",
+      "in progress",
+      "completed",
+    ].includes(t.status) ||
+    t.history.some(
+      (h) =>
+        h.action === "Owner quick approved" ||
+        h.action === "implementation batch",
+    )
+  );
 // Ticket kinds intentionally do not participate in request-data seven-day cleanup.
 // Owner review and batch capture run under the workspace transaction lock, avoiding
 // races between a submitter revision and an implementation snapshot.
@@ -69,6 +88,7 @@ export async function tickets(
     const { privateNotes, images, ...rest } = t;
     return {
       ...rest,
+      requirementsLocked: ticketRequirementsLocked(t),
       ...(owner ? { privateNotes } : {}),
       images: images.map(({ photo, ...meta }) => meta),
       sharedUntil:
@@ -240,8 +260,10 @@ export async function tickets(
       "Duplicate selection.",
     );
     for (const t of chosen) {
+      t.submitterLocked = ticketRequirementsLocked(t);
       t.status = input.status;
       if (input.status === "approved") {
+        t.submitterLocked = true;
         t.reviewedRevision = t.authorRevision;
         t.finalApprovedAt = now();
         t.finalApprovedRevision = t.authorRevision;
@@ -543,8 +565,10 @@ export async function tickets(
     t.ownerText = required(input.ownerText);
     t.privateNotes = text(input.privateNotes || "", 8000);
     t.forms = scope(input.forms);
+    t.submitterLocked = ticketRequirementsLocked(t);
     const previousStatus = t.status;
     t.status = input.status;
+    if (t.status === "approved") t.submitterLocked = true;
     if (input.acknowledge === true) t.reviewedRevision = t.authorRevision;
     if (
       input.status === "approved" &&
@@ -566,7 +590,7 @@ export async function tickets(
   check(owner || t.author === u.id, "Shared tickets are read-only.", 403);
   if (route === "ticket-edit") {
     check(
-      t.author === u.id && !t.locked,
+      t.author === u.id && !ticketRequirementsLocked(t),
       "Create a related ticket: this ticket is locked.",
       409,
     );
@@ -580,14 +604,14 @@ export async function tickets(
   }
   if (route === "ticket-comment") {
     const note = required(input.note, 3000);
-    if (!owner && !t.locked) t.authorRevision++;
+    // Notes are discussion only: never revise requirements or invalidate approval.
     history(t, "comment", note);
     return save(t);
   }
   if (route === "ticket-attach") {
     check(
-      !t.locked,
-      "Create a related ticket to add screenshots after batching.",
+      !t.locked && (owner || !ticketRequirementsLocked(t)),
+      "Create a related ticket to add screenshots after approval.",
       409,
     );
     check(photo && t.images.length < 5, "Attach up to five screenshots.");

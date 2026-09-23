@@ -85,7 +85,7 @@ it("preserves originals and independent owner copy, review gates and immutable b
   t = await save(t, {
     ownerText: "Owner scope",
     privateNotes: "SECRET",
-    status: "approved",
+    status: "new",
   });
   t = await call(
     "ticket-edit",
@@ -96,7 +96,11 @@ it("preserves originals and independent owner copy, review gates and immutable b
   expect(t.ownerText).toBe("Owner scope");
   expect(t.privateNotes).toBeUndefined();
   await expect(call("ticket-batch", { ids: [t.id] })).rejects.toThrow("review");
-  t = await save(t, { privateNotes: "SECRET", acknowledge: true });
+  t = await save(t, {
+    privateNotes: "SECRET",
+    status: "approved",
+    acknowledge: true,
+  });
   const b = await call("ticket-batch", { ids: [t.id] });
   expect(b.brief).toContain("Owner scope");
   expect(b.brief).not.toContain("SECRET");
@@ -537,4 +541,74 @@ it("backfills legacy metrics on Owner reads without rewriting requirements or ti
   expect(await store.transaction((tx) => tx.get("ticket-batch", b.id))).toEqual(
     saved,
   );
+});
+
+it("keeps own approved tickets visible and notes independent of frozen requirements", async () => {
+  let t = await create();
+  t = await save(t, {
+    status: "approved",
+    acknowledge: true,
+    privateNotes: "PRIVATE-8",
+  });
+  const approval = t.finalApprovedAt;
+  const authorRevision = t.authorRevision;
+  for (const route of ["ticket-edit", "ticket-attach"]) {
+    await expect(
+      call(
+        route,
+        { id: t.id, revision: t.revision, title: "Alter", wording: "Alter" },
+        "alice",
+      ),
+    ).rejects.toThrow(/locked|after approval/);
+  }
+  for (const as of ["alice", "owner"]) {
+    t = await call(
+      "ticket-comment",
+      { id: t.id, revision: t.revision, note: "Discussion only" },
+      as,
+    );
+    expect(t.authorRevision).toBe(authorRevision);
+    expect(t.finalApprovedAt).toBe(approval);
+    expect(t.ownerText).toBe("Please show age");
+    expect(t.wording).toBe("Please show age");
+  }
+  const batch = await call("ticket-batch", { ids: [t.id] });
+  for (const status of [
+    "implementation requested",
+    "in progress",
+    "completed",
+  ]) {
+    t = (await call("ticket-list")).tickets.find((x: any) => x.id === t.id);
+    t = await save(t, { status });
+    const own = (await call("ticket-list", {}, "alice")).tickets.find(
+      (x: any) => x.id === t.id,
+    );
+    expect(own.requirementsLocked).toBe(true);
+    expect(own.sharedUntil).toBeNull();
+    expect(own.privateNotes).toBeUndefined();
+    t = await call(
+      "ticket-comment",
+      { id: t.id, revision: t.revision, note: "After status change" },
+      "alice",
+    );
+    expect((await call("ticket-batch-download", { id: batch.id })).brief).toBe(
+      batch.brief,
+    );
+  }
+  expect(
+    (await call("ticket-list", {}, "bob")).tickets.some(
+      (x: any) => x.id === t.id,
+    ),
+  ).toBe(false);
+});
+it("does not reopen submitter edits when an approved ticket is deferred", async () => {
+  let t = await save(await create(), { status: "approved", acknowledge: true });
+  t = await save(t, { status: "deferred" });
+  await expect(
+    call(
+      "ticket-edit",
+      { id: t.id, revision: t.revision, title: "x", wording: "x" },
+      "alice",
+    ),
+  ).rejects.toThrow("locked");
 });

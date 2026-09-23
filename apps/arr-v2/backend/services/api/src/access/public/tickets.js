@@ -3,6 +3,41 @@
 let ticketState = null,
   ticketSelection = new Set(),
   ticketFocus = null;
+let ticketTransition = false;
+let ticketInputBaseline = new Map();
+function rememberTicketInputs() {
+  ticketInputBaseline.clear();
+  for (const el of document.querySelectorAll(
+    "#ticket-inline-detail input, #ticket-inline-detail textarea, #ticket-inline-detail select",
+  ))
+    ticketInputBaseline.set(el, editValue(el));
+}
+function allowTicketNavigation() {
+  return (
+    !(
+      $("#ticket-inline-detail .ticket-thumb") ||
+      [...ticketInputBaseline].some(
+        ([el, value]) => el.isConnected && editValue(el) !== value,
+      )
+    ) ||
+    confirm("You have unsaved comments or edits. Discard them and continue?")
+  );
+}
+async function selectTicket(id) {
+  if (ticketTransition || !allowTicketNavigation()) return false;
+  ticketTransition = true;
+  try {
+    const old = $("#ticket-inline-shell");
+    if (old) await animateDisclosure(old, false);
+    ticketFocus = id;
+    renderTickets();
+    const next = $("#ticket-inline-shell");
+    if (next) await animateDisclosure(next, true);
+    return true;
+  } finally {
+    ticketTransition = false;
+  }
+}
 function ticketDefaultDates() {
   const today = new Date(),
     start = new Date();
@@ -181,8 +216,19 @@ function renderTickets() {
   section.innerHTML =
     '<h2>Enhancement & bug tickets</h2><p>Tickets and screenshots are retained separately from demo requests. Use fictional information; never paste passwords or personal records.</p><div id="ticket-tools" class="actions"></div><div id="ticket-filters" class="grid"></div><div id="ticket-sharing"></div><div id="ticket-table" class="ticket-scroll"></div><div id="ticket-batch-actions"></div><div id="ticket-detail"></div><div id="ticket-compose"></div><div id="ticket-batches"></div>';
   actions($("#ticket-tools"), [
-    ["New ticket", () => ticketCompose()],
-    ["Refresh tickets", refreshTickets],
+    ["Queue", () => selectTicket(null)],
+    [
+      "New ticket",
+      () => {
+        if (allowTicketNavigation()) ticketCompose();
+      },
+    ],
+    [
+      "Refresh tickets",
+      () => {
+        if (allowTicketNavigation()) return refreshTickets();
+      },
+    ],
     ...(!owner
       ? [
           [
@@ -211,6 +257,14 @@ function renderTickets() {
         ]
       : []),
   ]);
+  if (!owner)
+    $("#ticket-tools").after(
+      node(
+        "p",
+        "muted",
+        "Your own tickets remain available without timed access. Use filters to show completed or older tickets. Approved requirements are read-only; comments remain separate.",
+      ),
+    );
   const filters = $("#ticket-filters");
   const from = ticketField(
       filters,
@@ -220,10 +274,18 @@ function renderTickets() {
     ),
     to = ticketField(filters, "Through", ticketFilters.to, "date");
   from.onchange = () => {
+    if (!allowTicketNavigation()) {
+      from.value = ticketFilters.from;
+      return;
+    }
     ticketFilters.from = from.value;
     renderTickets();
   };
   to.onchange = () => {
+    if (!allowTicketNavigation()) {
+      to.value = ticketFilters.to;
+      return;
+    }
     ticketFilters.to = to.value;
     renderTickets();
   };
@@ -234,6 +296,10 @@ function renderTickets() {
   ]) {
     const c = ticketCheck(filters, label, ticketFilters[key]);
     c.onchange = () => {
+      if (!allowTicketNavigation()) {
+        c.checked = ticketFilters[key];
+        return;
+      }
       ticketFilters[key] = c.checked;
       renderTickets();
     };
@@ -244,6 +310,7 @@ function renderTickets() {
         ? "Restore Date Range"
         : "All dates",
       () => {
+        if (!allowTicketNavigation()) return;
         if (!ticketFilters.from && !ticketFilters.to) {
           Object.assign(ticketFilters, ticketDefaultDates());
         } else {
@@ -287,10 +354,7 @@ function renderTickets() {
     cell(t.username);
     const first = cell("");
     first.append(
-      button(t.title, () => {
-        ticketFocus = ticketFocus === t.id ? null : t.id;
-        renderTickets();
-      }),
+      button(t.title, () => selectTicket(ticketFocus === t.id ? null : t.id)),
       node("small", "", `${t.kind} · ${t.id}`),
       node("p", "", t.wording),
     );
@@ -379,7 +443,11 @@ function renderTickets() {
       detailCell.colSpan = owner ? 7 : 5;
       const detail = node("div");
       detail.id = "ticket-inline-detail";
-      detailCell.append(detail);
+      const shell = node("div");
+      shell.id = "ticket-inline-shell";
+      shell.style.display = "flow-root";
+      shell.append(detail);
+      detailCell.append(shell);
       detailRow.append(detailCell);
       table.tBodies[0].append(detailRow);
     }
@@ -561,6 +629,7 @@ function renderTickets() {
       );
   if (ticketFocus && rows.some((t) => t.id === ticketFocus))
     ticketDetail(ticketFocus);
+  rememberTicketInputs();
   updateQuickSelection();
   ticketTick();
 }
@@ -1006,10 +1075,8 @@ function ticketDetail(id) {
   if (!box) return;
   box.replaceChildren(node("h3", "", `${t.title} · ${t.id}`));
   box.append(
-    button("Collapse", () => {
-      ticketFocus = null;
-      renderTickets();
-    }),
+    button("Collapse", () => selectTicket(null)),
+    button("← Queue", () => selectTicket(null)),
   );
   box.dataset.ticketId = t.id;
   if (t.sharedUntil) {
@@ -1131,7 +1198,7 @@ function ticketDetail(id) {
       ],
     ]);
   }
-  if (t.author === user.id && !t.locked) {
+  if (t.author === user.id && !t.requirementsLocked) {
     const title = ticketField(box, "Revise your title", t.title),
       wording = ticketField(box, "Revise your request", t.wording, "textarea");
     actions(box, [
@@ -1149,12 +1216,12 @@ function ticketDetail(id) {
       ],
     ]);
   }
-  if (t.locked)
+  if (t.requirementsLocked)
     box.append(
       node(
         "p",
         "warning",
-        "Locked in an implementation batch. Add a follow-up comment or create a related ticket; the saved brief will not change.",
+        "Requirements are locked after Owner approval. Add a dated comment or create a related ticket; comments do not change approved requirements or saved briefs.",
       ),
     );
   const comment = ticketField(box, "Follow-up comment", "", "textarea");
@@ -1171,7 +1238,7 @@ function ticketDetail(id) {
       },
     ],
   ]);
-  if (!t.locked) {
+  if (!t.locked && (user.role === "owner" || !t.requirementsLocked)) {
     const photos = [];
     ticketUploads(box, photos);
     actions(box, [
