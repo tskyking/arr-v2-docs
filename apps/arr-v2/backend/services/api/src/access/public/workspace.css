@@ -591,3 +591,17 @@ button.resume-account {
 .activity-hours {
   color: #000;
 }
+
+.queue-details,
+.ticket-share-panel {
+  display: flow-root;
+}
+.queue-details > .card {
+  margin: 8px 0 12px;
+}
+.queue-item[aria-expanded="true"] {
+  outline: 2px solid #7196bd;
+}
+.ticket-share-request > button {
+  margin-inline-start: 12px;
+}

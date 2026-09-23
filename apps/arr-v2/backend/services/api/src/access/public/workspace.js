@@ -365,6 +365,10 @@ function reset() {
   resubmit = null;
 }
 function setForm(value) {
+  if (!allowRequestNavigation()) {
+    $("#form-switch").value = formId;
+    return;
+  }
   if (draft || Object.keys(data).length) {
     if (
       !confirm(
@@ -729,7 +733,9 @@ function renderStaff() {
     tabs.append(
       button(
         t[0].toUpperCase() + t.slice(1),
-        () => {
+        async () => {
+          if (tab === "queue" && !(await selectQueueRequest(null))) return;
+          if (t === "queue" && tab === "queue") return;
           tab = t;
           selected = null;
           renderStaff();
@@ -737,7 +743,11 @@ function renderStaff() {
         tab === t ? "selected" : "",
       ),
     );
-  tabs.append(button("Refresh", refreshStaff));
+  tabs.append(
+    button("Refresh", async () => {
+      if (allowRequestNavigation()) await refreshStaff();
+    }),
+  );
   if (tab === "queue") queue();
   if (tab === "forms") forms();
   if (tab === "accounts") accounts();
@@ -750,12 +760,71 @@ function renderStaff() {
     ticketsBox.textContent = e.message;
   });
 }
+let requestEditBaseline = new Map();
+function editValue(el) {
+  if (el.type === "checkbox" || el.type === "radio") return String(el.checked);
+  if (el.multiple)
+    return JSON.stringify([...el.selectedOptions].map((o) => o.value));
+  return el.value;
+}
+function rememberRequestInputs(root) {
+  for (const el of root.querySelectorAll("input, select, textarea"))
+    requestEditBaseline.set(el, editValue(el));
+}
+function allowRequestNavigation() {
+  const dirty = [...requestEditBaseline].some(
+    ([el, value]) => el.isConnected && editValue(el) !== value,
+  );
+  return (
+    !dirty ||
+    confirm("You have unsaved comments or edits. Discard them and continue?")
+  );
+}
+async function animateDisclosure(box, opening) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const height = box.getBoundingClientRect().height;
+  box.style.overflow = "hidden";
+  try {
+    await box.animate(
+      opening
+        ? [{ height: "0px" }, { height: `${height}px` }]
+        : [{ height: `${height}px` }, { height: "0px" }],
+      { duration: 1000, easing: "ease-in-out" },
+    ).finished;
+  } finally {
+    box.style.overflow = "";
+  }
+}
+async function selectQueueRequest(id) {
+  if (!allowRequestNavigation()) return false;
+  const old = document.querySelector(".queue-details");
+  if (old) {
+    await animateDisclosure(old, false);
+    old.remove();
+  }
+  requestEditBaseline.clear();
+  selected = id;
+  for (const b of document.querySelectorAll(".queue-item"))
+    b.setAttribute("aria-expanded", String(b.dataset.requestId === id));
+  if (id) {
+    const header = [...document.querySelectorAll(".queue-item")].find(
+      (b) => b.dataset.requestId === id,
+    );
+    if (!header) {
+      selected = null;
+      return true;
+    }
+    const box = node("div", "queue-details");
+    box.id = "queue-request-details";
+    header.after(box);
+    detail(box);
+    await animateDisclosure(box, true);
+  }
+  return true;
+}
 function queue() {
   const panel = $("#panel");
-  if (selected) {
-    detail(panel);
-    return;
-  }
+  requestEditBaseline.clear();
   panel.innerHTML =
     '<div class="card"><label>Status <select id="status-filter"><option value="all">All</option>' +
     [
@@ -771,8 +840,13 @@ function queue() {
     '</select></label><p class="muted">Showing the selected form only. Switch forms at the top. Bold version = latest published version.</p><div id="queue-list"></div></div>';
   $("#status-filter").value = filter;
   $("#status-filter").onchange = (e) => {
-    filter = e.target.value;
-    queue();
+    const next = e.target.value;
+    e.target.value = filter;
+    void run(async () => {
+      if (!(await selectQueueRequest(null))) return;
+      filter = next;
+      queue();
+    });
   };
   const rows = dash.requests.filter(
     (r) => r.form === formId && (filter === "all" || r.status === filter),
@@ -781,16 +855,31 @@ function queue() {
   for (const r of rows) {
     const b = button(
       "",
-      () => {
-        selected = r.id;
-        renderStaff();
-      },
+      () => selectQueueRequest(selected === r.id ? null : r.id),
       "queue-item",
     );
     const latest = dash.forms.find((f) => f.id === r.form)?.published;
-    b.innerHTML = `<strong>${esc(r.reference)}</strong> — ${esc(r.data.name)} · ${esc(r.status)} · ${r.formVersion === latest ? "<b>" : ""}0.${r.formVersion}${r.formVersion === latest ? "</b>" : ""} ${r.attempt ? "· attempt " + r.attempt : ""}`;
+    b.dataset.requestId = r.id;
+    b.setAttribute("aria-expanded", String(selected === r.id));
+    b.setAttribute("aria-controls", "queue-request-details");
+    const submittedAt =
+      r.status === "partial"
+        ? null
+        : (r.history || []).filter((h) => h.action === "submitted").at(-1)
+            ?.at || r.createdAt;
+    const submission = submittedAt
+      ? new Date(submittedAt).toLocaleString()
+      : "Not submitted";
+    b.innerHTML = `<strong>${esc(r.data.name)}</strong> — ${esc(r.reference)} · ${esc(r.status)} · ${r.formVersion === latest ? "<b>" : ""}0.${r.formVersion}${r.formVersion === latest ? "</b>" : ""} · <span class="queue-submitted">${esc(submission)}</span> ${r.attempt ? "· attempt " + r.attempt : ""}`;
     $("#queue-list").append(b);
+    if (selected === r.id) {
+      const box = node("div", "queue-details");
+      box.id = "queue-request-details";
+      b.after(box);
+      detail(box);
+    }
   }
+  if (!rows.some((r) => r.id === selected)) selected = null;
 }
 function detail(panel) {
   const r = dash.requests.find((r) => r.id === selected);
@@ -840,15 +929,7 @@ function detail(panel) {
         },
       ],
     ]);
-  actions(a, [
-    [
-      "← Queue",
-      () => {
-        selected = null;
-        renderStaff();
-      },
-    ],
-  ]);
+  actions(a, [["← Queue", () => selectQueueRequest(null)]]);
   if (r.status === "partial") return;
   const note = document.createElement("textarea");
   note.placeholder = "Comment / decision reason";
@@ -860,6 +941,7 @@ function detail(panel) {
       action,
       note: note.value,
     });
+    requestEditBaseline.clear();
     await refreshStaff();
   };
   const items = [];
@@ -901,15 +983,18 @@ function detail(panel) {
                 note: note.value,
                 data: values,
               });
+              requestEditBaseline.clear();
               await refreshStaff();
             },
             "primary",
           ],
         ]);
         a.append(edit);
+        rememberRequestInputs(edit);
       },
     ]);
   actions(a, items);
+  rememberRequestInputs(panel);
 }
 function forms() {
   const panel = $("#panel");
