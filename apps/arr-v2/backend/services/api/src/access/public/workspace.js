@@ -365,7 +365,7 @@ function reset() {
   resubmit = null;
 }
 function setForm(value) {
-  if (!allowRequestNavigation()) {
+  if (!allowRequestNavigation() || !allowTicketNavigation()) {
     $("#form-switch").value = formId;
     return;
   }
@@ -735,6 +735,7 @@ function renderStaff() {
         t[0].toUpperCase() + t.slice(1),
         async () => {
           if (tab === "queue" && !(await selectQueueRequest(null))) return;
+          if (ticketFocus && !(await selectTicket(null))) return;
           if (t === "queue" && tab === "queue") return;
           tab = t;
           selected = null;
@@ -745,7 +746,8 @@ function renderStaff() {
     );
   tabs.append(
     button("Refresh", async () => {
-      if (allowRequestNavigation()) await refreshStaff();
+      if (allowRequestNavigation() && allowTicketNavigation())
+        await refreshStaff();
     }),
   );
   if (tab === "queue") queue();
@@ -763,7 +765,7 @@ function renderStaff() {
 let requestEditBaseline = new Map();
 function editValue(el) {
   if (el.type === "checkbox" || el.type === "radio") return String(el.checked);
-  if (el.multiple)
+  if (el.tagName === "SELECT" && el.multiple)
     return JSON.stringify([...el.selectedOptions].map((o) => o.value));
   return el.value;
 }

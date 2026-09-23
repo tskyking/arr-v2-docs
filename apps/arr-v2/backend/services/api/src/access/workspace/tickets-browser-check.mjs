@@ -106,6 +106,7 @@ try {
     .click();
   await expect(page.locator("#ticket-table")).toContainText(title);
   await page.getByRole("button", { name: title, exact: true }).click();
+  await page.waitForFunction(() => !busy);
   await page
     .getByLabel("Owner-edited requirements", { exact: true })
     .fill("Owner approved scope");
@@ -195,7 +196,7 @@ try {
     .getByRole("button", { name: "Refresh tickets", exact: true })
     .click();
   await expect(staff.locator("#ticket-inline-detail")).toContainText(
-    "Locked in an implementation batch",
+    "Requirements are locked after Owner approval",
   );
   await expect(
     staff.getByRole("button", { name: "Save submitter revision", exact: true }),
