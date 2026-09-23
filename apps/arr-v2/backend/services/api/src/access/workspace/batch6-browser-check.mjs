@@ -102,20 +102,28 @@ try {
   ).toBe(1000);
   await settled(p);
   await expect(headers).toHaveCount(2);
-  await expect(first.locator("+ .queue-details")).toHaveCount(1);
+  await expect(
+    first.locator("xpath=..").locator("+ .queue-details"),
+  ).toHaveCount(1);
   await p.locator("#request-actions textarea").fill("Unsaved note");
   p.once("dialog", (x) => x.dismiss());
   await second.click();
-  await expect(first.locator("+ .queue-details")).toHaveCount(1);
+  await expect(
+    first.locator("xpath=..").locator("+ .queue-details"),
+  ).toHaveCount(1);
   await expect(p.locator("#request-actions textarea")).toHaveValue(
     "Unsaved note",
   );
   p.once("dialog", (x) => x.accept());
   await second.click();
   await p.waitForTimeout(300);
-  await expect(first.locator("+ .queue-details")).toHaveCount(1);
+  await expect(
+    first.locator("xpath=..").locator("+ .queue-details"),
+  ).toHaveCount(1);
   await p.waitForTimeout(800);
-  await expect(second.locator("+ .queue-details")).toHaveCount(1);
+  await expect(
+    second.locator("xpath=..").locator("+ .queue-details"),
+  ).toHaveCount(1);
   await settled(p);
   await p.getByRole("button", { name: "← Queue", exact: true }).click();
   await settled(p);

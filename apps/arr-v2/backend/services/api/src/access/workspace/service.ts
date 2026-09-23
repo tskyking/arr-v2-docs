@@ -1,3 +1,4 @@
+import { isArchived, queueLifecycle } from "./retention.js";
 import { tickets } from "./tickets.js";
 import legacySnapshot from "./legacy-v01.json";
 import bootstrap from "./owner-bootstrap.json";
@@ -29,7 +30,12 @@ type Input = Record<string, any>;
 const until = (ms: number) => new Date(Date.now() + ms).toISOString();
 const safe = (r: Request) => {
   const { receiptHash, photo, ...rest } = r;
-  return { ...rest, hasPhoto: !!photo };
+  return {
+    ...rest,
+    hasPhoto: !!photo,
+    kind: "request",
+    archived: isArchived(r),
+  };
 };
 const accountDate = (at: string) =>
   new Intl.DateTimeFormat("en-US", {
@@ -304,6 +310,7 @@ export class WorkspaceService {
           definition: def,
           data: answers(def, input.data, true),
           createdAt: old?.createdAt ?? now(),
+          updatedAt: now(),
           expires: old?.expires ?? until(20 * 60000),
           completed: null,
         };
@@ -417,6 +424,7 @@ export class WorkspaceService {
         );
         check(r, "Receipt unavailable or expired.", 404);
         if (route === "requester-comment") {
+          check(!isArchived(r), "Archived requests are read-only.", 409);
           check(
             ["pending", "clarification"].includes(r.status),
             "Requester comments close at approval or rejection.",
@@ -467,6 +475,7 @@ export class WorkspaceService {
         await tx.put("user", u.id, u);
         return { ok: true };
       }
+      if (route === "queue-lifecycle") return queueLifecycle(tx, u, input);
       if (route.startsWith("ticket-"))
         return tickets(tx, u, route, input, photo);
       if (route === "dashboard") {
@@ -491,8 +500,14 @@ export class WorkspaceService {
             reference: "Partial form · timed out",
             data: d.data,
             createdAt: d.createdAt,
-            updatedAt: d.expires,
-            revision: 1,
+            updatedAt: d.updatedAt || d.expires,
+            revision: d.revision || 1,
+            kind: "draft",
+            archived: isArchived(d),
+            deletedAt: d.deletedAt || null,
+            deletedBy: d.deletedBy || null,
+            history: d.history || [],
+            definition: d.definition,
           }));
         return {
           user: publicUser(u),
@@ -864,6 +879,7 @@ export class WorkspaceService {
           "Request changed. Reload before acting.",
           409,
         );
+        check(!isArchived(r), "Archived requests are read-only.", 409);
         const action = text(input.action);
         const note = text(input.note ?? "", 1500);
         const settings = await tx.get("settings", "main");
@@ -1056,7 +1072,8 @@ export class WorkspaceService {
             ),
             decisions: r.decisions,
           })),
-          retentionDays: 7,
+          retentionDays: null,
+          archiveAfterDays: 60,
         };
       }
       check(false, "Operation not found.", 404);
