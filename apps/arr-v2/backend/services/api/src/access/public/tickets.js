@@ -480,11 +480,13 @@ function renderTickets() {
     )) {
       const row = node(
         "div",
-        "warning",
+        "warning ticket-share-request",
         `${r.username} requests viewing access: ${r.note}`,
       );
       row.append(
-        button("Share selected with " + r.username, () => shareTickets(r.user)),
+        button("Share selected with " + r.username, () =>
+          shareTickets(r.user, row),
+        ),
       );
       $("#ticket-sharing").append(row);
     }
@@ -665,11 +667,18 @@ function showBrief(b) {
     ],
   ]);
 }
-function shareTickets(recipient = "") {
-  const box = $("#ticket-detail");
+async function shareTickets(recipient = "", requestRow = null) {
+  $("#ticket-share-panel")?.remove();
+  const holder = node("div", "ticket-share-panel");
+  holder.id = "ticket-share-panel";
+  const box = node("div", "card");
+  holder.append(box);
+  if (requestRow) requestRow.after(holder);
+  else $("#ticket-sharing").append(holder);
   box.replaceChildren(node("h3", "", "Time-limited read-only sharing"));
   const l = node("label", "field", "Recipient"),
     sel = document.createElement("select");
+  sel.setAttribute("aria-label", "Recipient");
   for (const u of dash.users.filter((u) => u.active && u.role !== "owner"))
     sel.append(new Option(u.username, u.id));
   if (recipient) sel.value = recipient;
@@ -678,6 +687,7 @@ function shareTickets(recipient = "") {
   const choose = (label, max, initial) => {
     const l = node("label", "field", label),
       s = document.createElement("select");
+    s.setAttribute("aria-label", label);
     for (let i = 0; i <= max; i++) s.append(new Option(String(i), String(i)));
     s.value = String(initial);
     l.append(s);
@@ -708,7 +718,9 @@ function shareTickets(recipient = "") {
       },
       "primary",
     ],
+    ["Cancel sharing", () => holder.remove()],
   ]);
+  await animateDisclosure(holder, true);
 }
 function ticketCompose(source = null) {
   const box = $("#ticket-compose");

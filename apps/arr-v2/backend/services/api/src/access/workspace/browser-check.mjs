@@ -124,6 +124,7 @@ try {
       .getByRole("heading", { name: role + " workspace", exact: true })
       .waitFor();
     await worker.getByRole("button", { name: new RegExp(reference) }).click();
+    await worker.waitForFunction(() => !busy);
     await worker
       .getByRole("button", { name: "Approve step", exact: true })
       .click();
