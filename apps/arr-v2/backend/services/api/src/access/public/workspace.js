@@ -59,6 +59,7 @@ function button(label, fn, cls = "") {
   const b = document.createElement("button");
   b.textContent = label;
   b.className = cls;
+  if (label === "Queue") b.classList.add("queue-nav");
   b.onclick = () => run(fn);
   return b;
 }
@@ -345,6 +346,7 @@ function theme() {
           : "",
   );
   document.body.classList.toggle("prr", formId === "prr");
+  document.body.classList.toggle("arr-manager", location.hash === "#staff" && user?.role === "manager" && formId === "arr");
   document.body.classList.toggle("sheet", sheet);
   $("#form-switch").value = formId;
   $("#brand").innerHTML =
@@ -671,6 +673,7 @@ async function showReceipt() {
     }, 45000);
 }
 function login(username = "") {
+  document.body.classList.remove("arr-manager");
   identityLabel("");
   ticketState = null;
   ticketFocus = null;
