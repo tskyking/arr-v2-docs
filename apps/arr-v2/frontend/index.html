@@ -9,12 +9,12 @@
       (function () {
         // REVIEW NOTE: navigation convenience only, not protection of the financial
         // application. Other hostnames/routes still require their own security review.
-        // This hostname belongs to Access Request Review, not the financial SPA.
+        // This hostname belongs to the production demonstration, not the financial SPA.
         // Discard legacy hashes such as #/login rather than forwarding them.
         if (window.location.hostname === 'access.arrweb.com') {
-          document.title = 'T-schutes ARR · Access Request Review';
+          document.title = 'Achievement Recognition Review · Production demo';
           document.documentElement.style.visibility = 'hidden';
-          window.location.replace('/api/access-demo/');
+          window.location.replace('/api/access-demo/production.html');
           return;
         }
         var path = window.location.pathname || '/';

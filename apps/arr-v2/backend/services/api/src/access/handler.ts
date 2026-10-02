@@ -40,6 +40,9 @@ for (const [file, type] of [
   ["app.js", "application/javascript; charset=utf-8"],
   ["style.css", "text/css; charset=utf-8"],
   ["workspace.html", "text/html; charset=utf-8"],
+  ["production.html", "text/html; charset=utf-8"],
+  ["production.js", "application/javascript; charset=utf-8"],
+  ["production.css", "text/css; charset=utf-8"],
   ["tickets.js", "application/javascript; charset=utf-8"],
   ["workspace.js", "application/javascript; charset=utf-8"],
   ["workspace.css", "text/css; charset=utf-8"],
@@ -222,12 +225,12 @@ export function createAccessHandler(
         const route = suffix.slice(3);
         await store.limit(
           "v2:" + route + ":" + sha256(ip),
-          ["login", "activate", "activation-info", "reset-request"].includes(route) ? 12 : route === "session-state" ? 1200 : 120,
+          ["login", "production-login", "activate", "activation-info", "reset-request"].includes(route) ? 12 : route === "session-state" ? 1200 : 120,
           900,
         );
         await store.limit(route === "session-state" ? "v2:session-state:global" : "v2:global", route === "session-state" ? 120000 : 3000, 3600);
         if (
-          ["login", "activate", "activation-info", "reset-request", "submit", "draft"].includes(
+          ["login", "production-login", "activate", "activation-info", "reset-request", "submit", "draft"].includes(
             route,
           )
         )
@@ -246,8 +249,14 @@ export function createAccessHandler(
             .find((v) => v.startsWith("tschutes_workspace="))
             ?.slice(19) ?? "";
         const photo =
-          ["submit", "ticket-attach"].includes(route) ? await cleanPhoto(input.photo) : undefined;
-        const result = await workspace.execute(route, input, session, photo);
+          ["submit", "production-submit", "ticket-attach"].includes(route) ? await cleanPhoto(input.photo) : undefined;
+        const operatorSession = req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("production_operator="))?.slice("production_operator=".length) ?? "";
+        const result = await workspace.execute(route, input, session, photo, operatorSession);
+        if (route === "production-login" || route === "production-logout") {
+          const value = route === "production-login" ? result.token : "";
+          res.setHeader("Set-Cookie", `production_operator=${value}; HttpOnly; SameSite=Strict; Path=/api/access-demo; Max-Age=${value ? 14400 : 0}${local ? "" : "; Secure"}`);
+          delete result.token;
+        }
         if (route === "login" || route === "logout" || route === "password" || route === "activate") {
           const value = route === "login" ? result.token : "";
           res.setHeader(
