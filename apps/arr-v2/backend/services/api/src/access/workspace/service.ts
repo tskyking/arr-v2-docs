@@ -1,3 +1,4 @@
+import { production } from './production.js';
 import { isArchived, queueLifecycle } from "./retention.js";
 import { tickets } from "./tickets.js";
 import legacySnapshot from "./legacy-v01.json";
@@ -133,6 +134,7 @@ export class WorkspaceService {
     input: Input,
     token: string,
     photo?: string | null,
+    operatorToken = '',
   ): Promise<any> {
     return this.store.transaction(async (tx) => {
       await this.seed(tx);
@@ -141,6 +143,7 @@ export class WorkspaceService {
         this.lastCleanup = Date.now();
       }
       const u = await this.user(tx, token);
+      if (route.startsWith("production-")) return production(tx, u, route, input, operatorToken, photo);
       if (route === "session-state") {
         const session = await tx.get("session", sha256(token));
         const account =
