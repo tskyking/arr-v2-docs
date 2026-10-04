@@ -23,3 +23,6 @@ If rollout fails, retain/redeploy the previous DO deployment or revert this rele
 
 ## Tester path
 Open root or the explicit production.html link. Select Operator for fictional check-ins/proposals; select Staff workspace for existing individual staff credentials. Use separate browser profiles for simultaneous roles. Existing admin page remains separate. Do not distribute local fixture credential files.
+
+## October 3 — 30-associate demo roster
+Todd requested person-11 through person-30 with the existing temporary operator demo password. A transaction-locked, marked one-time migration adds missing accounts only, on fresh and existing deployments. It does not reset prior accounts/passwords, forms, sessions, entries, or synthetic daily totals. Login guidance now lists person-1 through person-30. No production multiplier or automatic per-person submission generation was added: approximately 1,400 FGI units remains a whole-workforce simulation target, not a per-associate target.

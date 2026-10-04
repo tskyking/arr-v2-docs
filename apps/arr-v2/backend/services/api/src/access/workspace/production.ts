@@ -13,8 +13,21 @@ async function seed(tx:WorkspaceTx) {
  await tx.put('production-settings','main',productionConfig);
  let date=workToday();for(let n=0;n<30;n++){do {date=dayOffset(date,-1);} while([0,6].includes(new Date(date+'T12:00:00Z').getUTCDay()));await tx.put('production-total',date,{date,units:1400+Math.round(Math.sin(n*1.7)*330),dataSource:'synthetic_seed',team:'Team A',provenance:'fictional group total',note:n===3?'Fictional facility interruption':n===9?'Fictional training support':'Fictional production history'});}
 }
+/** Runs under the workspace transaction lock. Never resets an existing account or production total. */
+async function expandDemoAssociates(tx:WorkspaceTx) {
+ const migration='associates-30-v1';
+ if(await tx.get('production-migration',migration))return;
+ for(let n=11;n<=30;n++) {
+  const key=`person-${n}`;
+  if(await tx.get('production-operator',key))continue;
+  const salt=secret();
+  await tx.put('production-operator',key,{id:key,username:key,role:'operator',active:true,password:{salt,hash:scryptSync('abc@123',salt,64).toString('hex')}});
+ }
+ await tx.put('production-migration',migration,{completedAt:now(),associateCount:30});
+}
 export async function production(tx:WorkspaceTx,u:User|undefined,route:string,input:any,operatorToken:string,photo?:string|null):Promise<any> {
  await seed(tx);
+ await expandDemoAssociates(tx);
  const session=operatorToken?await tx.get('production-session',sha256(operatorToken)):undefined;
  const operator:Operator|undefined=session&&session.expires>now()?await tx.get('production-operator',session.user):undefined;
  const o=operator?.active?operator:undefined;

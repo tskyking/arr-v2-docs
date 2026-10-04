@@ -46,7 +46,7 @@ describe('Production alpha independent authorization QA', () => {
   it('does not accept demo operator credential for staff accounts', async () => {
     await expect(call('login',{username:'owner',password:'abc@123'})).rejects.toThrow();
     await expect(call('production-login',{username:'owner',password:'abc@123'})).rejects.toThrow();
-    await expect(call('production-login',{username:'person-11',password:'abc@123'})).rejects.toThrow();
+    await expect(call('production-login',{username:'person-31',password:'abc@123'})).rejects.toThrow();
   });
   it('does not accept operator token as staff session', async () => {
     await expect(call('dashboard',{},operators['person-1'])).rejects.toThrow();
