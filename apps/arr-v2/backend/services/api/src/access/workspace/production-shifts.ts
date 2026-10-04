@@ -39,7 +39,15 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
  const settings=await tx.get('production-settings','main')||{};
  const actor=u?.username||o!.username;
  const resolvedAssignment=async(a:any)=>({...assignment(a),productId:undefined,...await resolveProduct(tx,text(a.product,600),actor)});
- const answers=(r:ProductionShift,d:any,phase:string)=>{const values=definitionAnswers(r.formSnapshot?.definition||initialDefinition('arr'),d||{},phase);if(u?.role==='reviewer'){delete values.recognition;delete values.recognitionPeople;}return values;};
+ const answers=(r:ProductionShift,d:any,phase:string)=>{
+  const definition=r.formSnapshot?.definition||initialDefinition('arr');
+  // Enforce required questions for this action, then retain explicitly supplied
+  // optional feedback shown in the shared changeover/End Shift form.
+  const values=definitionAnswers(definition,d||{},phase);
+  const optional=definition.fields.filter((f:any)=>!f.required&&f.phase!=='bod').map((f:any)=>({...f,phase:'all'}));
+  Object.assign(values,definitionAnswers({...definition,fields:optional},d||{}));
+  if(u?.role==='reviewer'){delete values.recognition;delete values.recognitionPeople;}return values;
+ };
  const correctedAnswers=(r:ProductionShift,d:any)=>{
   check(d&&typeof d==='object'&&!Array.isArray(d),'Invalid shift answers.');
   if(u?.role==='reviewer')check(d.recognition===undefined&&d.recognitionPeople===undefined,'Recognition information is restricted.');

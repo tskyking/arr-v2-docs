@@ -1,5 +1,5 @@
 import {seedProducts,catalogRoutes,resolveProduct} from './production-catalog.js';
-import {ensureProductionForms,formRoutes,definitionForProductionEntry} from './production-forms.js';
+import {ensureProductionForms,simplifyProductionARR,formRoutes,definitionForProductionEntry} from './production-forms.js';
 import {settingsRoutes} from './production-settings.js';
 import {shiftRoutes} from './production-shifts.js';
 import {productionAllocations} from './production-allocations.js';
@@ -35,6 +35,7 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
  await expandDemoAssociates(tx);
  await seedProducts(tx);
  await ensureProductionForms(tx);
+ await simplifyProductionARR(tx);
  const session=operatorToken?await tx.get('production-session',sha256(operatorToken)):undefined;
  const operator:Operator|undefined=session&&session.expires>now()?await tx.get('production-operator',session.user):undefined;
  const o=operator?.active?operator:undefined;
@@ -56,7 +57,7 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
  if(route==='production-login') {
   const username=text(input.username,80).toLowerCase();const found=await tx.get<Operator>('production-operator',username);
   check(found?.active&&verifyPassword(input.password,found.password),'Username or password is incorrect.',401);
-  const token=secret();await tx.put('production-session',sha256(token),{user:found.id,expires:new Date(Date.now()+4*3600000).toISOString()});await audit(tx,username,'demo operator login','');return{token,user:opSafe(found)};
+  const token=secret();await tx.put('production-session',sha256(token),{user:found.id,expires:new Date(Date.now()+4*3600000).toISOString()});await audit(tx,username,'demo Mfg. Associate login','');return{token,user:opSafe(found)};
  }
  if(route==='production-logout'){if(operatorToken)await tx.remove('production-session',sha256(operatorToken));return{ok:true};}
  if(route==='production-catalog')return{user:u?publicUser(u):o?opSafe(o):null,config:{...productionConfig,...await tx.get('production-settings','main')},products:(await tx.list('production-product')).filter(p=>p.active&&p.common),forms:(await tx.list('production-form')).map(f=>({id:f.id,identity:f.identity,version:f.version,publishedAt:f.publishedAt,definition:f.definition})),operators:(await tx.list<Operator>('production-operator')).filter(v=>v.active).map(v=>({id:v.id,username:v.username})),capabilities:{recognition,publishing,operationalManager},demo:true};
@@ -83,7 +84,7 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
   check(input.operationalManager===undefined||typeof input.operationalManager==='boolean','Invalid operational role.');check(!input.operationalManager||target.role==='owner','Additional operational role is for Owner accounts.');await tx.put('production-permission',userId,{...await tx.get('production-permission',userId),recognition:input.recognition,updates:input.updates,teams,...(input.operationalManager!==undefined?{operationalManager:input.operationalManager}:{})});await audit(tx,u.username,'permissions updated',userId);return{ok:true};
  }
  if(route==='production-submit') {
-  check(!u&&o,'Use an operator account to submit.',403);check(['arr','prr'].includes(input.form),'Unknown form.');const f=await tx.get('production-form',input.form);
+  check(!u&&o,'Use a Mfg. Associate account to submit.',403);check(['arr','prr'].includes(input.form),'Unknown form.');const f=await tx.get('production-form',input.form);
   const key=text(input.idempotencyKey,100);check(key.length>=8,'A submission key is required.');const hash=sha256(JSON.stringify({form:input.form,version:input.formVersion,data:input.data,photo:photo||null,sourceEntryId:input.sourceEntryId||null,relatedId:input.relatedId||null}));const previous=await tx.get('production-idempotency',`${o.id}:${key}`);
   if(previous){check(previous.hash===hash,'Submission key already used for different answers.',409);return{entry:await safe((await tx.get<ProductionEntry>('production-entry',previous.id))!)};}
   check(input.form!=='arr'||f.version==='0.1.0','ARR now uses the continuous shift workflow. Reload and use Start shift, Change assignment, or End shift.',409);
@@ -93,7 +94,7 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
   if(photo)r.photo=photo;await tx.put('production-entry',rid,r);await tx.put('production-idempotency',`${o.id}:${key}`,{id:rid,hash});await tx.remove('production-draft',`${o.id}:${input.form}`);return{entry:await safe(r)};
  }
  if(route==='production-draft') {
-  check(!u&&o,'Use an operator account.',403);check(['arr','prr'].includes(input.form),'Unknown form.');const key=`${o.id}:${input.form}`;
+  check(!u&&o,'Use a Mfg. Associate account.',403);check(['arr','prr'].includes(input.form),'Unknown form.');const key=`${o.id}:${input.form}`;
   if(input.data===undefined)return{draft:await tx.get('production-draft',key)||null};check(input.data&&typeof input.data==='object'&&JSON.stringify(input.data).length<30000,'Draft too large.');await tx.put('production-draft',key,{form:input.form,data:input.data,updatedAt:now(),formVersion:(await tx.get('production-form',input.form)).version});return{ok:true};
  }
  if(route==='production-detail') {const r=await get();if(u){const key=`${r.id}:${u.id}`,old=await tx.get('production-review',key);await tx.put('production-review',key,{...old,viewedAt:old?.viewedAt||now(),lastViewedAt:now()});}return{entry:await safe(r)};}
@@ -135,7 +136,7 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
   }
   const shiftDays=[...shiftMap.values()].sort((a,b)=>a.date.localeCompare(b.date));
   const fgiDays=formOK(u,'arr')&&input.dataSource!=='synthetic_seed'?(await tx.list('production-fgi')).filter(r=>r.workDate>=from&&r.workDate<=to).sort((a,b)=>a.workDate.localeCompare(b.workDate)).map(r=>({date:r.workDate,total:r.total,rows:r.rows,revision:r.revision,provenance:r.provenance,demo:true,label:'Authoritative demo FGI'})):[];
-  const synthetic=input.dataSource==='interactive_demo'||!formOK(u,'arr')||u.role!=='manager'&&permissions?.teams?.length&&!permissions.teams.includes('Team A')?[]:(await tx.list('production-total')).filter(d=>d.date>=from&&d.date<=to);return{shiftDays,fgiDays,demo:true,shiftProvenance:'Recorded operation moves may count the same physical unit at successive operations; they are not unique finished goods. Open intervals are not estimated.',days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),syntheticDays:synthetic.sort((a,b)=>a.date.localeCompare(b.date)),totals:{entries:records.length,reportedCount:[...days.values()].reduce((a,d)=>a+d.reportedCount,0),reportedUnits:[...days.values()].reduce((a,d)=>a+d.reportedUnits,0)},averages,sourceCounts:{interactive_demo:records.length,synthetic_seed:synthetic.length},provenance:'Operator-reported estimates; synthetic series is a separate fictional group total.'};
+  const synthetic=input.dataSource==='interactive_demo'||!formOK(u,'arr')||u.role!=='manager'&&permissions?.teams?.length&&!permissions.teams.includes('Team A')?[]:(await tx.list('production-total')).filter(d=>d.date>=from&&d.date<=to);return{shiftDays,fgiDays,demo:true,shiftProvenance:'Recorded operation moves may count the same physical unit at successive operations; they are not unique finished goods. Open intervals are not estimated.',days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),syntheticDays:synthetic.sort((a,b)=>a.date.localeCompare(b.date)),totals:{entries:records.length,reportedCount:[...days.values()].reduce((a,d)=>a+d.reportedCount,0),reportedUnits:[...days.values()].reduce((a,d)=>a+d.reportedUnits,0)},averages,sourceCounts:{interactive_demo:records.length,synthetic_seed:synthetic.length},provenance:'Mfg. Associate-reported estimates; synthetic series is a separate fictional group total.'};
  }
  check(false,'Unknown production operation.',404);
 }
