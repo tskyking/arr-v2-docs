@@ -1,6 +1,6 @@
 import {beforeEach,describe,it,expect} from 'vitest';
 import {seedProducts,resolveProduct,catalogRoutes as rawCatalogRoutes} from '../workspace/production-catalog.js';
-import {ensureProductionForms,formRoutes as rawFormRoutes,initialDefinition,definitionAnswers,legacyProductionDefinition,definitionForProductionEntry} from '../workspace/production-forms.js';
+import {ensureProductionForms,simplifyProductionARR,formRoutes as rawFormRoutes,initialDefinition,definitionAnswers,legacyProductionDefinition,definitionForProductionEntry} from '../workspace/production-forms.js';
 import {settingsRoutes as rawSettingsRoutes} from '../workspace/production-settings.js';
 import {production} from '../workspace/production.js';
 import {productionConfig,productionAnswers} from '../workspace/production-model.js';
@@ -90,5 +90,26 @@ describe('continuous ARR is the only new shift entry path',()=>{
   const f=await tx.get('production-form','arr');await tx.put('production-form','arr',{...f,version:'0.1.1'});
   const replay=(await call('production-submit',input,null)).entry;expect(replay.id).toBe(first.id);expect(await tx.list('production-entry')).toHaveLength(1);
   await expect(call('production-submit',{...input,data:{...answers,mood:9}},null)).rejects.toThrow('different answers');
+ });
+});
+
+
+describe('approved ARR usability definition migration',()=>{
+ it('removes future redundant exception once, preserving history, drafts and other questions',async()=>{
+  const definition=initialDefinition('arr');definition.fields.push({key:'localQuestion',label:'Local custom question',type:'text',page:1,required:false,options:[],active:true});
+  const draft={definition:structuredClone(definition),by:'admin',summary:'Unpublished work'};
+  const original={id:'arr',identity:'production-demo-arr',version:'0.1.1',revision:4,definition,versions:[{version:'0.1.1',definition:structuredClone(definition)}],draft};
+  await tx.put('production-form','arr',original);
+  const historic={id:'historic-shift',formSnapshot:structuredClone(original),data:{exception:'Existing historical context'}};await tx.put('production-shift',historic.id,historic);
+  const prr=await tx.get('production-form','prr');
+  await simplifyProductionARR(tx);const updated=await tx.get('production-form','arr');
+  expect(updated.version).toBe('0.1.2');expect(updated.revision).toBe(5);expect(updated.definition.fields.find((f:any)=>f.key==='exception')).toMatchObject({active:false,required:false});
+  expect(updated.definition.fields.find((f:any)=>f.key==='localQuestion').active).toBe(true);
+  expect(updated.versions[0].definition).toEqual(definition);expect(updated.draft).toEqual(draft);expect(await tx.get('production-shift',historic.id)).toEqual(historic);expect(await tx.get('production-form','prr')).toEqual(prr);
+  const events=await tx.list('production-event');expect(events.at(-1)).toMatchObject({before:original,after:updated});
+  await simplifyProductionARR(tx);expect(await tx.get('production-form','arr')).toEqual(updated);expect(await tx.list('production-event')).toEqual(events);
+ });
+ it('does not add unnecessary versions when the question was already removed',async()=>{
+  const definition=initialDefinition('arr');definition.fields=definition.fields.filter(f=>f.key!=='exception');const original={id:'arr',version:'0.1.3',revision:2,definition};await tx.put('production-form','arr',original);await simplifyProductionARR(tx);expect(await tx.get('production-form','arr')).toEqual(original);
  });
 });

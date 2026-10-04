@@ -58,6 +58,30 @@ export async function ensureProductionForms(tx:WorkspaceTx){
   const key=id();await tx.put('production-event',key,{id:key,at:stamp,by:'approved-release',action:'production form upgraded',form:name,beforeVersion:f.version,afterVersion:upgraded.version,source:LEGACY_SOURCE});
  }
 }
+/** One-time approved removal from future ARR forms; preserve records, snapshots and drafts. */
+export async function simplifyProductionARR(tx:WorkspaceTx) {
+ const marker='arr-usability-20261004';
+ if(await tx.get('production-migration',marker))return;
+ const form=await tx.get('production-form','arr');
+ // Metadata-only forms are first upgraded by ensureProductionForms. Explicit
+ // legacy definitions remain untouched; this migration is for continuous shifts.
+ if(!form?.definition||form.version==='0.1.0')return;
+ const question=form.definition.fields.find((f:ProductionField)=>f.key==='exception'&&f.active);
+ if(!question){await tx.put('production-migration',marker,{at:now(),status:'already absent'});return;}
+ const parts=String(form.version).split('.').map(Number);
+ check(parts.length===3&&parts.every(Number.isSafeInteger),'Invalid ARR version.');
+ const before=structuredClone(form),at=now();parts[2]++;
+ const definition=structuredClone(form.definition);
+ definition.fields=definition.fields.map((f:ProductionField)=>f.key==='exception'?{...f,active:false,required:false}:f);
+ const versions=structuredClone(form.versions||[]);
+ if(!versions.some((v:any)=>v.version===form.version))versions.push({version:form.version,definition:structuredClone(form.definition),at:form.publishedAt||null});
+ versions.push({version:parts.join('.'),definition:structuredClone(definition),at,by:'approved-usability-release',summary:'Remove redundant Work exception from future entry; preserve historical answers.'});
+ const updated={...form,version:parts.join('.'),revision:(form.revision||0)+1,definition,versions,publishedAt:at};
+ await tx.put('production-form','arr',updated);
+ const event=id();await tx.put('production-event',event,{id:event,at,by:'approved-usability-release',action:'ARR usability definition published',before,after:updated});
+ await tx.put('production-migration',marker,{at,beforeVersion:form.version,afterVersion:updated.version,draftPreserved:!!form.draft});
+}
+
 function validatedDefinition(value:any):ProductionDefinition{
  check(value&&typeof value==='object'&&Array.isArray(value.fields)&&value.fields.length<=100,'Invalid form definition.');
  const keys=new Set<string>();
