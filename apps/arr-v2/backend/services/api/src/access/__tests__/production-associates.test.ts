@@ -15,7 +15,8 @@ it('creates 30 demo associates and upgrades an existing installation once withou
  const service = new WorkspaceService(store);
  const call = (route:string, input:any) => service.execute(route,input,'');
  try {
-  await call('production-catalog',{});
+  const catalog = await call('production-catalog',{});
+  expect(catalog.operators.map((o:any)=>o.username)).toEqual(Array.from({length:30},(_,i)=>`person-${i+1}`));
   for(let n=1;n<=30;n++) {
    const login = await call('production-login',{username:`person-${n}`,password:'abc@123'});
    expect(login.user.username).toBe(`person-${n}`);
