@@ -1,6 +1,7 @@
 /* All authorization, version pinning and state transitions are server-enforced.
  * No requester answers or receipt capabilities are persisted in browser storage.
  * textContent/escaped templates prevent admin-authored labels becoming scripts. */
+const productionAdmin = new URLSearchParams(location.search).get('production') === '1';
 const $ = (s) => document.querySelector(s),
   app = $("#app");
 const esc = (v) =>
@@ -24,7 +25,7 @@ let catalog = [],
   pinned = null,
   resubmit = null,
   dash = null,
-  tab = "queue",
+  tab = productionAdmin ? (new URLSearchParams(location.search).get("tab") === "accounts" ? "accounts" : "tickets") : "queue",
   filter = "all",
   selected = null,
   sheet = false,
@@ -350,7 +351,7 @@ function theme() {
   document.body.classList.toggle("sheet", sheet);
   $("#form-switch").value = formId;
   $("#brand").innerHTML =
-    "<strong>" + esc(formId.toUpperCase()) + "</strong> / Request workspace";
+    (productionAdmin ? "<strong>ARR / PRR</strong> · Production administration" : "<strong>" + esc(formId.toUpperCase()) + "</strong> / Request workspace");
 }
 function current() {
   return pinned || catalog.find((f) => f.id === formId);
@@ -392,6 +393,7 @@ function setForm(value) {
   }
 }
 async function load() {
+  if(productionAdmin){document.title="Production demo · Administration";document.body.classList.add("production-administration");$(".notice").textContent="DEMO · Independent fictional production workspace · Safety and quality first";$("footer").textContent="Fictional data only. Account, ticket and security controls share the production demo session. Historical records remain separate.";$("#view-switch").hidden=true;$("#staff-link").textContent="Production workspace";$("#staff-link").onclick=()=>location.href="production.html";$("#brand").onclick=()=>location.href="production.html";$("#form-switch").closest("label").hidden=true;}
   const c = await api("catalog");
   catalog = c.forms;
   user = c.user;
@@ -399,7 +401,7 @@ async function load() {
   $("#form-switch").innerHTML = catalog
     .map(
       (f) =>
-        `<option value="${esc(f.id)}">${esc(f.id.toUpperCase() + " — " + f.definition.title)}</option>`,
+        `<option value="${esc(f.id)}">${esc(f.id.toUpperCase() + " — " + (productionAdmin ? (f.id === "arr" ? "Achievement Recognition Review" : "Production Request Review") : f.definition.title))}</option>`,
     )
     .join("");
   if (!catalog.some((f) => f.id === formId)) formId = catalog[0]?.id || "arr";
@@ -680,6 +682,7 @@ function login(username = "") {
   ticketSelection.clear();
   app.innerHTML =
     '<section class="intake card"><h1>Staff workspace</h1><p>Use your approved personal account. A+ manages Admins; Admins manage their assigned reviewers.</p><form id="login"><label class="field">Username or email<input name="username" required autocomplete="username"></label><label class="field">Password<input name="password" type="password" required autocomplete="current-password"></label><button class="primary">Sign in</button></form><div id="recovery"></div><p class="muted">Roles: Reviewer · Manager · Admin · A+</p><a href="index.html#staff">Previous demo queue (legacy records)</a></section>';
+  if(productionAdmin) $("#app a[href=\"index.html#staff\"]")?.remove();
   passwordControls($("#login"));
   $("#login [name=username]").value = username;
   $("#login").onsubmit = (e) => {
@@ -728,11 +731,11 @@ function renderStaff() {
   theme();
   app.innerHTML = `<span class="badge">${esc(formId.toUpperCase())} workspace</span><h1>${user.role === "owner" ? "A+ owner" : esc(user.role)} workspace</h1><p>${esc(user.username)} · permissions are restricted to assigned forms</p><nav class="tabs" id="tabs"></nav><section id="panel"></section>`;
   const tabs = $("#tabs");
-  for (const t of [
+  for (const t of (productionAdmin ? [...(["owner","admin"].includes(user.role)?["accounts"]:[]),"tickets"] : [
     "queue",
     ...(["owner", "admin"].includes(user.role) ? ["forms", "accounts"] : []),
     ...(user.role === "owner" ? ["metrics", "operations"] : []),
-  ])
+  ]))
     tabs.append(
       button(
         t[0].toUpperCase() + t.slice(1),
@@ -754,6 +757,7 @@ function renderStaff() {
     }),
   );
   if (tab === "queue") queue();
+  if (tab === "tickets") $("#panel").innerHTML = `<p>Website bugs and enhancement requests. <a href="production.html">Return to production workspace</a></p>`;
   if (tab === "forms") forms();
   if (tab === "accounts") accounts();
   if (tab === "metrics") void metrics().catch((e) => msg(e.message));
@@ -1673,7 +1677,7 @@ function accounts() {
         ),
       );
     }
-    actions($("#account-more"), [
+    if(!productionAdmin) actions($("#account-more"), [
       [
         "Create another form",
         async () => {
@@ -1731,7 +1735,7 @@ function editAccount(u) {
             )
           )
             return;
-          const r = await api("setup-link", { id: u.id });
+          const r = await api("setup-link", { id: u.id, production: productionAdmin });
           const box = node(
             "div",
             "warning",
@@ -1847,7 +1851,7 @@ async function route() {
   }
   if (hash.startsWith("#activate=")) {
     const token = hash.slice(10);
-    history.replaceState(null, "", location.pathname + "#activate");
+    history.replaceState(null, "", location.pathname + location.search + "#activate");
     app.innerHTML =
       '<section class="intake card"><h1>Checking setup link…</h1></section>';
     let identity;
@@ -1874,7 +1878,7 @@ async function route() {
         user = null;
         dash = null;
         msg(`Password set for ${result.username}. Sign in with this username.`);
-        history.replaceState(null, "", location.pathname + "#staff");
+        history.replaceState(null, "", location.pathname + location.search + "#staff");
         login(result.username);
       });
     };
@@ -1921,6 +1925,7 @@ run(async () => {
     await api("logout");
     user = null;
   }
-  await api("visit", { form: formId });
+  if(!productionAdmin) await api("visit", { form: formId });
+  if(productionAdmin&&!location.hash)location.hash="staff";
   await route();
 });

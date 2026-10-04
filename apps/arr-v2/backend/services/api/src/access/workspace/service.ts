@@ -759,7 +759,7 @@ export class WorkspaceService {
           link:
             (process.env.TSCHUTES_PUBLIC_URL ||
               "https://access.arrweb.com/api/access-demo/") +
-            "#activate=" +
+            (input.production === true ? "workspace.html?production=1#activate=" : "#activate=") +
             cap,
         };
       }

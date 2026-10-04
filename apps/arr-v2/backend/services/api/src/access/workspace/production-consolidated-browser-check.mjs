@@ -1,0 +1,61 @@
+/** Local-only consolidated release UI verification. Never use against production. */
+import { chromium, expect } from '@playwright/test';
+import { readFileSync, mkdirSync } from 'node:fs';
+const path=process.env.PRODUCTION_QA_CREDENTIALS;
+if(!path?.startsWith('/tmp/production-alpha-'))throw Error('Local fixture required');
+const credentials=JSON.parse(readFileSync(path,'utf8'));
+const base=process.env.PRODUCTION_QA_BASE||credentials.base;
+if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+\/api\/access-demo\/$/.test(base))throw Error('Local endpoint required');
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const errors=[],passed=[];
+const dir='/tmp/production-consolidated-ui';mkdirSync(dir,{recursive:true});
+async function page(){const p=await browser.newPage({viewport:{width:1440,height:1000},timezoneId:'America/New_York',reducedMotion:'reduce'});p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());if(process.env.PRODUCTION_QA_SOURCE==='1')await p.route('**/production.js*',r=>r.fulfill({path:new URL('../public/production.js',import.meta.url).pathname,contentType:'application/javascript'}));if(process.env.PRODUCTION_QA_SOURCE==='1')await p.route('**/production.css*',r=>r.fulfill({path:new URL('../public/production.css',import.meta.url).pathname,contentType:'text/css'}));await p.goto(base+'production.html');return p;}
+async function login(p,name,staff=false){if(staff)await p.locator('#staff-mode').click();await p.locator('[name=username]').fill(name);await p.locator('[name=password]').fill(staff?credentials.password:'abc@123');await p.getByRole('button',{name:'Sign in',exact:true}).click();await expect(p.locator('[data-tab=shifts]')).toBeVisible();}
+const request=async(p,route,input={})=>p.evaluate(async({route,input})=>{const r=await fetch('v2/production-'+route,{method:'POST',headers:{'Content-Type':'application/json','X-ARR-Request':'1'},body:JSON.stringify(input)});return{status:r.status,body:await r.json()};},{route,input});
+const stamp=d=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).map(v=>[v.type,v.value]));return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;};
+try{
+ const p=await page();await login(p,process.env.PRODUCTION_QA_PERSON||'person-28');await p.locator('#start-shift').click();
+ await expect(p.locator('[name=readiness]:checked')).toHaveCount(0);
+ await p.locator('[name=actualTime]').fill(stamp(new Date(Date.now()-3*3600000)));
+ await p.locator('[name=readiness][value=ready]').check();
+ await p.locator('#shift-start-form').getByRole('button',{name:'Begin shift',exact:true}).click();
+ await expect(p.locator('#notice')).toContainText('Shift started');
+ await p.locator('[data-shift]').first().click();
+ await expect(p.locator('.shift-timeline')).toBeVisible();
+ await p.locator('#segment-action [name=actualTime]').fill(stamp(new Date(Date.now()-2*3600000)));
+ await p.locator('#segment-action [name=stage]').selectOption('Inspection');
+ await p.locator('[name=doAction][value=changeover]').click();
+ await expect(p.locator('.shift-timeline li')).toHaveCount(2);
+ await p.locator('#segment-action [name=actualTime]').fill(stamp(new Date(Date.now()-3600000)));
+ await p.locator('[name=doAction][value=end]').click();
+ await expect(p.locator('.queue-detail')).toContainText('Submitted');
+ const timezone=await p.evaluate(()=>({shown:localStamp('2026-10-04T16:30:00Z'),parsed:isoStamp('2026-10-04T09:30')}));if(timezone.shown!=='2026-10-04T09:30'||timezone.parsed!=='2026-10-04T16:30:00.000Z')throw Error('Pacific time mismatch on East-coast device');passed.push('Pacific work times preserved on America/New_York browser');
+ passed.push('Continuous start/changeover/end, explicit readiness, connected timeline');
+ await p.locator('[data-tab=prr]').click();await p.getByRole('button',{name:'Continue →',exact:true}).click();
+ await expect(p.locator('[data-dynamic=proposal]')).toBeVisible();
+ await p.locator('[data-dynamic=categories]').selectOption('Ergonomic');
+ await p.locator('[data-dynamic=proposal]').fill('Fictional adjustable light proposal');
+ await p.getByRole('button',{name:'Continue →',exact:true}).click();
+ await expect(p.locator('#panel')).toContainText('Fictional adjustable light proposal');
+ passed.push('Published PRR definition renders and preserves answers through review');
+ const mgr=await page();await login(mgr,'manager',true);
+ await mgr.locator('[data-tab=fgi]').click();await mgr.locator('[data-preset="1400"]').click();
+ await expect(mgr.locator('#fgi-total')).toContainText('1,400');
+ await mgr.locator('#fgi-form').getByRole('button',{name:'Save demo FGI',exact:true}).click();
+ await expect(mgr.locator('#notice')).toContainText('Demo FGI saved');
+ await mgr.locator('[data-preset="14000"]').click();await expect(mgr.locator('#fgi-total')).toContainText('14,000');
+ passed.push('Variable exact-total demo presets and FGI save UI');
+ const owner=await page();await login(owner,'owner',true);await owner.locator('[data-tab=administration]').click();
+ await owner.getByText('Product catalog · common and long lists',{exact:true}).click();
+ await expect(owner.locator('#product-edit')).toBeVisible();
+ await owner.getByText('Crews & readiness routing',{exact:true}).click();await owner.locator('[data-crew-user=person-27] [name=team]').fill('Team A');await owner.locator('[data-crew-user=person-27] [name=managerId]').selectOption('manager');await owner.locator('[data-crew-user=person-27] [name=leadId]').selectOption('reviewer');await owner.getByRole('button',{name:'Save minimal crew assignments',exact:true}).click();await expect(owner.locator('#notice')).toContainText('Crew assignments saved');passed.push('Crew routing saved through Admin UI');
+ await owner.getByText('Form definitions · Admin draft → A+ publish',{exact:true}).click();
+ await owner.locator('[data-edit-form=arr]').click();await expect(owner.locator('#form-definition')).toBeVisible();
+ passed.push('Catalog, crew routing and versioned form editor reachable');
+ await owner.screenshot({path:dir+'/admin.png',fullPage:true});
+ await p.setViewportSize({width:390,height:844});
+ if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2))throw Error('Mobile overflow');
+ passed.push('Mobile layout no page overflow');
+ if(errors.length)throw Error(errors.join('; '));
+ console.log(JSON.stringify({passed,pageErrors:errors,screenshots:dir},null,2));
+}finally{await browser.close();}

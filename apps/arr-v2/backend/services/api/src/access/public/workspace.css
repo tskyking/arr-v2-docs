@@ -690,3 +690,6 @@ body.arr-manager .queue-nav:is(.selected, .primary):active:not(:disabled) {
 }
 body.arr-manager .queue-nav:focus-visible { outline: 3px solid #2366a5; outline-offset: 4px; }
 body.arr-manager .queue-nav:disabled { box-shadow: none; transform: none; }
+
+/* Reused administration controls in the production demo visual family. */
+.production-administration{background:#f2f7f5;color:#193f37}.production-administration header{background:#e0eee7;border-bottom:1px solid #bdd6ca}.production-administration .notice{background:#fff4d8;color:#59431c}.production-administration .card{border-radius:16px;border-color:#d1dfd8}.production-administration .tabs{margin-bottom:20px}.production-administration #brand{color:#215b48}
