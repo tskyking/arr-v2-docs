@@ -83,7 +83,7 @@ export class WorkspaceTx {
   async cleanup() {
     // Business records are retained until explicit Owner purge. Only capabilities expire here.
     await this.db.query(
-      "DELETE FROM tschutes_v2_documents WHERE kind IN ('session','activation') AND (data->>'expires')::timestamptz < now()",
+      "DELETE FROM tschutes_v2_documents WHERE kind IN ('session','activation','production-login-failure') AND (data->>'expires')::timestamptz < now()",
     );
   }
 }
