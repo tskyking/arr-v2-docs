@@ -223,22 +223,33 @@ export function createAccessHandler(
       if (suffix.startsWith("v2/") && workspace && workspaceStore) {
         if (method !== "POST") throw new AccessError(405, "Use POST.");
         const route = suffix.slice(3);
-        await store.limit(
-          "v2:" + route + ":" + sha256(ip),
-          ["login", "production-login", "activate", "activation-info", "reset-request"].includes(route) ? 12 : route === "session-state" ? 1200 : 120,
-          900,
-        );
-        await store.limit(route === "session-state" ? "v2:session-state:global" : "v2:global", route === "session-state" ? 120000 : 3000, 3600);
-        if (
-          ["login", "production-login", "activate", "activation-info", "reset-request", "submit", "draft"].includes(
-            route,
-          )
-        )
+        if (route === 'production-login') {
+          // Resource-abuse ceiling, NOT the credential-guessing allowance. A shared
+          // facility NAT may send hundreds of valid logins at shift change.
+          await store.limit('v2:production-login:traffic:ip:' + sha256(ip), 1200, 900);
+          await store.limit('v2:production-login:traffic:global', 20000, 3600);
+        } else if (['catalog','production-catalog','logout','production-logout'].includes(route)) {
+          // Shared-IP sign-in bootstrap must not recreate the removed login bottleneck.
+          await store.limit('v2:bootstrap:' + route + ':' + sha256(ip), 1200, 900);
+          await store.limit('v2:bootstrap:global', 30000, 3600);
+        } else {
           await store.limit(
-            "v2:bounded:" + route,
-            route === "draft" ? 400 : 200,
-            3600,
+            "v2:" + route + ":" + sha256(ip),
+            ["login", "activate", "activation-info", "reset-request"].includes(route) ? 12 : route === "session-state" ? 1200 : 120,
+            900,
           );
+          await store.limit(route === "session-state" ? "v2:session-state:global" : "v2:global", route === "session-state" ? 120000 : 3000, 3600);
+          if (
+            ["login", "activate", "activation-info", "reset-request", "submit", "draft"].includes(
+              route,
+            )
+          )
+            await store.limit(
+              "v2:bounded:" + route,
+              route === "draft" ? 400 : 200,
+              3600,
+            );
+        }
         const input = await body(req);
         if (input.website)
           throw new AccessError(400, "Unable to process request.");
@@ -251,7 +262,7 @@ export function createAccessHandler(
         const photo =
           ["submit", "production-submit", "ticket-attach"].includes(route) ? await cleanPhoto(input.photo) : undefined;
         const operatorSession = req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("production_operator="))?.slice("production_operator=".length) ?? "";
-        const result = await workspace.execute(route, input, session, photo, operatorSession);
+        const result = await workspace.execute(route, input, session, photo, operatorSession, sha256(ip));
         if (route === "production-login" || route === "production-logout") {
           const value = route === "production-login" ? result.token : "";
           res.setHeader("Set-Cookie", `production_operator=${value}; HttpOnly; SameSite=Strict; Path=/api/access-demo; Max-Age=${value ? 14400 : 0}${local ? "" : "; Secure"}`);

@@ -1,3 +1,4 @@
+import {protectProductionLogin,ProductionLoginRejected} from './production-login-protection.js';
 import { production } from './production.js';
 import { isArchived, queueLifecycle } from "./retention.js";
 import { tickets } from "./tickets.js";
@@ -135,14 +136,17 @@ export class WorkspaceService {
     token: string,
     photo?: string | null,
     operatorToken = '',
+    productionLoginIpHash = 'internal',
   ): Promise<any> {
-    return this.store.transaction(async (tx) => {
+    const result = await this.store.transaction(async (tx) => {
       await this.seed(tx);
       if (Date.now() - this.lastCleanup > 3600000) {
         await tx.cleanup();
         this.lastCleanup = Date.now();
       }
       const u = await this.user(tx, token);
+      if (route === 'production-login') return protectProductionLogin(tx, input.username, productionLoginIpHash,
+        () => production(tx, u, route, input, operatorToken, photo));
       if (route.startsWith("production-")) return production(tx, u, route, input, operatorToken, photo);
       if (route === "session-state") {
         const session = await tx.get("session", sha256(token));
@@ -1081,5 +1085,7 @@ export class WorkspaceService {
       }
       check(false, "Operation not found.", 404);
     });
+    if (result instanceof ProductionLoginRejected) throw result.error;
+    return result;
   }
 }
