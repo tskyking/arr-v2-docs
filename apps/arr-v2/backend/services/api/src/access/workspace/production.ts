@@ -120,12 +120,13 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
   const shiftMap=new Map<string,any>();
   if(formOK(u,'arr')&&input.dataSource!=='synthetic_seed')for(const r of await tx.list('production-shift')){
    if(r.workDate<from||r.workDate>to||input.teams?.length&&!input.teams.includes(r.team))continue;
-   const d=shiftMap.get(r.workDate)||{date:r.workDate,shifts:0,statusCounts:{},productionMinutes:0,trainingMinutes:0,downtimeMinutes:0,openSegments:0,reportedMoves:0,reportedCount:0,unreportedCount:0,demo:true,operations:[]};
+   const d=shiftMap.get(r.workDate)||{date:r.workDate,shifts:0,statusCounts:{},productionMinutes:0,trainingMinutes:0,waitingMinutes:0,downtimeMinutes:0,openSegments:0,reportedMoves:0,reportedCount:0,unreportedCount:0,demo:true,operations:[]};
    d.shifts++;d.statusCounts[r.status]=(d.statusCounts[r.status]||0)+1;
    for(const segment of r.segments||[]){
     if(!segment.end){d.openSegments++;continue;}
     const gross=Math.max(0,(Date.parse(segment.end)-Date.parse(segment.start))/60000);if(!Number.isFinite(gross))continue;
     if(segment.kind==='training'){d.trainingMinutes+=gross;continue;}
+    if(segment.kind==='waiting'){d.waitingMinutes+=gross;continue;}
     const downtime=Math.min(gross,Math.max(0,Number(segment.extras?.interruptionMinutes)||0)),minutes=gross-downtime;
     d.productionMinutes+=minutes;d.downtimeMinutes+=downtime;
     let operation=d.operations.find((op:any)=>op.operation===segment.stage&&op.product===segment.product);

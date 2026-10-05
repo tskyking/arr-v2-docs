@@ -14,3 +14,13 @@ body[data-form=prr]{--teal:#71458b;--teal-dark:#533365;--background:#f8f5fa}.fac
 .reported-quantities { margin-top: .4rem; font-size: .9rem; }
 .reported-quantities summary { cursor: pointer; color: #465963; }
 .reported-quantities small { display: block; margin-top: .25rem; }
+
+/* Preserve the compact inline duration despite queue/timeline strong rules. */
+.shift-timeline .segment-kind, .queue-summary .segment-kind { display:inline; }
+.shift-timeline .segment-kind .segment-duration, .queue-summary .segment-kind .segment-duration { display:inline; font-size:inherit; margin:0; }
+.prr-item, .prr-item.viewed { border-color:#d6c6e7; background:#f5effb; }
+.prr-item .queue-summary { background:#eee3f8; color:#503366; }
+.prr-item .queue-summary:hover { background:#e6d7f3; }
+.prr-item .queue-detail, .prr-detail { background:#f8f3fc; border-color:#d6c6e7; }
+.assigned-fields[hidden], .next-assignment[hidden], .end-reflection[hidden], .waiting-hint[hidden] { display:none; }
+.field[hidden], button[hidden] { display:none!important; }

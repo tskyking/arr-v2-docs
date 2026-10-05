@@ -53,4 +53,26 @@ describe('continuous production shifts',()=>{
 
  it('read/comment-only lead can add consultation notes but cannot change source answers or review unshared shifts',async()=>{let s=await start();await expect(action(s,'comment',{note:'Not shared'},lead)).rejects.toThrow('unavailable');s=(await action(s,'share',{leadId:'lead',allowCorrections:false},manager)).shift;const view=(await call('production-shift-detail',{id:s.id},lead)).shift;expect(view.canComment).toBe(true);expect(view.canCorrect).toBe(false);s=(await action(s,'comment',{note:'Internal consultation only'},lead)).shift;expect(s.status).toBe('in_progress');expect(s.data.note).toBeUndefined();expect(s.history.at(-1).reason).toBe('Internal consultation only');s=(await action(s,'reviewed',{},lead)).shift;expect(s.history.at(-1).action).toBe('reviewed');await expect(action(s,'comment',{note:'Owner without operational role'},owner)).rejects.toThrow('supervisor');});
 
+ it('records repeated waiting periods without catalog entries, production minutes, or readiness queues',async()=>{
+  let s=await start({waitingForAssignment:true,assignment:null,data:{sopClarity:undefined,note:'Await dispatch'}});
+  expect(s.segments[0]).toMatchObject({kind:'waiting',product:'',stage:'Waiting for assignment',reportedMoves:null});expect(s.readiness).toBeNull();
+  expect(await tx.list('production-unmatched')).toEqual([]);
+  await expect(action(s,'changeover',{actualTime:at(9),assignment:assigned})).rejects.toThrow('SOP understanding');
+  s=(await action(s,'changeover',{actualTime:at(9),assignment:assigned,data:{sopClarity:10}})).shift;
+  s=(await action(s,'changeover',{actualTime:at(10),waitingForAssignment:true,reportedMoves:50})).shift;
+  s=(await action(s,'changeover',{actualTime:at(11),assignment:assigned,needsReadiness:true})).shift;
+  expect(s.segments.map((v:any)=>v.kind)).toEqual(['waiting','production','waiting','training']);
+  s=(await action(s,'readiness-ready')).shift;await action(s,'readiness-confirm',{},lead);s=(await call('production-shift-detail',{id:s.id})).shift;
+  s=(await action(s,'begin-work',{actualTime:at(12)})).shift;s=(await action(s,'end',{actualTime:at(13)})).shift;
+  const rows=await allocationSources(tx as any,s.workDate,'Sleeves','Cleaning / Decontamination');expect(rows.map(v=>v.minutes)).toEqual([60,60]);expect(rows[0].reportedMoves).toBe(50);expect(s.data.note).toBe('Await dispatch');
+  const correction=structuredClone(s.segments);correction[0].kind='production';correction[0].product='Sleeves';
+  s=(await action(s,'reopen',{reason:'Review'},manager)).shift;s=(await action(s,'correct',{segments:correction,reason:'Preserve waiting kind'},manager)).shift;expect(s.segments[0].kind).toBe('waiting');expect(s.segments[0].product).toBe('');
+ });
+ it('can end while still waiting and abandon preparation for waiting without granting production readiness',async()=>{
+  let s=await start({needsReadiness:true});s=(await action(s,'changeover',{actualTime:at(9),waitingForAssignment:true,needsReadiness:true})).shift;expect(s.readiness).toBeNull();
+  s=(await action(s,'end',{actualTime:at(10),reportedMoves:999,extras:{rejected:99},data:{recognition:'End reflection'}})).shift;
+  expect(s.status).toBe('submitted');expect(s.segments[1].reportedMoves).toBeNull();expect(s.segments[1].extras).toBeUndefined();expect(s.data.recognition).toBe('End reflection');expect(await allocationSources(tx as any,s.workDate,'Sleeves','Cleaning / Decontamination')).toEqual([]);
+  expect((await call('production-shift-list',{from:s.workDate,to:s.workDate},lead)).readiness).toEqual([]);
+ });
+
 });

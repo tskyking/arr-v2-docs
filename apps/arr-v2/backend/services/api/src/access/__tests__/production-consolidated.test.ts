@@ -48,13 +48,14 @@ describe('publication and alias review regression',()=>{
 describe('current operational dashboard sources',()=>{
  it('shows new shift and FGI days with distinct labels; zero stays counted and missing stays unknown',async()=>{
   await tx.put('production-shift','dashboard-shift',{id:'dashboard-shift',workDate:date,operator:'person-1',username:'person-1',team:'Team A',status:'submitted',data:{recognition:'NEVER SHOW IN AGGREGATE'},history:[{private:'NEVER SHOW IN AGGREGATE'}],segments:[
+   {kind:'waiting',start:'2026-01-02T06:00:00Z',end:'2026-01-02T07:00:00Z',stage:'Waiting for assignment',product:'',reportedMoves:999},
    {kind:'training',start:'2026-01-02T07:00:00Z',end:'2026-01-02T08:00:00Z',stage:'Cleaning / Decontamination',product:'Compression sleeves',reportedMoves:999},
    {kind:'production',start:'2026-01-02T08:00:00Z',end:'2026-01-02T09:00:00Z',stage:'Cleaning / Decontamination',product:'Compression sleeves',reportedMoves:0,extras:{interruptionMinutes:15}},
    {kind:'production',start:'2026-01-02T09:00:00Z',end:'2026-01-02T10:00:00Z',stage:'Packaging',product:'Compression sleeves',reportedMoves:null},
    {kind:'production',start:'2026-01-02T10:00:00Z',end:null,stage:'Packaging',product:'Compression sleeves',reportedMoves:null}
   ]});
   await call('production-fgi-save',{workDate:date,revision:0,rows:[{family:'Compression sleeves',quantity:1400}],provenance:'manual_demo'},manager);
-  const dashboard=await call('production-dashboard',{from:date,to:date},admin);expect(dashboard.demo).toBe(true);expect(dashboard.shiftDays).toHaveLength(1);expect(dashboard.shiftDays[0]).toMatchObject({shifts:1,productionMinutes:105,trainingMinutes:60,downtimeMinutes:15,reportedMoves:0,reportedCount:1,unreportedCount:1,openSegments:1,demo:true});expect(dashboard.fgiDays[0]).toMatchObject({date,total:1400,demo:true,label:'Authoritative demo FGI'});expect(dashboard.fgiDays[0].rows).toEqual([{family:'Compression sleeves',quantity:1400}]);expect(JSON.stringify(dashboard)).not.toContain('NEVER SHOW');
+  const dashboard=await call('production-dashboard',{from:date,to:date},admin);expect(dashboard.demo).toBe(true);expect(dashboard.shiftDays).toHaveLength(1);expect(dashboard.shiftDays[0]).toMatchObject({shifts:1,productionMinutes:105,trainingMinutes:60,waitingMinutes:60,downtimeMinutes:15,reportedMoves:0,reportedCount:1,unreportedCount:1,openSegments:1,demo:true});expect(dashboard.fgiDays[0]).toMatchObject({date,total:1400,demo:true,label:'Authoritative demo FGI'});expect(dashboard.fgiDays[0].rows).toEqual([{family:'Compression sleeves',quantity:1400}]);expect(JSON.stringify(dashboard)).not.toContain('NEVER SHOW');
   const otherCrew=await call('production-dashboard',{from:date,to:date,teams:['Team B']},manager);expect(otherCrew.shiftDays).toEqual([]);expect(otherCrew.fgiDays[0].total).toBe(1400);
   const prrOnly=await call('production-dashboard',{from:date,to:date},user('manager',['prr']));expect(prrOnly.shiftDays).toEqual([]);expect(prrOnly.fgiDays).toEqual([]);
   await expect(call('production-dashboard',{from:date,to:date},lead)).rejects.toThrow();
