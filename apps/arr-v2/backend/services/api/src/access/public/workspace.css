@@ -693,3 +693,8 @@ body.arr-manager .queue-nav:disabled { box-shadow: none; transform: none; }
 
 /* Reused administration controls in the production demo visual family. */
 .production-administration{background:#f2f7f5;color:#193f37}.production-administration header{background:#e0eee7;border-bottom:1px solid #bdd6ca}.production-administration .notice{background:#fff4d8;color:#59431c}.production-administration .card{border-radius:16px;border-color:#d1dfd8}.production-administration .tabs{margin-bottom:20px}.production-administration #brand{color:#215b48}
+
+.production-return { display:inline-block; padding:.6rem .8rem; border:1px solid #789e94; border-radius:8px; background:#f4faf7; color:#205449; font-size:.9rem; font-weight:650; text-decoration:none; }
+.production-return:hover { background:#e4f1eb; text-decoration:underline; }
+.production-return:focus-visible { outline:3px solid #246f61; outline-offset:3px; }
+.production-return-bottom { max-width:1200px; margin:1rem auto; padding:0 1rem; }
