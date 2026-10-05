@@ -422,6 +422,12 @@ $("#staff-link").onclick = () => {
 $("#brand").onclick = () => {
   location.hash = "";
 };
+// Fixed same-origin links preserve the staff session and never trust a return URL.
+document.querySelectorAll('a.production-return').forEach(link => {
+  link.addEventListener('click', event => {
+    if (!allowRequestNavigation() || !allowTicketNavigation()) event.preventDefault();
+  });
+});
 function control(field, value, onchange) {
   const label = node("label", "field");
   label.append(
