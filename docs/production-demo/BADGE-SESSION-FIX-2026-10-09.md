@@ -1,0 +1,6 @@
+# Badge identity confirmation
+TK reported scanning printed person-22 while app displayed prior person-24 session. Photo decoded to the correct person-22 URL. Root cause: loadSession preferred existing cookie and never required badge identity confirmation. No evidence of a misprinted code.
+
+Badge username query now gates workspace rendering before loading session data. Confirmation dialog prefills the valid scanned username, permits edits, and requires the chosen account password even if that account is already signed in. Invalid badge names leave username blank, never defaulting to person-1. Wrong password shows an inline dialog error and does not replace the previous operator session. Cancel leaves sign-in view, never resumes previous person's shift UI. After successful authentication, staff cookie is logged out and badge query consumed before session loading. No passwords encoded in QRs.
+
+Validation: mocked-session WebKit and Chrome tests for person-24→person-22, failed password, same-account reauth, edited username→person-23, invalid badge and cancellation; no shift writes. Existing mobile scanner tests, parser tests, typecheck and build. Actual physical phone retest pending. No database migration, saved-record changes, or rehearsal restart.
