@@ -24,3 +24,6 @@ body[data-form=prr]{--teal:#71458b;--teal-dark:#533365;--background:#f8f5fa}.fac
 .prr-item .queue-detail, .prr-detail { background:#f8f3fc; border-color:#d6c6e7; }
 .assigned-fields[hidden], .next-assignment[hidden], .end-reflection[hidden], .waiting-hint[hidden] { display:none; }
 .field[hidden], button[hidden] { display:none!important; }
+
+/* Station QR check-in keeps camera access explicit and user initiated. */
+.station-qr-launch{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0;padding:1rem;border:2px solid #89b9b8;border-radius:12px;background:#edf8f7}.station-qr-launch h3,.station-qr-launch p{margin-bottom:.25rem}.station-qr-button{font-size:1.02rem;min-height:52px;white-space:nowrap}.station-scan-panel{margin:0 0 1rem;padding:1rem;border:1px solid var(--line);border-radius:12px;background:#102f35;color:#fff}.station-scan-panel video{display:block;width:100%;max-height:54vh;object-fit:cover;border-radius:9px;background:#071d21}.station-scan-panel p{margin:.8rem 0}.station-scan-panel .muted{color:#d4e3e4}.station-scan-panel button{margin-top:.25rem}@media(max-width:640px){.station-qr-launch{align-items:stretch;flex-direction:column}.station-qr-button{width:100%;white-space:normal}}
