@@ -42,6 +42,8 @@ for (const [file, type] of [
   ["workspace.html", "text/html; charset=utf-8"],
   ["production.html", "text/html; charset=utf-8"],
   ["production.js", "application/javascript; charset=utf-8"],
+  ["station-qr.js", "application/javascript; charset=utf-8"],
+  ["vendor/jsQR.js", "application/javascript; charset=utf-8"],
   ["production.css", "text/css; charset=utf-8"],
   ["tickets.js", "application/javascript; charset=utf-8"],
   ["workspace.js", "application/javascript; charset=utf-8"],
