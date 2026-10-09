@@ -1,3 +1,4 @@
+import printed from './fixtures/printed-station-qr.json';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {describe, expect, it} from 'vitest';
@@ -14,6 +15,11 @@ async function loadStationQr() {
 }
 
 describe('station QR payloads', () => {
+  it('preserves every printed code and exact operation/product mapping', async () => {
+    const api=await loadStationQr();
+    expect(new Set(printed.map(p=>p.payload)).size).toBe(15);
+    for(const {payload,...expected} of printed)expect(api?.parse(payload)).toEqual(expected);
+  });
   it('maps the cleaning station code to the exact demo assignment', async () => {
     const api = await loadStationQr();
     expect(api?.parse('ARR-STATION:1:cleaning-air-transfer')).toEqual({
