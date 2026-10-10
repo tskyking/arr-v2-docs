@@ -20,7 +20,10 @@ describe('continuous production shifts',()=>{
  it('preserves and validates default shift through crew settings saves',async()=>{
   await tx.put('production-operator','person-1',{...op,active:true});
   const input={revision:1,settings:{teams:['Team A','Team C'],cutoffHour:3,crewAssignments:{'person-1':{team:'Team C',defaultShift:'swing'}}}};
-  const result=await settingsRoutes(tx as any,owner,'production-settings-save',input);expect(result.settings.crewAssignments['person-1'].defaultShift).toBe('swing');
+  const result=await settingsRoutes(tx as any,owner,'production-settings-save',input);
+  expect(result).toBeDefined();
+  if(!result)throw new Error('Expected production-settings-save result.');
+  expect(result.settings.crewAssignments['person-1'].defaultShift).toBe('swing');
   input.revision=result.settings.revision;input.settings.crewAssignments['person-1'].defaultShift='invalid';await expect(settingsRoutes(tx as any,owner,'production-settings-save',input)).rejects.toThrow('Day or Swing');
  });
  it('defaults new shifts from configured crew but preserves a chosen shift override',async()=>{
