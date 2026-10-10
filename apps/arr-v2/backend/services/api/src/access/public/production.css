@@ -16,9 +16,9 @@ body[data-form=prr]{--teal:#71458b;--teal-dark:#533365;--background:#f8f5fa}.fac
 .reported-quantities summary { cursor: pointer; color: #465963; width: 2.75rem; min-height: 2rem; padding: .25rem; }
 .reported-quantities[open] summary { margin-bottom: .4rem; }
 .reported-quantities small { display: block; margin-top: .25rem; }
-.gate-quantity-grid { display:grid; gap:.55rem; max-width:32rem; margin-bottom:.6rem; }
-.gate-quantity-grid label { display:grid; grid-template-columns:minmax(8rem,1fr) minmax(5.5rem,8rem); align-items:center; gap:.75rem; font-weight:600; }
-.gate-quantity-grid input { width:100%; min-height:2.5rem; padding:.4rem .55rem; }
+.gate-quantity-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; max-width:42rem; margin-bottom:.6rem; }
+.gate-quantity-grid label { display:block; font-weight:600; }
+.gate-quantity-grid input { display:block; width:100%; min-height:2.5rem; margin-top:.3rem; padding:.4rem .55rem; }
 .gate-quantity-grid input:disabled { opacity:.75; background:#f3f6f6; }
 .reported-quantities [data-save-gate-quantities] { margin-top:.15rem; }
 
