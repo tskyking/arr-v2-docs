@@ -16,6 +16,19 @@ describe('continuous production shifts',()=>{
  const start=(extra:any={})=>call('production-shift-start',{workDate:'2026-10-01',shift:'day',team:'Team A',actualTime:at(8),assignment:assigned,...extra,data:{sopClarity:10,...extra.data}}).then(r=>r.shift);
  const action=async(r:any,a:string,extra:any={},u?:User,o:any=op)=>call('production-shift-action',{id:r.id,revision:r.revision,action:a,...(a==='end'?{confirmed:true}:{}),...extra},u,o);
  beforeEach(async()=>{tx=new MemoryTx();await tx.put('production-settings','main',{crewAssignments:{'person-1':{team:'Team A',leadId:'lead',managerId:'manager'}}});for(const u of [lead,otherLead])await tx.put('user',u.id,u);await tx.put('production-product','sleeves',{id:'sleeves',name:'Sleeves',active:true,aliases:[]});await tx.put('production-form','arr',{identity:'production-demo-arr',version:'0.1.0',definition:initialDefinition('arr')});});
+ it.each(['associate','demo_preselected'])('accepts %s readiness without inventing an SOP score',async(source)=>{
+  const s=await start({sopReady:true,sopReadySource:source,data:{sopClarity:undefined}});
+  expect(s.segments[0]).toMatchObject({kind:'production',sopReadySource:source});expect(s.data.sopClarity).toBeUndefined();expect(s.history[0].after.segments[0].sopReadySource).toBe(source);
+ });
+ it('accepts help without a score and still blocks production until approval',async()=>{
+  const s=await start({needsReadiness:true,sopReady:false,data:{sopClarity:undefined}});expect(s.segments[0].kind).toBe('training');expect(s.data.sopClarity).toBeUndefined();await expect(action(s,'begin-work',{actualTime:at(9)})).rejects.toThrow('confirmation');
+ });
+ it('rejects false or string readiness without a score',async()=>{
+  for(const sopReady of [false,'true',null])await expect(start({sopReady,data:{sopClarity:undefined}})).rejects.toThrow('Select your SOP');expect(await tx.list('production-shift')).toHaveLength(0);
+ });
+ it('allows waiting to production with explicit readiness and no score',async()=>{
+  let s=await start({waitingForAssignment:true,data:{sopClarity:undefined}});s=(await action(s,'changeover',{actualTime:at(9),assignment:assigned,sopReady:true,sopReadySource:'associate',data:{}})).shift;expect(s.segments[1]).toMatchObject({kind:'production',sopReadySource:'associate'});expect(s.data.sopClarity).toBeUndefined();
+ });
  it('preserves optional feedback typed at changeover without requiring end-phase answers or clearing earlier notes',async()=>{
   let s=await start({data:{note:'Keep earlier note'}});
   s=(await action(s,'changeover',{actualTime:at(10),assignment:{...assigned,stage:'Packaging'},data:{quality:8,experience:7,workedWell:'Shared feedback'}})).shift;
