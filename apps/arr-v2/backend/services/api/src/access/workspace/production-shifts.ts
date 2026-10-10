@@ -8,7 +8,7 @@ type Operator={id:string;username:string};
 export type ShiftSegment={id:string;kind:'production'|'training'|'waiting';start:string;end:string|null;stage:string;station:string;product:string;productId?:string;reportedMoves:number|null;sopReadySource?:'associate'|'demo_preselected'|'legacy_score';extras?:{countType:string;unit:string;rejected?:number;rework?:number;lot?:string;exception?:string;interruptionMinutes?:number}};
 export type ProductionShift={id:string;operator:string;username:string;workDate:string;shift:string;team:string;status:'in_progress'|'submitted'|'needs_attention'|'closed';revision:number;segments:ShiftSegment[];data:Record<string,any>;formSnapshot:any;createdAt:string;updatedAt:string;shares:Record<string,{assignedAt:string;allowCorrections:boolean;retractedAt?:string}>;readiness:any;history:any[]};
 const stamp=(v:any)=>{check(typeof v==='string'&&/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v)),'Enter an actual date and time including time zone.');check(Date.parse(v)<=Date.now()+300000,'Actual work time cannot be in the future.');validDate(v.slice(0,10));return new Date(v).toISOString();};
-const count=(v:any):number|null=>{if(v===undefined||v===null||v==='')return null;check(typeof v==='number'&&Number.isSafeInteger(v)&&v>=0,'Reported moves must be a nonnegative whole number or left blank.');return v;};
+const count=(v:any,label='Gate Passes'):number|null=>{if(v===undefined||v===null||v==='')return null;check(typeof v==='number'&&Number.isSafeInteger(v)&&v>=0,`${label} must be a nonnegative whole number or left blank.`);return v;};
 export function shiftWorkDate(at:string,cutoff=3){const d=new Date(at);const date=workToday(d);const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:productionConfig.timezone,hour:'2-digit',hourCycle:'h23'}).format(d));return hour<cutoff?dayOffset(date,-1):date;}
 const assignment=(a:any)=>{check(a&&typeof a==='object','Choose an assignment.');const product=text(a.product,600),stage=text(a.stage,120);check(product&&stage,'Product and operation are required.');check(productionConfig.stages.includes(stage),'Choose a valid production operation.');return {product,stage,station:text(a.station||'',120),...(a.productId?{productId:text(a.productId,100)}:{})};};
 function extras(value:any,moves:number|null){
@@ -108,6 +108,12 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
  if(action==='readiness-ready'){check(own(r),'Associate confirmation required.',403);check(r.readiness?.status==='waiting_associate','No pending preparation.');r.readiness.status='waiting_confirmation';r.readiness.associateConfirmedAt=now();return save(r,action,before);}
  check(correct(r)||own(r)&&['in_progress','needs_attention'].includes(r.status),'Correction permission required.',403);check(r.status!=='closed','Reopen this shift before making corrections.',409);
  const reason=text(input.reason||'',1000);if(u||action==='correct')check(reason,'Enter a brief correction reason.');
+ if(action==='segment-counts'){
+  const segment=r.segments.find(s=>s.id===text(input.segmentId,100));check(segment,'Choose an existing station segment.');check(segment.kind==='production','Gate quantities apply only to production stations.');
+  const gatePasses=count(input.gatePasses,'Gate Passes'),gateHolds=count(input.gateHolds,'Gate Holds'),details:any={...(segment.extras||{})};
+  if(gateHolds===null)delete details.rejected;else details.rejected=gateHolds;details.countType=gatePasses===null?'not_counted':details.countType==='exact'?'exact':'estimated';
+  segment.reportedMoves=gatePasses;segment.extras=extras(details,gatePasses);return save(r,action,before,reason);
+ }
  if(action==='correct'){
   if(input.workDate!==undefined){const date=validDate(input.workDate);check(date<=workToday(),'Work date cannot be in the future.');check(!(await tx.list<ProductionShift>('production-shift')).some(v=>v.id!==r.id&&v.operator===r.operator&&v.workDate===date),'A shift already exists for this work date.');r.workDate=date;}
   check(Array.isArray(input.segments)&&input.segments.length===r.segments.length,'Correct the existing segments together.');
