@@ -15,6 +15,7 @@ async function loadStationQr() {
 }
 
 describe('station QR payloads', () => {
+  it('recognizes only the exact end-shift action version',async()=>{const api=await loadStationQr();expect(api?.parse('ARR-ACTION:1:end-shift')).toEqual({id:'end-shift',action:'end'});expect(api?.parse('ARR-ACTION:2:end-shift')).toBeNull();expect(api?.parse('ARR-ACTION:1:close-all')).toBeNull();});
   it('preserves every printed code and exact operation/product mapping', async () => {
     const api=await loadStationQr();
     expect(new Set(printed.map(p=>p.payload)).size).toBe(15);
