@@ -1,4 +1,5 @@
 import {describe,it,expect,beforeEach} from 'vitest';
+import {settingsRoutes} from '../workspace/production-settings.js';
 import {initialDefinition} from '../workspace/production-forms.js';
 import {shiftRoutes,allocationSources,shiftWorkDate} from '../workspace/production-shifts.js';
 import type {WorkspaceTx} from '../workspace/store.js';
@@ -16,6 +17,17 @@ describe('continuous production shifts',()=>{
  const start=(extra:any={})=>call('production-shift-start',{workDate:'2026-10-01',shift:'day',team:'Team A',actualTime:at(8),assignment:assigned,...extra,data:{sopClarity:10,...extra.data}}).then(r=>r.shift);
  const action=async(r:any,a:string,extra:any={},u?:User,o:any=op)=>call('production-shift-action',{id:r.id,revision:r.revision,action:a,...(a==='end'?{confirmed:true}:{}),...extra},u,o);
  beforeEach(async()=>{tx=new MemoryTx();await tx.put('production-settings','main',{crewAssignments:{'person-1':{team:'Team A',leadId:'lead',managerId:'manager'}}});for(const u of [lead,otherLead])await tx.put('user',u.id,u);await tx.put('production-product','sleeves',{id:'sleeves',name:'Sleeves',active:true,aliases:[]});await tx.put('production-form','arr',{identity:'production-demo-arr',version:'0.1.0',definition:initialDefinition('arr')});});
+ it('preserves and validates default shift through crew settings saves',async()=>{
+  await tx.put('production-operator','person-1',{...op,active:true});
+  const input={revision:1,settings:{teams:['Team A','Team C'],cutoffHour:3,crewAssignments:{'person-1':{team:'Team C',defaultShift:'swing'}}}};
+  const result=await settingsRoutes(tx as any,owner,'production-settings-save',input);expect(result.settings.crewAssignments['person-1'].defaultShift).toBe('swing');
+  input.revision=result.settings.revision;input.settings.crewAssignments['person-1'].defaultShift='invalid';await expect(settingsRoutes(tx as any,owner,'production-settings-save',input)).rejects.toThrow('Day or Swing');
+ });
+ it('defaults new shifts from configured crew but preserves a chosen shift override',async()=>{
+  await tx.put('production-settings','main',{crewAssignments:{'person-1':{team:'Team C',defaultShift:'swing'}}});
+  let s=await start({shift:undefined});expect(s.team).toBe('Team C');expect(s.shift).toBe('swing');s=(await action(s,'end',{actualTime:at(9)})).shift;
+  const next=await start({workDate:'2026-10-02',actualTime:'2026-10-02T08:00:00Z',shift:'day'});expect(next.shift).toBe('day');expect((await call('production-shift-detail',{id:s.id})).shift.shift).toBe('swing');
+ });
  it.each(['associate','demo_preselected'])('accepts %s readiness without inventing an SOP score',async(source)=>{
   const s=await start({sopReady:true,sopReadySource:source,data:{sopClarity:undefined}});
   expect(s.segments[0]).toMatchObject({kind:'production',sopReadySource:source});expect(s.data.sopClarity).toBeUndefined();expect(s.history[0].after.segments[0].sopReadySource).toBe(source);
