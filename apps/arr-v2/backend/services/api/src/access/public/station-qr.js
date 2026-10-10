@@ -95,6 +95,7 @@
 };
   Object.values(assignments).forEach(Object.freeze);Object.freeze(assignments);
   function parse(value){
+    if(String(value||" ").trim()==="ARR-ACTION:1:end-shift")return {id:"end-shift",action:"end"};
     const match=/^ARR-STATION:1:([a-z0-9-]+)$/.exec(String(value||"").trim());
     if(!match||!Object.hasOwn(assignments,match[1]))return null;
     return {...assignments[match[1]]};
