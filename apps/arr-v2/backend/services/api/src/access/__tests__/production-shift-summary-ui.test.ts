@@ -2,6 +2,7 @@ import {readFile} from 'node:fs/promises';
 import {describe, expect, it} from 'vitest';
 
 const sourcePath = new URL('../public/production.js', import.meta.url);
+const stylePath = new URL('../public/production.css', import.meta.url);
 
 describe('shift queue elapsed-time presentation', () => {
   it('shows a live bold shift total beside the crew', async () => {
@@ -16,5 +17,16 @@ describe('shift queue elapsed-time presentation', () => {
     const source = await readFile(sourcePath, 'utf8');
     expect(source).toContain("title==='Current'?'current-segment-label':''");
     expect(source).not.toContain('<b>${title}</b>');
+  });
+
+  it('darkens the full current-operation line without changing previous operations', async () => {
+    const [source, styles] = await Promise.all([
+      readFile(sourcePath, 'utf8'),
+      readFile(stylePath, 'utf8'),
+    ]);
+    expect(source).toContain("title==='Current'?'current-segment-row':''");
+    expect(styles).toContain('.current-segment-row { color: #344b55; }');
+    expect(styles).toContain('.current-segment-row .segment-kind { color: #344b55; }');
+    expect(styles).not.toContain('.shift-summary small { color: #344b55; }');
   });
 });
