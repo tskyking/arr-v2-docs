@@ -12,6 +12,7 @@ body[data-form=prr]{--teal:#71458b;--teal-dark:#533365;--background:#f8f5fa}.fac
 .current-segment-label { color: #263c46; font-weight: 700; }
 .current-segment-row { color: #263c46; font-weight: 600; background: #f2f7f6; border-left: 2px solid #8aafa9; border-radius: 4px; padding: .12rem .35rem; }
 .current-segment-row .segment-kind { color: #263c46; }
+.previous-segment-row .segment-duration { color: #61727a; }
 .segment-training, .history .readiness-audit, .history .readiness-audit small { color: #a44349; }
 .segment-training .segment-duration { color: #842e35; }
 .reported-quantities { margin-top: .4rem; font-size: .9rem; }
@@ -27,7 +28,7 @@ body[data-form=prr]{--teal:#71458b;--teal-dark:#533365;--background:#f8f5fa}.fac
 /* Preserve the compact inline duration despite queue/timeline strong rules. */
 .shift-timeline .segment-kind, .queue-summary .segment-kind { display:inline; }
 .shift-timeline .segment-kind .segment-duration, .queue-summary .segment-kind .segment-duration { display:inline; font-size:inherit; margin:0; }
-.queue-summary .shift-total-duration { display:inline; font-size:inherit; margin:0; }
+.queue-summary .shift-total-duration { display:inline; font-size:1.06em; margin:0; }
 .prr-item, .prr-item.viewed { border-color:#d6c6e7; background:#f5effb; }
 .prr-item .queue-summary { background:#eee3f8; color:#503366; }
 .prr-item .queue-summary:hover { background:#e6d7f3; }
