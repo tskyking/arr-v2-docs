@@ -1,8 +1,16 @@
 /** Demo-only FGI and versioned estimates. Operation allocations are never additive FGI. */
 import {check,id,now,sha256,text,type User} from './model.js';
-import {validDate,workToday,dayOffset} from './production-model.js';
+import {validDate,workToday,dayOffset,productionConfig} from './production-model.js';
 import type {WorkspaceTx} from './store.js';
-import {allocationSources} from './production-shifts.js';
+import {allocationSources,allocationSourcesForDates} from './production-shifts.js';
+export type ProductOperationProfile={operation:string;lagDays:number;localScrapRateBps:number};
+export const DEFAULT_ALLOCATION_PROFILE:ProductOperationProfile[]=productionConfig.stages.map((operation,i)=>({operation,lagDays:[5,4,3,2,2,1,0][i],localScrapRateBps:[2000,500,400,300,300,200,0][i]}));
+export function calculateOperationTargets(fgi:number,profile:ProductOperationProfile[]){
+ check(Number.isSafeInteger(fgi)&&fgi>=0,'FGI must be a nonnegative whole quantity.');
+ let target=fgi;const out=new Array(profile.length);
+ for(let i=profile.length-1;i>=0;i--){const p=profile[i];check(Number.isSafeInteger(p.localScrapRateBps)&&p.localScrapRateBps>=0&&p.localScrapRateBps<10000,'Scrap rate must be from 0 to 9,999 basis points.');const numerator=BigInt(target)*10000n,denominator=BigInt(10000-p.localScrapRateBps),next=(numerator+denominator-1n)/denominator;check(next<=BigInt(Number.MAX_SAFE_INTEGER),'Operation target exceeds safe integer range.');target=Number(next);out[i]={...p,target};}
+ return out;
+}
 export const FGI_BASE = [
  ['Compression sleeves',5040],['Disposable pulse-ox sensors',2520],['ECG leads/patient cables',1400],['Tourniquet cuffs',728],['Air-transfer products',672],['Manifolds',672],['Arthroscopic shaver blades',616],['Bits/burs/blades',560],['Laryngoscope blades',392],['Trocars/cannulas',364],['Harmonic scalpels/shears',252],['LigaSure/vessel sealers',224],['Ablation devices',168],['Suture passers/retrievers',168],['Reusable pulse-ox sensors',112],['EP devices/diagnostic catheters',84],['Shaver handpieces/accessories',28]
 ] as const;
@@ -66,11 +74,63 @@ async function present(tx:WorkspaceTx,a:any){
  // The durable old revision is retained; current eligibility is always checked at read time.
  return {...a,stale,status:stale?'Needs refresh—source data changed.':'Current estimate',current:stale?null:a.preview,history:(a.history||[]).map((h:any)=>({...h,historical:true,status:'Historical allocation revision—not current'}))};
 }
+const runId=(from:string,to:string,family:string)=>sha256(JSON.stringify([from,to,family]));
+function appliedProfile(overrides:any):ProductOperationProfile[]{
+ check(overrides===undefined||overrides&&typeof overrides==='object','Invalid profile overrides.');
+ let values:Record<string,any>={};
+ if(Array.isArray(overrides)){for(const item of overrides){check(item&&typeof item==='object'&&!Array.isArray(item),'Invalid profile override.');const operation=text(item.operation,200);check(productionConfig.stages.includes(operation),'Profile override has an unknown operation.');check(!values[operation],'Duplicate profile override.');values[operation]=item;}}
+ else values=overrides||{};
+ for(const key of Object.keys(values))check(productionConfig.stages.includes(key),'Profile override has an unknown operation.');
+ return DEFAULT_ALLOCATION_PROFILE.map(p=>{const value=values[p.operation]||{};const lagDays=value.lagDays??p.lagDays,localScrapRateBps=value.localScrapRateBps??p.localScrapRateBps;check(Number.isSafeInteger(lagDays)&&lagDays>=0&&lagDays<=365,'Lag days must be a whole number from 0 to 365.');check(Number.isSafeInteger(localScrapRateBps)&&localScrapRateBps>=0&&localScrapRateBps<10000,'Scrap rate must be from 0 to 9,999 basis points.');return{operation:p.operation,lagDays,localScrapRateBps};});
+}
+async function currentRunPreview(tx:WorkspaceTx,from:string,to:string,familyInput:any,overrides:any){
+ const family=text(familyInput,600);check(family,'Choose a product family.');const prior=(await tx.list<any>('production-allocation-run')).find(r=>r.from===from&&r.to===to&&r.family===family),profile=appliedProfile(overrides===undefined?prior?.audit?.appliedProfile:overrides);
+ const fgiRecords=(await tx.list<any>('production-fgi')).filter(r=>r.workDate>=from&&r.workDate<=to).sort((a,b)=>a.workDate.localeCompare(b.workDate));
+ let fgi=0;for(const record of fgiRecords)for(const row of record.rows||[])if(row.family===family)fgi+=row.quantity;check(Number.isSafeInteger(fgi)&&fgi>=0,'Invalid aggregate FGI.');check(fgiRecords.some(r=>r.rows?.some((v:any)=>v.family===family)),'No FGI exists for this product in the selected range.');
+ const fgiRevisions=fgiRecords.map(r=>({workDate:r.workDate,revision:r.revision}));
+ const targets=calculateOperationTargets(fgi,profile),operations=[] as any[],sourceFingerprint=[] as any[];
+ for(const target of targets){const sourceWindow={from:dayOffset(from,-target.lagDays),to:dayOffset(to,-target.lagDays)};const sources=await allocationSourcesForDates(tx,sourceWindow.from,sourceWindow.to,family,target.operation);sourceFingerprint.push({operation:target.operation,sourceWindow,sources:sources.map((s:any)=>({sourceId:s.sourceId,sourceRevision:s.sourceRevision,sourceDate:s.sourceDate,operator:s.operator,username:s.username,minutes:s.minutes,grossMinutes:s.grossMinutes,downtimeMinutes:s.downtimeMinutes,reportedMoves:s.reportedMoves}))});
+  const byAssociate=new Map<string,any>();for(const s of sources){const row=byAssociate.get(s.operator)||{operator:s.operator,username:s.username,minutes:0,gatePasses:null,partialGatePasses:false};row.minutes+=s.minutes;if(s.reportedMoves===null||s.reportedMoves===undefined)row.partialGatePasses=true;else row.gatePasses=(row.gatePasses??0)+s.reportedMoves;byAssociate.set(s.operator,row);}
+  const associates=[...byAssociate.values()].filter(v=>v.minutes>0).sort((a,b)=>a.operator.localeCompare(b.operator)),canAllocate=associates.length>0;const proposed=canAllocate?distribute(target.target,associates.map(v=>v.minutes)):[],priorAllocations=structuredClone(prior?.operations?.find((v:any)=>v.operation===target.operation)?.allocations||[]),priorByAssociate=new Map(priorAllocations.map((v:any)=>[v.operator,v.allocated]));associates.forEach((v,i)=>{v.hours=v.minutes/60;v.eligibleMinutes=v.minutes;v.eligibleHours=v.hours;v.priorAllocated=priorByAssociate.get(v.operator)??null;v.proposed=proposed[i];});
+  operations.push({...target,sourceWindow,associates,priorAllocations,canAllocate});
+ }
+ const fingerprintSources=sourceFingerprint.map(({sources,...operation}:any)=>({...operation,sources:sources.map(({sourceId,operator,minutes,reportedMoves}:any)=>({sourceId,operator,minutes,reportedMoves}))}));
+ const fingerprint=sha256(JSON.stringify({from,to,family,fgi,appliedProfile:profile,sources:fingerprintSources}));
+ return{id:runId(from,to,family),from,to,family,fgi,defaultProfile:structuredClone(DEFAULT_ALLOCATION_PROFILE),appliedProfile:profile,profileAssumption:'demo assumptions only: editable per allocation run.',fgiRevisions,sourceRevisions:sourceFingerprint,fingerprint,savedFingerprint:prior?.fingerprint||null,stale:!!prior&&prior.fingerprint!==fingerprint,revision:prior?.revision||0,operations,demo:true};
+}
 export async function productionAllocations(tx:WorkspaceTx,u:User|undefined,route:string,input:any):Promise<any|undefined>{
- if(!['production-fgi-presets','production-fgi-list','production-fgi-save','production-allocation-preview','production-allocation-save','production-allocation-list','production-allocation-export'].includes(route))return undefined;
+ const runRoutes=['production-allocation-board','production-allocation-expand','production-allocation-calculate','production-allocation-run-save'];
+ if(!['production-fgi-presets','production-fgi-list','production-fgi-save','production-allocation-preview','production-allocation-save','production-allocation-list','production-allocation-export',...runRoutes].includes(route))return undefined;
  check(u&&u.active&&(u.role==='owner'||['manager','admin'].includes(u.role)&&u.forms.includes('arr')),'Management access required.',403);
  const permission=await tx.get('production-permission',u.id);const operational=u.role==='manager'||u.role==='owner'&&permission?.operationalManager===true;
  const mutation=()=>check(operational,'Manager/Supervisor operational role required.',403);
+ if(runRoutes.includes(route)){
+  check(operational,'Manager operational role required.',403);
+  const from=validDate(input.from),to=validDate(input.to),rangeDays=(Date.parse(to+'T12:00:00Z')-Date.parse(from+'T12:00:00Z'))/86400000+1;check(Number.isInteger(rangeDays)&&rangeDays>=1&&rangeDays<=366,'Choose a valid FGI date range of 1 to 366 days.');
+  if(route==='production-allocation-board'){
+   const totals=new Map<string,number>();
+   for(const fgi of await tx.list<any>('production-fgi'))if(fgi.workDate>=from&&fgi.workDate<=to)for(const row of fgi.rows||[])totals.set(row.family,(totals.get(row.family)||0)+row.quantity);
+   const runs=await tx.list<any>('production-allocation-run');
+   const products=await Promise.all([...totals].map(async([family,fgi])=>{const run=runs.find(r=>r.from===from&&r.to===to&&r.family===family);const allocatedOperations=run?.operations?.length||0;let stale=false;if(run)try{stale=(await currentRunPreview(tx,from,to,family,undefined)).stale;}catch{stale=true;}return{family,fgi,totalOperations:productionConfig.stages.length,allocatedOperations,remainingOperations:productionConfig.stages.length-allocatedOperations,currentRunRevision:run?.revision||0,stale};}));products.sort((a,b)=>b.fgi-a.fgi||a.family.localeCompare(b.family));
+   return{from,to,products,demo:true};
+  }
+  if(route==='production-allocation-expand'||route==='production-allocation-calculate')return currentRunPreview(tx,from,to,input.family,input.profileOverrides);
+  if(route==='production-allocation-run-save'){
+   const family=text(input.family,600);check(family,'Choose a product family.');const runs=await tx.list<any>('production-allocation-run');const old=runs.find(r=>r.from===from&&r.to===to&&r.family===family);
+   check(!runs.some(r=>r.family===family&&!(r.from===from&&r.to===to)&&r.from<=to&&r.to>=from),'This product already has a saved allocation run whose date range overlaps the selected range.',409);
+   check(input.revision===(old?.revision||0),'Allocation run changed. Refresh before saving.',409);
+   const preview=await currentRunPreview(tx,from,to,family,input.profileOverrides);check(input.fingerprint===preview.fingerprint,'Source or FGI data changed. Refresh before saving.',409);
+   check(Array.isArray(input.operations)&&input.operations.length===productionConfig.stages.length,'Provide final allocations for every operation.');const operations=[] as any[];
+   for(let i=0;i<preview.operations.length;i++){const expected=preview.operations[i],submitted=input.operations[i];check(expected.canAllocate,'Operation requires positive eligible production time before allocation.');check(submitted?.operation===expected.operation,'Keep final allocations in approved process order.');check(submitted.target===expected.target,'Operation target changed. Refresh before saving.',409);const submittedAllocations=submitted.allocations??submitted.finalAllocations??(Array.isArray(input.finalAllocations)?input.finalAllocations.find((v:any)=>v.operation===expected.operation)?.allocations:input.finalAllocations?.[expected.operation]);check(Array.isArray(submittedAllocations),'Provide final associate allocations.');
+    const eligible=new Map(expected.associates.map((v:any)=>[v.operator,v]));check(submittedAllocations.length===eligible.size,'Provide one final allocation for every eligible associate.');const seen=new Set<string>(),allocations=[] as any[];let total=0;
+    for(const value of submittedAllocations){const operator=text(value.operator,100);check(!seen.has(operator),'Duplicate associate allocation.');seen.add(operator);const source:any=eligible.get(operator);check(source,'Allocation includes an ineligible associate.');check(Number.isSafeInteger(value.allocated)&&value.allocated>=0,'Final allocations must be nonnegative whole quantities.');total+=value.allocated;allocations.push({operator,username:source.username,allocated:value.allocated});}
+    check(total===expected.target,'Final associate allocations must balance exactly to the operation target.');operations.push({operation:expected.operation,target:expected.target,lagDays:expected.lagDays,localScrapRateBps:expected.localScrapRateBps,sourceWindow:expected.sourceWindow,allocations});
+   }
+   const adjustmentReason=text(input.adjustmentReason,2000);check(adjustmentReason,'Enter an adjustment reason.');const audit={fingerprint:preview.fingerprint,defaultProfile:preview.defaultProfile,appliedProfile:preview.appliedProfile,fgiRevisions:preview.fgiRevisions,sourceRevisions:preview.sourceRevisions};
+   const run={id:preview.id,from,to,family,fgi:preview.fgi,revision:(old?.revision||0)+1,fingerprint:preview.fingerprint,operations,adjustmentReason,audit,by:u.username,at:now(),demo:true,history:old?[...(old.history||[]),{...old,history:undefined}]:[]};
+   await tx.put('production-allocation-run',run.id,run);await event(tx,u,'production allocation run saved',run.id,{revision:run.revision,fingerprint:run.fingerprint,defaultProfile:audit.defaultProfile,appliedProfile:audit.appliedProfile,fgiRevisions:audit.fgiRevisions,sourceRevisions:audit.sourceRevisions,adjustmentReason});return{run,demo:true};
+  }
+ }
  if(route==='production-fgi-presets'){mutation();return fgiPreset(input.total);}
  if(route==='production-fgi-save'){
   mutation();const workDate=validDate(input.workDate),old=await tx.get('production-fgi',workDate);check(input.revision===(old?.revision||0),'FGI changed. Refresh before saving.',409);
