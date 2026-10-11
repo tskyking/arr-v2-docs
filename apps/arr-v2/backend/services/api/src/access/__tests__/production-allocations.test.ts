@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {calculateAllocation,distribute,fgiPreset,productionAllocations} from '../workspace/production-allocations.js';
+import {calculateAllocation,calculateOperationTargets,DEFAULT_ALLOCATION_PROFILE,distribute,fgiPreset,productionAllocations} from '../workspace/production-allocations.js';
 const source=(operator:string,minutes:number,reportedMoves:number|null)=>({sourceId:operator,sourceRevision:1,operator,username:operator,minutes,reportedMoves});
 describe('demo allocation arithmetic',()=>{
  it('keeps preset totals exact with repeatable rounding and varied proportions',()=>{for(const total of [1400,14000])for(let seed=1;seed<100;seed++){let n=seed;const rand=()=>((n=n*16807%2147483647)-1)/2147483646;const p=fgiPreset(total,rand);expect(p.rows.reduce((a,r)=>a+r.quantity,0)).toBe(total);expect(p.rows.every(r=>Number.isInteger(r.quantity)&&r.quantity>=0)).toBe(true);}});
@@ -8,6 +8,18 @@ describe('demo allocation arithmetic',()=>{
  it('retains missing vs zero and never silently normalizes excessive reports',()=>{const result=calculateAllocation(100,[source('a',60,400),source('b',60,0),source('c',60,null)],'reported-first');expect(result.canSave).toBe(false);expect(result.rows.map(r=>r.reportedMoves)).toEqual([400,0,null]);expect(result.rows.every(r=>r.allocated===null)).toBe(true);expect(calculateAllocation(100,[source('a',60,400)],'time').canSave).toBe(true);});
  it('refuses unassigned remainder without eligible minutes',()=>{expect(calculateAllocation(100,[source('a',60,80)],'reported-first').canSave).toBe(false);expect(calculateAllocation(100,[],'time').canSave).toBe(false);expect(()=>distribute(100,[0,0])).toThrow();});
  it('rejects negative, unknown-associate, and noninteger fixed values',()=>{for(const fixed of [{a:-1},{a:.5},{b:3}] as Record<string,number>[])expect(()=>calculateAllocation(10,[source('a',60,null)],'adjusted',fixed)).toThrow();});
+ it('compounds integer-safe operation targets backward from FGI using the approved process order',()=>{
+  expect(DEFAULT_ALLOCATION_PROFILE.map(v=>[v.operation,v.lagDays,v.localScrapRateBps])).toEqual([
+   ['Receiving and Sorting',5,2000],['Cleaning / Decontamination',4,500],['Inspection',3,400],['Functional Testing',2,300],['Repair / Reassembly',2,300],['Final Quality Review',1,200],['Packaging',0,0],
+  ]);
+  expect(calculateOperationTargets(100,DEFAULT_ALLOCATION_PROFILE).map(v=>v.target)).toEqual([154,123,116,111,107,103,100]);
+ });
+ it('applies a nonzero final Packaging scrap rate before compounding upstream targets',()=>{
+  const profile=DEFAULT_ALLOCATION_PROFILE.map(v=>({...v}));profile.at(-1)!.localScrapRateBps=1000;
+  const targets=calculateOperationTargets(100,profile);
+  expect(targets.at(-1)!.target).toBe(112);
+  expect(targets.at(-2)!.target).toBe(115);
+ });
 });
 class Tx {docs=new Map<string,any>();async get(kind:string,key:string){return structuredClone(this.docs.get(kind+':'+key));}async put(kind:string,key:string,value:any){this.docs.set(kind+':'+key,structuredClone(value));}async list(kind:string){return [...this.docs].filter(([k])=>k.startsWith(kind+':')).map(([,v])=>structuredClone(v));}}
 const manager:any={id:'mgr',username:'mgr',role:'manager',active:true,forms:['arr']};
@@ -53,3 +65,98 @@ describe('allocation lifecycle and stale containment',()=>{
   const refreshed=await productionAllocations(tx,manager,'production-allocation-preview',{...input,method:undefined});expect(refreshed.preview.method).toBe('time');expect(refreshed.preview.adjustments).toEqual({});expect(refreshed.preview.rows[0].allocated).toBe(300);
  });
 });
+
+describe('lag-adjusted seven-day allocation runs',()=>{
+ const range={from:'2026-10-01',to:'2026-10-07'};
+ async function setupBoard(){
+  const tx:any=new Tx();
+  await tx.put('production-fgi','2026-10-01',{id:'2026-10-01',workDate:'2026-10-01',revision:2,provenance:'manual_demo',rows:[{family:'Sleeves',quantity:60},{family:'Sensors',quantity:40}]});
+  await tx.put('production-fgi','2026-10-07',{id:'2026-10-07',workDate:'2026-10-07',revision:1,provenance:'manual_demo',rows:[{family:'Sleeves',quantity:40},{family:'Sensors',quantity:10}]});
+  return tx;
+ }
+ async function addSources(tx:any){for(const [operator,minutes,reportedMoves] of [['a',60,null],['b',180,0]] as const)await tx.put('production-shift','shift-'+operator,{id:'shift-'+operator,revision:4,operator,username:operator,workDate:'2026-10-01',segments:productionConfigForTest().map((operation,i)=>({id:`${operator}-${i}`,kind:'production',start:`2026-10-01T0${i}:00:00Z`,end:new Date(Date.parse(`2026-10-01T0${i}:00:00Z`)+minutes*60000).toISOString(),product:'Sleeves',stage:operation,reportedMoves}))});}
+ it('builds a manager-only board with a seven-day default while accepting another valid range',async()=>{
+  const tx=await setupBoard();
+  await tx.put('production-allocation-run','existing',{id:'existing',from:range.from,to:range.to,family:'Sensors',revision:3,operations:[{operation:'Packaging',target:50,allocations:[]}]});
+  const board=await productionAllocations(tx,manager,'production-allocation-board',range);
+  expect(board.products).toEqual([
+   {family:'Sleeves',fgi:100,totalOperations:7,allocatedOperations:0,remainingOperations:7,currentRunRevision:0,stale:false},
+   {family:'Sensors',fgi:50,totalOperations:7,allocatedOperations:1,remainingOperations:6,currentRunRevision:3,stale:true},
+  ]);
+  expect((await productionAllocations(tx,manager,'production-allocation-board',{from:'2026-10-01',to:'2026-10-06'})).products[0].fgi).toBe(60);
+  await expect(productionAllocations(tx,manager,'production-allocation-board',{from:'2026-10-07',to:'2026-10-01'})).rejects.toThrow('date range');
+  for(const role of ['admin','reviewer','associate'])await expect(productionAllocations(tx,{...manager,role} as any,'production-allocation-board',range)).rejects.toThrow();
+ });
+ it('expands in process order with lagged source windows, applied assumptions, prior exact-run allocations, and balanced proposals',async()=>{
+  const tx=await setupBoard();
+  await addSources(tx);
+  await tx.put('production-allocation-run','prior',{id:'prior',from:range.from,to:range.to,family:'Sleeves',revision:2,operations:[{operation:'Packaging',target:100,allocations:[{operator:'a',username:'a',allocated:25},{operator:'b',username:'b',allocated:75}]}]});
+  const result=await productionAllocations(tx,manager,'production-allocation-expand',{...range,family:'Sleeves',profileOverrides:{'Cleaning / Decontamination':{lagDays:6,localScrapRateBps:1000}}});
+  expect(result.operations.map((v:any)=>v.operation)).toEqual(productionConfigForTest());
+  expect(result.defaultProfile).toEqual(DEFAULT_ALLOCATION_PROFILE);expect(result.profileAssumption).toContain('demo');
+  expect(result.appliedProfile[1]).toMatchObject({operation:'Cleaning / Decontamination',lagDays:6,localScrapRateBps:1000});
+  expect(result.operations[1].sourceWindow).toEqual({from:'2026-09-25',to:'2026-10-01'});
+  expect(result.operations[0].associates.map((v:any)=>[v.operator,v.minutes,v.hours,v.gatePasses,v.proposed])).toEqual([['a',60,1,null,41],['b',180,3,0,121]]);
+  expect(result.operations.at(-1).priorAllocations.map((v:any)=>v.allocated)).toEqual([25,75]);expect(result.operations.at(-1).associates.map((v:any)=>v.priorAllocated)).toEqual([25,75]);
+  for(const operation of result.operations)expect(operation.associates.reduce((n:number,v:any)=>n+v.proposed,0)).toBe(operation.target);
+  expect(result.fingerprint).toMatch(/^[a-f0-9]{64}$/);expect(result.fgiRevisions).toEqual([{workDate:'2026-10-01',revision:2},{workDate:'2026-10-07',revision:1}]);
+  const arrayOverride=await productionAllocations(tx,manager,'production-allocation-calculate',{...range,family:'Sleeves',profileOverrides:[{operation:'Packaging',lagDays:1,localScrapRateBps:100}]});
+  expect(arrayOverride.appliedProfile.at(-1)).toMatchObject({lagDays:1,localScrapRateBps:100});
+ });
+ it('returns a non-allocatable operation instead of throwing when all eligible minutes net to zero',async()=>{
+  const tx=await setupBoard();
+  await tx.put('production-shift','zero-minutes',{id:'zero-minutes',revision:1,operator:'a',username:'a',workDate:'2026-09-26',segments:[{id:'receiving',kind:'production',start:'2026-09-26T08:00:00Z',end:'2026-09-26T09:00:00Z',product:'Sleeves',stage:'Receiving and Sorting',reportedMoves:null,extras:{interruptionMinutes:60}}]});
+  const result=await productionAllocations(tx,manager,'production-allocation-expand',{...range,family:'Sleeves'});
+  expect(result.operations[0].canAllocate).toBe(false);
+  expect(result.operations[0].associates).toEqual([]);
+  await expect(productionAllocations(tx,manager,'production-allocation-run-save',{...range,family:'Sleeves',revision:0,fingerprint:result.fingerprint,profileOverrides:result.appliedProfile,adjustmentReason:'Should not save without eligible time.',operations:result.operations.map((operation:any)=>({operation:operation.operation,target:operation.target,allocations:operation.associates.map((associate:any,index:number)=>({operator:associate.operator,allocated:index===0?operation.target:0}))}))})).rejects.toThrow('positive eligible production time');
+ });
+ it('excludes zero-net-minute associates when other associates have eligible time',async()=>{
+  const tx=await setupBoard();await addSources(tx);const zero=await tx.get('production-shift','shift-a');zero.id='shift-c';zero.operator='c';zero.username='c';zero.segments=zero.segments.map((segment:any)=>({...segment,id:'c-'+segment.id,extras:{interruptionMinutes:60}}));await tx.put('production-shift','shift-c',zero);
+  const preview=await productionAllocations(tx,manager,'production-allocation-calculate',{...range,family:'Sleeves'});
+  expect(preview.operations.every((operation:any)=>operation.associates.map((associate:any)=>associate.operator).join(',')==='a,b')).toBe(true);
+  const operations=preview.operations.map((operation:any)=>({operation:operation.operation,target:operation.target,allocations:operation.associates.map((associate:any)=>({operator:associate.operator,allocated:associate.proposed}))}));
+  operations[0].allocations.push({operator:'c',allocated:0});
+  await expect(productionAllocations(tx,manager,'production-allocation-run-save',{...range,family:'Sleeves',revision:0,fingerprint:preview.fingerprint,profileOverrides:preview.appliedProfile,adjustmentReason:'Zero-minute associate must remain ineligible.',operations})).rejects.toThrow('one final allocation');
+ });
+ it('rejects a zero-FGI run when no operation has positive eligible production time',async()=>{
+  const tx=await setupBoard(),fgi=await tx.get('production-fgi','2026-10-01');fgi.rows.push({family:'Zero product',quantity:0});await tx.put('production-fgi','2026-10-01',fgi);
+  const preview=await productionAllocations(tx,manager,'production-allocation-expand',{...range,family:'Zero product'});
+  expect(preview.operations.every((operation:any)=>operation.canAllocate===false)).toBe(true);
+  await expect(productionAllocations(tx,manager,'production-allocation-run-save',{...range,family:'Zero product',revision:0,fingerprint:preview.fingerprint,profileOverrides:preview.appliedProfile,adjustmentReason:'No eligible production time.',operations:preview.operations.map((operation:any)=>({operation:operation.operation,target:operation.target,allocations:[]}))})).rejects.toThrow('positive eligible production time');
+ });
+ it('restores the saved lag and scrap profile when reopening without explicit overrides',async()=>{
+  const tx=await setupBoard();await addSources(tx);
+  const profileOverrides=DEFAULT_ALLOCATION_PROFILE.map(v=>({...v}));profileOverrides.at(-1)!.lagDays=1;profileOverrides.at(-1)!.localScrapRateBps=100;
+  const preview=await productionAllocations(tx,manager,'production-allocation-calculate',{...range,family:'Sleeves',profileOverrides});
+  await productionAllocations(tx,manager,'production-allocation-run-save',{...range,family:'Sleeves',revision:0,fingerprint:preview.fingerprint,profileOverrides,adjustmentReason:'Preserve custom assumptions.',operations:preview.operations.map((operation:any)=>({operation:operation.operation,target:operation.target,allocations:operation.associates.map((associate:any)=>({operator:associate.operator,allocated:associate.proposed}))}))});
+  const reopened=await productionAllocations(tx,manager,'production-allocation-expand',{...range,family:'Sleeves'});
+  expect(reopened.appliedProfile.at(-1)).toMatchObject({operation:'Packaging',lagDays:1,localScrapRateBps:100});
+  expect(reopened.stale).toBe(false);
+ });
+ it('validates and atomically versions complete runs, rejects overlaps, and exposes source staleness by fingerprint',async()=>{
+  const tx=await setupBoard();await addSources(tx);
+  const preview=await productionAllocations(tx,manager,'production-allocation-calculate',{...range,family:'Sleeves'});
+  const operations=preview.operations.map((operation:any)=>({operation:operation.operation,target:operation.target,allocations:operation.associates.map((v:any)=>({operator:v.operator,username:v.username,allocated:v.proposed}))}));
+  const invalid=structuredClone(operations);invalid[0].allocations[0].allocated=-1;
+  await expect(productionAllocations(tx,manager,'production-allocation-run-save',{...range,family:'Sleeves',fingerprint:preview.fingerprint,revision:0,operations:invalid,adjustmentReason:'Manager review'})).rejects.toThrow('nonnegative');
+  expect(await tx.list('production-allocation-run')).toEqual([]);
+  const operationTargets=operations.map(({operation,target}:any)=>({operation,target})),finalAllocations=Object.fromEntries(operations.map((v:any)=>[v.operation,v.allocations]));
+  const saved=await productionAllocations(tx,manager,'production-allocation-run-save',{...range,family:'Sleeves',fingerprint:preview.fingerprint,revision:0,operations:operationTargets,finalAllocations,adjustmentReason:'Manager reviewed proposed allocation'});
+  expect(saved.run.revision).toBe(1);expect(saved.run.operations).toHaveLength(7);expect(saved.run.audit).toMatchObject({defaultProfile:DEFAULT_ALLOCATION_PROFILE,appliedProfile:DEFAULT_ALLOCATION_PROFILE,fgiRevisions:preview.fgiRevisions});
+  expect((await productionAllocations(tx,manager,'production-allocation-expand',{...range,family:'Sleeves'})).stale).toBe(false);
+  expect((await tx.list('production-event')).at(-1).details).toMatchObject({fingerprint:preview.fingerprint,fgiRevisions:preview.fgiRevisions});
+  await expect(productionAllocations(tx,manager,'production-allocation-run-save',{from:'2026-10-02',to:'2026-10-08',family:'Sleeves',fingerprint:'x',revision:0,operations,adjustmentReason:'Overlap'})).rejects.toThrow('overlaps');
+  const shift=await tx.get('production-shift','shift-a');shift.revision++;await tx.put('production-shift','shift-a',shift);
+  const revisionOnly=await productionAllocations(tx,manager,'production-allocation-calculate',{...range,family:'Sleeves'});expect(revisionOnly.fingerprint).toBe(preview.fingerprint);expect(revisionOnly.stale).toBe(false);
+  shift.revision++;shift.segments[0].end=new Date(Date.parse(shift.segments[0].start)+120*60000).toISOString();shift.segments[0].extras={interruptionMinutes:60};await tx.put('production-shift','shift-a',shift);
+  const sameNetMinutes=await productionAllocations(tx,manager,'production-allocation-calculate',{...range,family:'Sleeves'});expect(sameNetMinutes.fingerprint).toBe(preview.fingerprint);expect(sameNetMinutes.stale).toBe(false);expect(sameNetMinutes.sourceRevisions[0].sources[0]).toMatchObject({grossMinutes:120,downtimeMinutes:60,minutes:60});
+  expect((await productionAllocations(tx,manager,'production-allocation-board',range)).products.find((product:any)=>product.family==='Sleeves').stale).toBe(false);
+  shift.revision++;shift.segments[0].reportedMoves=9;await tx.put('production-shift','shift-a',shift);
+  const refreshed=await productionAllocations(tx,manager,'production-allocation-calculate',{...range,family:'Sleeves'});expect(refreshed.fingerprint).not.toBe(preview.fingerprint);expect(refreshed.stale).toBe(true);expect(refreshed.savedFingerprint).toBe(preview.fingerprint);
+  expect((await productionAllocations(tx,manager,'production-allocation-board',range)).products.find((product:any)=>product.family==='Sleeves').stale).toBe(true);
+  await expect(productionAllocations(tx,manager,'production-allocation-run-save',{...range,family:'Sleeves',fingerprint:preview.fingerprint,revision:1,operations,adjustmentReason:'Stale'})).rejects.toThrow('Source or FGI data changed');
+ });
+});
+
+function productionConfigForTest(){return ['Receiving and Sorting','Cleaning / Decontamination','Inspection','Functional Testing','Repair / Reassembly','Final Quality Review','Packaging'];}

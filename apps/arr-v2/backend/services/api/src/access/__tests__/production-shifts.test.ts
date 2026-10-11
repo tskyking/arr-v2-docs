@@ -1,7 +1,7 @@
 import {describe,it,expect,beforeEach} from 'vitest';
 import {settingsRoutes} from '../workspace/production-settings.js';
 import {initialDefinition} from '../workspace/production-forms.js';
-import {shiftRoutes,allocationSources,shiftWorkDate} from '../workspace/production-shifts.js';
+import {shiftRoutes,allocationSources,allocationSourcesForDates,shiftWorkDate} from '../workspace/production-shifts.js';
 import type {WorkspaceTx} from '../workspace/store.js';
 import type {User} from '../workspace/model.js';
 // Clone-on-read models transaction isolation: rejected actions never mutate persisted state.
@@ -83,6 +83,14 @@ describe('continuous production shifts',()=>{
 
  it('rejects impossible actual dates and beyond-tolerance future clock edits',async()=>{await expect(start({actualTime:'2026-02-30T08:00:00Z'})).rejects.toThrow('valid work date');await expect(start({actualTime:new Date(Date.now()+600000).toISOString()})).rejects.toThrow('future');});
  it('preserves not-counted versus an explicit zero and rejects contradictory count descriptors',async()=>{let s=await start();await expect(action(s,'end',{actualTime:at(9),reportedMoves:0,extras:{countType:'not_counted'}})).rejects.toThrow('Leave moves blank');await expect(action(s,'end',{actualTime:at(9),extras:{countType:'exact'}})).rejects.toThrow('Enter moves');s=(await action(s,'changeover',{actualTime:at(9),assignment:assigned,extras:{countType:'not_counted'}})).shift;s=(await action(s,'end',{actualTime:at(10),reportedMoves:0,extras:{countType:'exact'}})).shift;const rows=await allocationSources(tx as any,s.workDate,'Sleeves','Cleaning / Decontamination');expect(rows.map(r=>r.reportedMoves)).toEqual([null,0]);});
+
+ it('collects completed production across an inclusive source window while preserving blank versus zero Gate Passes',async()=>{
+  let first=await start();first=(await action(first,'end',{actualTime:at(9),reportedMoves:undefined,extras:{countType:'not_counted'}})).shift;
+  let second=await start({workDate:'2026-10-02',actualTime:'2026-10-02T08:00:00Z'});second=(await action(second,'end',{actualTime:'2026-10-02T09:00:00Z',reportedMoves:0,extras:{countType:'exact'}})).shift;
+  await tx.put('production-shift','open-outside',{...second,id:'open-outside',workDate:'2026-10-03',segments:[{...second.segments[0],id:'open',end:null,reportedMoves:99}]});
+  const rows=await allocationSourcesForDates(tx as any,'2026-10-01','2026-10-02','Sleeves','Cleaning / Decontamination');
+  expect(rows.map(r=>[r.sourceDate,r.reportedMoves,r.minutes])).toEqual([['2026-10-01',null,60],['2026-10-02',0,60]]);
+ });
 
  it('validates corrections against historical questions across phases and permits clearing optional answers',async()=>{let s=await start({data:{mood:7,note:'Temporary note'}});s=(await action(s,'correct',{segments:s.segments,data:{mood:8,note:''},reason:'Correct initial response'})).shift;expect(s.data.mood).toBe(8);expect(s.data.note).toBeUndefined();await expect(action(s,'correct',{segments:s.segments,data:{mood:99},reason:'Invalid scale'})).rejects.toThrow('Invalid');s=(await action(s,'share',{leadId:'lead'},manager)).shift;await expect(action(s,'correct',{segments:s.segments,data:{recognition:'Injected'},reason:'Try'},lead)).rejects.toThrow('restricted');});
 

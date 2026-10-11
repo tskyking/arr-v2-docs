@@ -21,12 +21,15 @@ function extras(value:any,moves:number|null){
  return out;
 }
 function timeline(segments:ShiftSegment[],complete=false){check(segments.length>0&&segments.length<=250,'A shift needs between 1 and 250 segments.');const keys=new Set<string>();for(let i=0;i<segments.length;i++){const s=segments[i];check(!keys.has(s.id),'Duplicate segment.');keys.add(s.id);check(s.end===null?i===segments.length-1&&!complete:Date.parse(s.end)>=Date.parse(s.start),'Segment end must follow its start; only the last segment may remain open.');if(s.end&&s.extras?.interruptionMinutes!==undefined)check(s.extras.interruptionMinutes<=(Date.parse(s.end)-Date.parse(s.start))/60000,'Interruption minutes cannot exceed segment duration.');if(i)check(segments[i-1].end===s.start,'Segments must meet at a shared boundary. Correct the previous end and next start together; overlaps and gaps are not allowed.');}}
-export async function allocationSources(tx:WorkspaceTx,date:string,family:string,operation:string){
+export async function allocationSourcesForDates(tx:WorkspaceTx,from:string,to:string,family:string,operation:string){
  const rows:any[]=[],catalog=await tx.list<any>('production-product');const norm=(v:string)=>v.trim().toLowerCase();
- for(const r of await tx.list<ProductionShift>('production-shift'))if(r.workDate===date)for(const s of r.segments){
+ for(const r of await tx.list<ProductionShift>('production-shift'))if(r.workDate>=from&&r.workDate<=to)for(const s of r.segments){
   const product=catalog.find(p=>p.id===s.productId)||catalog.find(p=>norm(p.name)===norm(s.product)||p.aliases?.some((a:string)=>norm(a)===norm(s.product)));
-  if(s.kind==='production'&&s.end&&(product?.name===family||product?.id===family||(!product&&(s.productId||s.product)===family))&&s.stage===operation){const grossMinutes=(Date.parse(s.end)-Date.parse(s.start))/60000,downtimeMinutes=s.extras?.interruptionMinutes||0,minutes=Math.max(0,grossMinutes-downtimeMinutes);rows.push({sourceId:`${r.id}:${s.id}`,sourceRevision:r.revision,operator:r.operator,username:r.username,minutes,grossMinutes,downtimeMinutes,reportedMoves:s.reportedMoves});}
- }return rows;
+  if(s.kind==='production'&&s.end&&(product?.name===family||product?.id===family||(!product&&(s.productId||s.product)===family))&&s.stage===operation){const grossMinutes=(Date.parse(s.end)-Date.parse(s.start))/60000,downtimeMinutes=s.extras?.interruptionMinutes||0,minutes=Math.max(0,grossMinutes-downtimeMinutes);rows.push({sourceId:`${r.id}:${s.id}`,sourceRevision:r.revision,sourceDate:r.workDate,sourceStart:s.start,operator:r.operator,username:r.username,minutes,grossMinutes,downtimeMinutes,reportedMoves:s.reportedMoves});}
+ }rows.sort((a,b)=>a.sourceDate.localeCompare(b.sourceDate)||a.sourceStart.localeCompare(b.sourceStart)||a.sourceId.localeCompare(b.sourceId));return rows.map(({sourceStart,...row})=>row);
+}
+export async function allocationSources(tx:WorkspaceTx,date:string,family:string,operation:string){
+ return allocationSourcesForDates(tx,date,date,family,operation);
 }
 export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|undefined,route:string,input:any):Promise<any>{
  if(!route.startsWith('production-shift-'))return undefined;
