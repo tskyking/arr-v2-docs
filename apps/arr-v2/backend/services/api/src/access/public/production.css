@@ -10,7 +10,7 @@ body[data-form=prr]{--teal:#71458b;--teal-dark:#533365;--background:#f8f5fa}.fac
 .segment-kind { color: #465963; }
 .segment-duration { color: #263c46; font-weight: 700; }
 .current-segment-label { color: #263c46; font-weight: 700; }
-.current-segment-row { color: #263c46; font-weight: 600; }
+.current-segment-row { color: #263c46; font-weight: 600; background: #f2f7f6; border-left: 2px solid #8aafa9; border-radius: 4px; padding: .12rem .35rem; }
 .current-segment-row .segment-kind { color: #263c46; }
 .segment-training, .history .readiness-audit, .history .readiness-audit small { color: #a44349; }
 .segment-training .segment-duration { color: #842e35; }
