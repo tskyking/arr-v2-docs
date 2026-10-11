@@ -29,4 +29,11 @@ describe('shift queue elapsed-time presentation', () => {
     expect(styles).toContain('.current-segment-row .segment-kind { color: #263c46; }');
     expect(styles).not.toContain('.shift-summary small { background: #f2f7f6; }');
   });
+
+  it('binds Queue to its own expanded shift and removes collapsed detail markup', async () => {
+    const source = await readFile(sourcePath, 'utf8');
+    expect(source).toContain('function bind(id,fn,root=document){const el=$(id,root);');
+    expect(source).toContain("return openShift(s.id);},el);");
+    expect(source).toContain("if(old){await animateDetail(old,false);old.innerHTML='';}");
+  });
 });
