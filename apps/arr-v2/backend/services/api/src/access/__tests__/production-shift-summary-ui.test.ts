@@ -25,8 +25,9 @@ describe('shift queue elapsed-time presentation', () => {
       readFile(stylePath, 'utf8'),
     ]);
     expect(source).toContain("title==='Current'?'current-segment-row':''");
-    expect(styles).toContain('.current-segment-row { color: #344b55; }');
-    expect(styles).toContain('.current-segment-row .segment-kind { color: #344b55; }');
-    expect(styles).not.toContain('.shift-summary small { color: #344b55; }');
+    expect(styles).toContain('.current-segment-row { color: #263c46; }');
+    expect(styles).toContain('.current-segment-row .segment-kind { color: #263c46; }');
+    expect(styles).not.toContain('.current-segment-row { color: #344b55; }');
+    expect(styles).not.toContain('.shift-summary small { color: #263c46; }');
   });
 });
