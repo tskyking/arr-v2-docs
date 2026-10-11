@@ -24,10 +24,22 @@ describe('shift queue elapsed-time presentation', () => {
       readFile(sourcePath, 'utf8'),
       readFile(stylePath, 'utf8'),
     ]);
-    expect(source).toContain("title==='Current'?'current-segment-row':''");
+    expect(source).toContain("title==='Current'?'current-segment-row':title==='Previous'?'previous-segment-row':''");
     expect(styles).toContain('.current-segment-row { color: #263c46; font-weight: 600; background: #f2f7f6; border-left: 2px solid #8aafa9; border-radius: 4px; padding: .12rem .35rem; }');
     expect(styles).toContain('.current-segment-row .segment-kind { color: #263c46; }');
     expect(styles).not.toContain('.shift-summary small { background: #f2f7f6; }');
+  });
+
+  it('slightly enlarges Shift total while softening only the bold Previous duration', async () => {
+    const [source, styles] = await Promise.all([
+      readFile(sourcePath, 'utf8'),
+      readFile(stylePath, 'utf8'),
+    ]);
+    expect(source).toContain("title==='Previous'?'previous-segment-row':''");
+    expect(styles).toContain('.queue-summary .shift-total-duration { display:inline; font-size:1.06em; margin:0; }');
+    expect(styles).toContain('.previous-segment-row .segment-duration { color: #61727a; }');
+    expect(styles).toContain('.segment-duration { color: #263c46; font-weight: 700; }');
+    expect(styles).toContain('.current-segment-row .segment-kind { color: #263c46; }');
   });
 
   it('binds Queue to its own expanded shift and removes collapsed detail markup', async () => {
