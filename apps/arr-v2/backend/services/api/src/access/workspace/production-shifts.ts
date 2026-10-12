@@ -53,6 +53,14 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
   Object.assign(values,definitionAnswers({...definition,fields:optional},d||{}));
   if(u?.role==='reviewer'){delete values.recognition;delete values.recognitionPeople;}return values;
  };
+ const finalFeedbackAnswers=(r:ProductionShift,d:any)=>{
+  check(d&&typeof d==='object'&&!Array.isArray(d),'Invalid final feedback.');
+  const definition=r.formSnapshot?.definition||initialDefinition('arr');
+  const excluded=new Set(['workDate','shift','stage','product','team','entryType','segmentStart','segmentEnd','newStage','newProduct','helpNeeded','helpDetail','qualityStatus','sopClarity','units','reportedMoves','rejected','rejects','rework','lot','downtimeMinutes','interruptionMinutes','countType','unit','exception','workException']);
+  const fields=definition.fields.filter((f:any)=>f.active!==false&&!excluded.has(f.key)&&(!f.phase||f.phase==='all'||f.phase==='eod'));
+  const allowed=new Set(fields.map((f:any)=>f.key));for(const key of Object.keys(d))check(allowed.has(key),'Only the displayed End-of-Day feedback fields may be saved.');
+  return definitionAnswers({...definition,fields},d,'eod');
+ };
  const correctedAnswers=(r:ProductionShift,d:any)=>{
   check(d&&typeof d==='object'&&!Array.isArray(d),'Invalid shift answers.');
   if(u?.role==='reviewer')check(d.recognition===undefined&&d.recognitionPeople===undefined,'Recognition information is restricted.');
@@ -67,7 +75,7 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
  const correct=(r:ProductionShift)=>manager||!!(u&&share(r)&&r.shares[u.id].allowCorrections);
  const confirm=(r:ProductionShift)=>manager||!!(u&&formAccess&&u.role==='reviewer'&&r.readiness?.leadId===u.id);
  const narrow=(r:ProductionShift)=>({id:r.id,revision:r.revision,operator:r.operator,username:r.username,workDate:r.workDate,team:r.team,readiness:structuredClone(r.readiness),assignment:(()=>{const s=r.segments.at(-1)!;return{stage:s.stage,station:s.station,product:s.product,start:s.start,kind:s.kind};})(),canConfirmReadiness:confirm(r)});
- const safe=(r:ProductionShift)=>{const c=structuredClone(r) as any;if(u&&!recognition){delete c.data.recognition;delete c.data.recognitionPeople;c.history=c.history.map((h:any)=>({at:h.at,by:h.by,role:h.role,action:h.action,reason:h.recognitionChanged?'Restricted recognition details':h.reason}));}if(!u)delete c.shares;if(u?.role==='reviewer')c.shares={[u.id]:c.shares[u.id]};c.canCorrect=correct(r)||own(r)&&['in_progress','needs_attention'].includes(r.status);c.canManage=manager;c.canComment=manager||!!share(r);c.canReview=manager||!!share(r);c.canConfirmReadiness=confirm(r);return c;};
+ const safe=(r:ProductionShift)=>{const c=structuredClone(r) as any;if(u&&!recognition){delete c.data.recognition;delete c.data.recognitionPeople;c.history=c.history.map((h:any)=>({at:h.at,by:h.by,role:h.role,action:h.action,reason:h.recognitionChanged?'Restricted recognition details':h.reason}));}if(!u)delete c.shares;if(u?.role==='reviewer')c.shares={[u.id]:c.shares[u.id]};c.canCorrect=correct(r)||own(r)&&['in_progress','needs_attention'].includes(r.status);c.canAddFeedback=own(r)&&r.status==='submitted'&&!r.history.some((h:any)=>h.action==='feedback');c.canManage=manager;c.canComment=manager||!!share(r);c.canReview=manager||!!share(r);c.canConfirmReadiness=confirm(r);return c;};
  const record=async()=>{const r=await tx.get<ProductionShift>('production-shift',text(input.id,100));check(r&&(visible(r)||confirm(r)),'Shift unavailable.',404);return r;};
  const save=async(r:ProductionShift,action:string,before:any,reason='')=>{r.revision++;r.updatedAt=now();r.history.push({at:r.updatedAt,by:actor,role:manager?'manager':u?.role||'operator',action,reason,recognitionChanged:JSON.stringify([before?.data?.recognition,before?.data?.recognitionPeople])!==JSON.stringify([r.data.recognition,r.data.recognitionPeople]),before,after:{status:r.status,segments:structuredClone(r.segments),readiness:structuredClone(r.readiness),data:structuredClone(r.data),workDate:r.workDate}});await tx.put('production-shift',r.id,r);return visible(r)?{shift:safe(r)}:{readiness:narrow(r)};};
  const newReadiness=(operatorId:string)=>{const a=settings.crewAssignments?.[operatorId]||{};return{status:'waiting_associate',requestedAt:now(),leadId:a.leadId||null,managerId:a.managerId||null};};
@@ -104,6 +112,7 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
  }
  if(action==='comment'){check(manager||share(r),'Shared lead or supervisor access required.',403);const note=text(input.note,1500);check(note,'Enter a note.');return save(r,action,before,note);}
  if(action==='reviewed'){check(u&&(manager||share(r)),'Shared lead or supervisor access required.',403);return save(r,action,before);}
+ if(action==='feedback'){check(own(r),'Associate access required.',403);check(r.status==='submitted','End the shift before saving final feedback.');check(!r.history.some((h:any)=>h.action==='feedback'),'Final feedback has already been saved.',409);r.data={...r.data,...finalFeedbackAnswers(r,input.data)};return save(r,action,before);}
  if(action==='close'){check(manager,'Supervisor role required.',403);check(r.status==='submitted'&&r.segments.every(s=>s.end),'Only submitted, complete shifts can be closed.');r.status='closed';return save(r,action,before);}
  if(action==='reopen'){check(correct(r),'Correction permission required.',403);check(r.status==='closed'||r.status==='submitted','Shift is already open.');check(text(input.reason,1000),'Enter a correction reason.');r.status='needs_attention';return save(r,action,before,text(input.reason,1000));}
  if(action==='submit'){check(correct(r)||own(r)&&['in_progress','needs_attention'].includes(r.status),'Correction permission required.',403);timeline(r.segments,true);r.status='submitted';return save(r,action,before,text(input.reason||'',1000));}
