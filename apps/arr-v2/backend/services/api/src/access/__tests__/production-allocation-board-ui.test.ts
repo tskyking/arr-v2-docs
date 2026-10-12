@@ -92,16 +92,22 @@ describe('lag-adjusted FGI allocation board UI', () => {
     expect(source).toContain('product.stale=false');
   });
 
-  it('reveals same-day product work context beside Daily FGI without associate rankings', async () => {
+  it('reveals a configurable multi-day WIP progression beneath each Daily FGI product', async () => {
     const source = await readFile(jsPath, 'utf8');
     const css = await readFile(cssPath, 'utf8');
     expect(source).toContain('data-fgi-work-context');
-    expect(source).toContain("api('fgi-work-context',{workDate:X.fgiDate||date(),family})");
-    expect(source).toContain('Same-day completed production for ${esc(value.workDate)}:');
+    expect(source).toContain("uiInput('fgiWipDays','Combine WIP days','number',X.fgiWipDays??3,'min=\"1\" max=\"30\" step=\"1\" required')");
+    expect(source).toContain('Load WIP');
+    expect(source).toContain("bind('#load-fgi-wip',async()=>");
+    expect(source).not.toContain("bind('#load-fgi-wip',()=>run(");
+    expect(source).toContain("api('fgi-work-context',{workDate:X.fgiDate||date(),family,days:X.fgiWipDays})");
+    expect(source).toContain('value.operations.slice().reverse()');
+    expect(source).toContain('Selected-date FGI');
+    expect(source).toContain('data-lag-source');
+    expect(source).toContain("$$('[data-fgi-work-context][aria-expanded=\"true\"]')");
     expect(source).toContain("allocationForm=$('#allocation-form');if(allocationForm)");
-    expect(source).toContain('Same-day completed production');
-    expect(source).toContain('Allocation calculations use their displayed lag-adjusted source windows');
     expect(source).toContain('Gate Passes');
-    expect(css).toContain('.fgi-work-context-detail');
+    expect(css).toContain('.fgi-wip-progression');
+    expect(css).toContain('.fgi-wip-arrow');
   });
 });
