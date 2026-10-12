@@ -105,9 +105,15 @@ describe('lag-adjusted FGI allocation board UI', () => {
     expect(source).toContain('Selected-date FGI');
     expect(source).toContain('data-lag-source');
     expect(source).toContain("$$('[data-fgi-work-context][aria-expanded=\"true\"]')");
-    expect(source).toContain("allocationForm=$('#allocation-form');if(allocationForm)");
+    expect(source).toContain("const allocationForm=$('#allocation-form');if(!allocationForm)return;");
     expect(source).toContain('Gate Passes');
     expect(css).toContain('.fgi-wip-progression');
     expect(css).toContain('.fgi-wip-arrow');
+  });
+
+  it('keeps Daily FGI preset generation safe after the legacy allocation form is removed', async () => {
+    const source = await readFile(jsPath, 'utf8');
+    expect(source).toContain('function syncLegacyAllocationFamilyOptions');
+    expect(source).not.toContain("$('[name=family]',$('#allocation-form'))");
   });
 });
