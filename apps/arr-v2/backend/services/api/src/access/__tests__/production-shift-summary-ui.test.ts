@@ -48,4 +48,13 @@ describe('shift queue elapsed-time presentation', () => {
     expect(source).toContain("return openShift(s.id);},el);");
     expect(source).toContain("if(old){await animateDetail(old,false);old.innerHTML='';}");
   });
+
+  it('opens final Feedback and keeps assignment change collapsed after End Shift', async () => {
+    const source = await readFile(sourcePath, 'utf8');
+    expect(source).toContain("finalFeedback?'<button name=\"doAction\" value=\"feedback\" class=\"primary\">Save feedback</button>'");
+    expect(source).toContain("if(last?.end){disclosure.open=false;if(finalFeedback){const feedback=$('.feedback-section',f);if(feedback)feedback.open=true;}}");
+    expect(source).toContain('assignmentControls.disabled=finalFeedback||!disclosure.open;');
+    expect(source).toContain("dynamicQuestions(s.formSnapshot?.definition||s.formSnapshot||publishedDefinition('arr'),finalFeedback?'eod':'all',['sopClarity'],true,last?.kind!=='waiting'&&!finalFeedback)");
+    expect(source).toContain("if(kind==='feedback'){run(()=>action('feedback',{data:{...dynamicAnswers(f,'eod',true)}}));return;}");
+  });
 });
