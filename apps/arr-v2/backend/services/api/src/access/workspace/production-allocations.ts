@@ -100,10 +100,15 @@ async function currentRunPreview(tx:WorkspaceTx,from:string,to:string,familyInpu
 }
 export async function productionAllocations(tx:WorkspaceTx,u:User|undefined,route:string,input:any):Promise<any|undefined>{
  const runRoutes=['production-allocation-board','production-allocation-expand','production-allocation-calculate','production-allocation-run-save'];
- if(!['production-fgi-presets','production-fgi-list','production-fgi-save','production-allocation-preview','production-allocation-save','production-allocation-list','production-allocation-export',...runRoutes].includes(route))return undefined;
+ if(!['production-fgi-presets','production-fgi-list','production-fgi-save','production-fgi-work-context','production-allocation-preview','production-allocation-save','production-allocation-list','production-allocation-export',...runRoutes].includes(route))return undefined;
  check(u&&u.active&&(u.role==='owner'||['manager','admin'].includes(u.role)&&u.forms.includes('arr')),'Management access required.',403);
  const permission=await tx.get('production-permission',u.id);const operational=u.role==='manager'||u.role==='owner'&&permission?.operationalManager===true;
  const mutation=()=>check(operational,'Manager/Supervisor operational role required.',403);
+ if(route==='production-fgi-work-context'){
+  check(operational,'Manager operational role required.',403);const workDate=validDate(input.workDate),family=text(input.family,600);check(family,'Choose a product family.');const operations=[] as any[],shifts=new Set<string>();let totalMinutes=0,segmentCount=0;
+  for(const operation of productionConfig.stages){const sources=await allocationSources(tx,workDate,family,operation);if(!sources.length)continue;const minutes=sources.reduce((n:number,s:any)=>n+s.minutes,0),counted=sources.filter((s:any)=>s.reportedMoves!==null&&s.reportedMoves!==undefined),gatePasses=counted.length?counted.reduce((n:number,s:any)=>n+s.reportedMoves,0):null;for(const source of sources)shifts.add(String(source.sourceId).split(':')[0]);totalMinutes+=minutes;segmentCount+=sources.length;operations.push({operation,minutes,hours:minutes/60,gatePasses,partialGatePasses:counted.length!==sources.length,segmentCount:sources.length});}
+  return{workDate,family,totalMinutes,totalHours:totalMinutes/60,segmentCount,shiftCount:shifts.size,operations,demo:true,scope:'Same-day completed production context only. Allocation calculations use their displayed lag-adjusted source windows.'};
+ }
  if(runRoutes.includes(route)){
   check(operational,'Manager operational role required.',403);
   const from=validDate(input.from),to=validDate(input.to),rangeDays=(Date.parse(to+'T12:00:00Z')-Date.parse(from+'T12:00:00Z'))/86400000+1;check(Number.isInteger(rangeDays)&&rangeDays>=1&&rangeDays<=366,'Choose a valid FGI date range of 1 to 366 days.');

@@ -57,6 +57,14 @@ body[data-form=prr]{--teal:#71458b;--teal-dark:#533365;--background:#f8f5fa}.fac
 
 /* Lag-adjusted FGI allocation board. */
 #fgi-rows{grid-template-columns:1fr}
+.fgi-row{border-bottom:1px solid var(--line)}
+.fgi-row-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.8rem;align-items:center;padding:.35rem 0}
+.fgi-work-context-toggle{border:0;background:transparent;color:var(--ink);padding:.5rem;text-align:left;font-size:.86rem;font-weight:600}
+.fgi-work-context-toggle:hover,.fgi-work-context-toggle:focus-visible{background:#edf4f3}
+.fgi-work-context-detail{padding:.25rem .5rem .75rem 1.7rem;background:#f8fbfa;border-left:3px solid #a9c6c2}
+.fgi-work-context-detail p{margin:.55rem 0}
+.fgi-work-context-list .compact-summary{padding:.45rem 0}
+@media(max-width:600px){.fgi-row-main{grid-template-columns:minmax(0,1fr) 92px}.fgi-row input{width:92px}.fgi-work-context-detail{padding-left:.75rem}.fgi-work-context-list .compact-summary{display:block}.fgi-work-context-list .compact-summary span{display:block;margin:.2rem 0}}
 .allocation-product-list{display:grid;grid-template-columns:1fr;gap:.8rem}
 .allocation-product-row{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
 .allocation-product-summary{display:grid;grid-template-columns:minmax(190px,1.5fr) auto repeat(3,minmax(110px,.55fr));gap:1rem;align-items:center;padding:1rem}

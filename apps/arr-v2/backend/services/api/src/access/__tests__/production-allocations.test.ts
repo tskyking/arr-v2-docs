@@ -27,6 +27,18 @@ describe('FGI storage and permissions',()=>{
  it('requires operational Manager role for Owner mutations',async()=>{const tx:any=new Tx(),owner={...manager,id:'owner',role:'owner'};await expect(productionAllocations(tx,owner,'production-fgi-presets',{total:1400})).rejects.toThrow();await tx.put('production-permission','owner',{operationalManager:true});expect((await productionAllocations(tx,owner,'production-fgi-presets',{total:1400})).total).toBe(1400);});
  it('retains revisions, audit, and demo provenance without accepting stale writes',async()=>{const tx:any=new Tx();const input={workDate:'2026-10-04',revision:0,rows:[{family:'Compression sleeves',quantity:10}],provenance:'simulated_preset'};await productionAllocations(tx,manager,'production-fgi-save',input);await expect(productionAllocations(tx,manager,'production-fgi-save',input)).rejects.toThrow();const {fgi}=await productionAllocations(tx,manager,'production-fgi-save',{...input,revision:1,provenance:'manual_demo',rows:[{family:'Compression sleeves',quantity:12}]});expect(fgi.revision).toBe(2);expect(fgi.history[0].total).toBe(10);expect(fgi.provenance).toBe('simulated_preset');expect((await tx.list('production-event')).length).toBe(2);});
  it('disallows lead/admin/associate mutations and unknown routes are ignored',async()=>{const tx:any=new Tx();for(const role of ['reviewer','admin'])await expect(productionAllocations(tx,{...manager,role} as any,'production-fgi-save',{})).rejects.toThrow();await expect(productionAllocations(tx,undefined,'production-fgi-list',{})).rejects.toThrow();expect(await productionAllocations(tx,manager,'production-anything',{})).toBeUndefined();});
+ it('summarizes same-day product work context by operation without exposing associate rankings',async()=>{
+  const tx:any=new Tx();await tx.put('production-shift','shift-a',{id:'shift-a',revision:1,operator:'a',username:'a',workDate:'2026-10-11',segments:[
+   {id:'receive',kind:'production',start:'2026-10-11T08:00:00Z',end:'2026-10-11T15:00:00Z',product:'Laryngoscope blades',stage:'Receiving and Sorting',reportedMoves:null},
+   {id:'quality',kind:'production',start:'2026-10-11T15:00:00Z',end:'2026-10-11T18:03:00Z',product:'Laryngoscope blades',stage:'Final Quality Review',reportedMoves:80},
+   {id:'training',kind:'training',start:'2026-10-11T18:03:00Z',end:'2026-10-11T19:03:00Z',product:'Laryngoscope blades',stage:'Packaging',reportedMoves:999}
+  ]});await tx.put('production-shift','shift-b',{id:'shift-b',revision:1,operator:'b',username:'b',workDate:'2026-10-11',segments:[{id:'pack',kind:'production',start:'2026-10-11T20:00:00Z',end:'2026-10-11T22:01:00Z',product:'Laryngoscope blades',stage:'Packaging',reportedMoves:null}]});
+  const out=await productionAllocations(tx,manager,'production-fgi-work-context',{workDate:'2026-10-11',family:'Laryngoscope blades'});
+  await expect(productionAllocations(tx,{...manager,role:'admin'},'production-fgi-work-context',{workDate:'2026-10-11',family:'Laryngoscope blades'})).rejects.toThrow('Manager operational role');
+  expect(out).toMatchObject({workDate:'2026-10-11',family:'Laryngoscope blades',totalMinutes:724,segmentCount:3,shiftCount:2});
+  expect(out.operations.map((v:any)=>[v.operation,v.minutes,v.gatePasses,v.partialGatePasses])).toEqual([['Receiving and Sorting',420,null,true],['Final Quality Review',183,80,false],['Packaging',121,null,true]]);
+  expect(JSON.stringify(out)).not.toContain('username');expect(JSON.stringify(out)).not.toContain('operator');
+ });
 });
 describe('allocation lifecycle and stale containment',()=>{
  async function setup(){

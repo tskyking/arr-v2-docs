@@ -91,4 +91,17 @@ describe('lag-adjusted FGI allocation board UI', () => {
     expect(source).toContain("product.stale?'<span class=\"pill stale\">Needs refresh</span>':''");
     expect(source).toContain('product.stale=false');
   });
+
+  it('reveals same-day product work context beside Daily FGI without associate rankings', async () => {
+    const source = await readFile(jsPath, 'utf8');
+    const css = await readFile(cssPath, 'utf8');
+    expect(source).toContain('data-fgi-work-context');
+    expect(source).toContain("api('fgi-work-context',{workDate:X.fgiDate||date(),family})");
+    expect(source).toContain('Same-day completed production for ${esc(value.workDate)}:');
+    expect(source).toContain("allocationForm=$('#allocation-form');if(allocationForm)");
+    expect(source).toContain('Same-day completed production');
+    expect(source).toContain('Allocation calculations use their displayed lag-adjusted source windows');
+    expect(source).toContain('Gate Passes');
+    expect(css).toContain('.fgi-work-context-detail');
+  });
 });
