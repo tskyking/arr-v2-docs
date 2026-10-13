@@ -49,6 +49,24 @@ describe('shift queue elapsed-time presentation', () => {
     expect(source).toContain("if(old){await animateDetail(old,false);old.innerHTML='';}");
   });
 
+  it('does not query Gate quantity controls when an SOP-preparation segment has no quantity detail', async () => {
+    const source = await readFile(sourcePath, 'utf8');
+    const match = source.match(/function bindGateQuantitySync\([\s\S]*?\nfunction updateElapsedDurations/);
+    expect(match).not.toBeNull();
+    const functionSource = match![0].replace(/\nfunction updateElapsedDurations$/, '');
+    const bindGateQuantitySync = new Function('$', 'CSS', 'X', `${functionSource}; return bindGateQuantitySync;`)(
+      (selector: string, root: { querySelector: (value: string) => unknown }) => root.querySelector(selector),
+      { escape: (value: string) => value },
+      { dirty: false },
+    );
+    let formQueried = false;
+    const trainingRoot = { querySelector: () => null };
+    const feedbackForm = { querySelector: () => { formQueried = true; return null; } };
+
+    expect(() => bindGateQuantitySync(trainingRoot, feedbackForm, { id: 'training-segment-1', kind: 'training' })).not.toThrow();
+    expect(formQueried).toBe(false);
+  });
+
   it('opens final Feedback and keeps assignment change collapsed after End Shift', async () => {
     const source = await readFile(sourcePath, 'utf8');
     expect(source).toContain("finalFeedback?'<button name=\"doAction\" value=\"feedback\" class=\"primary\">Save feedback</button>'");
