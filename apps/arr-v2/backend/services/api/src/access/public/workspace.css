@@ -698,3 +698,8 @@ body.arr-manager .queue-nav:disabled { box-shadow: none; transform: none; }
 .production-return:hover { background:#e4f1eb; text-decoration:underline; }
 .production-return:focus-visible { outline:3px solid #246f61; outline-offset:3px; }
 .production-return-bottom { max-width:1200px; margin:1rem auto; padding:0 1rem; }
+.current-production-jump { display:flex; align-items:center; justify-content:center; gap:.8rem; margin:1rem auto; padding:.85rem 1rem; max-width:1100px; border:1px solid #789e94; border-radius:10px; background:#e4f1eb; color:#193f37; font-weight:650; text-align:center; }
+.current-production-jump a { display:inline-block; padding:.55rem .75rem; border-radius:8px; background:#09685f; color:#fff; font-weight:750; text-decoration:none; }
+.current-production-jump a:hover { background:#07554e; text-decoration:underline; }
+.current-production-jump a:focus-visible { outline:3px solid #246f61; outline-offset:3px; }
+@media (max-width:600px) { .current-production-jump { flex-direction:column; margin:1rem; } }
