@@ -57,6 +57,35 @@ function json(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data));
 }
+function singleByteRange(
+  header: string,
+  length: number,
+): { start: number; end: number } | "unsatisfiable" | null {
+  const separator = header.indexOf("=");
+  if (separator < 0 || header.slice(0, separator).trim().toLowerCase() !== "bytes")
+    return null;
+  const value = header.slice(separator + 1).trim();
+  if (value.includes(",")) return null;
+  const match = /^(\d*)-(\d*)$/.exec(value);
+  if (!match || (!match[1] && !match[2])) return null;
+  const representationLength = BigInt(length);
+  if (!match[1]) {
+    const suffixLength = BigInt(match[2]);
+    if (suffixLength <= 0n) return "unsatisfiable";
+    return {
+      start: Number(suffixLength >= representationLength ? 0n : representationLength - suffixLength),
+      end: length - 1,
+    };
+  }
+  const start = BigInt(match[1]);
+  const requestedEnd = match[2] ? BigInt(match[2]) : representationLength - 1n;
+  if (start >= representationLength || requestedEnd < start)
+    return "unsatisfiable";
+  return {
+    start: Number(start),
+    end: Number(requestedEnd >= representationLength ? representationLength - 1n : requestedEnd),
+  };
+}
 // Bound the entire JSON body before parsing. This cap limits one request, not
 // aggregate CPU/memory/socket consumption; edge timeout/concurrency limits remain needed.
 async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -180,7 +209,7 @@ export function createAccessHandler(
     const suffix = path.slice("/access-demo".length).replace(/^\//, "");
     const method = req.method;
     try {
-      if (method === "GET" && (!suffix || assets.has(suffix))) {
+      if ((method === "GET" || method === "HEAD") && (!suffix || assets.has(suffix))) {
         if (!suffix && !req.url?.split("?")[0].endsWith("/")) {
           res.writeHead(308, { Location: (req.url ?? "").split("?")[0] + "/" });
           res.end();
@@ -189,8 +218,35 @@ export function createAccessHandler(
         const asset = assets.get(
           suffix || (workspaceEnabled ? "workspace.html" : "index.html"),
         )!;
-        res.writeHead(200, { "Content-Type": asset.type });
-        res.end(asset.body);
+        const headers: Record<string, string | number> = {
+          "Content-Type": asset.type,
+          "Content-Length": asset.body.length,
+        };
+        if (asset.type === "video/mp4") headers["Accept-Ranges"] = "bytes";
+        if (method === "GET" && asset.type === "video/mp4" && req.headers.range) {
+          const range = singleByteRange(req.headers.range, asset.body.length);
+          if (range === "unsatisfiable") {
+            res.writeHead(416, {
+              ...headers,
+              "Content-Length": 0,
+              "Content-Range": `bytes */${asset.body.length}`,
+            });
+            res.end();
+            return true;
+          }
+          if (range) {
+            const slice = asset.body.subarray(range.start, range.end + 1);
+            res.writeHead(206, {
+              ...headers,
+              "Content-Length": slice.length,
+              "Content-Range": `bytes ${range.start}-${range.end}/${asset.body.length}`,
+            });
+            res.end(slice);
+            return true;
+          }
+        }
+        res.writeHead(200, headers);
+        res.end(method === "HEAD" ? undefined : asset.body);
         return true;
       }
       if (!store)

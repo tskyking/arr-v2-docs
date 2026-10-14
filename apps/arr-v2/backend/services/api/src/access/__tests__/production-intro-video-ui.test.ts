@@ -27,7 +27,7 @@ describe('ARR introduction video overlay', () => {
 
     expect(html).toContain('id="arr-intro-open"');
     expect(html).toContain('id="arr-intro-dialog"');
-    expect(html).toContain('arr-concept-overview-final-marin-2026-10-14.mp4');
+    expect(html).toContain('arr-concept-overview-final-marin-2026-10-14.mp4?v=20261014-ios-safari-v2');
     expect(html).toContain('intro-video.js?v=20261014-arr-intro-video-v1');
     expect(css).toContain('.arr-intro-dialog');
     expect(css).toContain('.arr-intro-close');
