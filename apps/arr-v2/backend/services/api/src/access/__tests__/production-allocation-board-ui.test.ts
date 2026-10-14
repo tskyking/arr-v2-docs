@@ -26,6 +26,26 @@ describe('lag-adjusted FGI allocation board UI', () => {
     expect(source).toContain('Manager allocation');
   });
 
+  it('renders allocation operations bottom-up while retaining their original calculation indexes', async () => {
+    const source = await readFile(jsPath, 'utf8');
+    const match = source.match(/function allocationOperationsForDisplay\([\s\S]*?\nfunction allocationOperationCard/);
+    expect(match).not.toBeNull();
+    const functionSource = match![0].replace(/\nfunction allocationOperationCard$/, '');
+    const orderForDisplay = new Function(`${functionSource}; return allocationOperationsForDisplay;`)();
+    const displayed = orderForDisplay([
+      { operation: 'Receiving and Sorting' },
+      { operation: 'Inspection' },
+      { operation: 'Packaging' },
+    ]);
+
+    expect(displayed.map((value: any) => value.operation.operation)).toEqual([
+      'Packaging',
+      'Inspection',
+      'Receiving and Sorting',
+    ]);
+    expect(displayed.map((value: any) => value.originalIndex)).toEqual([2, 1, 0]);
+  });
+
   it('reveals operation cards sequentially and keeps product rows single-column', async () => {
     const source = await readFile(jsPath, 'utf8');
     const css = await readFile(cssPath, 'utf8');
