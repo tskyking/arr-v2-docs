@@ -40,6 +40,7 @@ for (const [file, type] of [
   ["app.js", "application/javascript; charset=utf-8"],
   ["style.css", "text/css; charset=utf-8"],
   ["workspace.html", "text/html; charset=utf-8"],
+  ["legacy-workspace-redirect.js", "application/javascript; charset=utf-8"],
   ["production.html", "text/html; charset=utf-8"],
   ["production.js", "application/javascript; charset=utf-8"],
   ["intro-video.js", "application/javascript; charset=utf-8"],
