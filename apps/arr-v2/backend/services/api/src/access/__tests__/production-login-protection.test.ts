@@ -47,6 +47,8 @@ describe('shared-facility-IP HTTP acceptance with durable failure counters',()=>
   expect((await pool.query("SELECT count(*)::int n FROM tschutes_v2_documents WHERE kind='production-login-failure'")).rows[0].n).toBe(0);
  },60000);
  it('serializes concurrent failures across handlers and isolates the account-plus-IP lock from other associates',async()=>{
+  for(let i=0;i<8;i++)expect((await call(i%2?'Zoe-30@demo.com':'person-30','wrong','203.0.113.30')).status).toBe(401);
+  expect((await call('ZOE-30@DEMO.COM','wrong','203.0.113.30')).status).toBe(429);
   const bad=await Promise.all(Array.from({length:20},()=>call('PERSON-1','wrong','203.0.113.21',{productionLoginIpHash:'forged',ip:'forged'})));
   expect(bad.filter(r=>r.status===401)).toHaveLength(8);expect(bad.filter(r=>r.status===429)).toHaveLength(12);
   expect((await call('person-1','abc@123','203.0.113.21')).status).toBe(429);
