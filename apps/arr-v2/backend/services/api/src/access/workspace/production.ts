@@ -7,9 +7,13 @@ import { scryptSync } from 'node:crypto';
 import {check,id,now,text,secret,sha256,verifyPassword,publicUser,type User} from './model.js';
 import {productionConfig,productionAnswers,workToday,dayOffset,lateEod,validDate,scoreFields,type ProductionEntry} from './production-model.js';
 import type {WorkspaceTx} from './store.js';
-type Operator={id:string;username:string;role:'operator';active:boolean;password:{salt:string;hash:string}};
+type AssociateProfile={firstName:string;lastName:string;email:string};
+type Operator={id:string;username:string;role:'operator';active:boolean;password:{salt:string;hash:string};profile?:AssociateProfile};
+const associateFirstNames=['Amy','Ben','Cal','Dan','Ed','Fay','Hal','Ivy','Joy','Kim','Leo','Max','Nev','Obe','Pat','Que','Ray','Sky','Ty','Uma','Val','Van','Vic','Viv','Von','Wes','Xia','Yan','Zac','Zoe'];
+const demoProfile=(username:string):AssociateProfile|undefined=>{const match=/^person-([1-9]|[12]\d|30)$/.exec(username),n=match?Number(match[1]):0,firstName=associateFirstNames[n-1];return firstName?{firstName,lastName:`-${n}`,email:`${firstName}-${n}@demo.com`}:undefined;};
+export const canonicalProductionLoginIdentifier=(value:unknown)=>{const login=text(value,80).toLowerCase();for(let n=1;n<=30;n++)if(demoProfile(`person-${n}`)?.email.toLowerCase()===login)return `person-${n}`;return login;};
 const formOK=(u:User,f:string)=>u.role==='owner'||u.forms.includes(f);
-const opSafe=(o:Operator)=>({id:o.id,username:o.username,role:o.role,demo:true});
+const opSafe=(o:Operator)=>({id:o.id,username:o.username,role:o.role,profile:o.profile,demo:true});
 async function audit(tx:WorkspaceTx,by:string,action:string,note:string) {const key=id();await tx.put('production-event',key,{id:key,by,action,note,at:now()});}
 async function seed(tx:WorkspaceTx) {
  if(await tx.get('production-settings','main'))return;
@@ -30,9 +34,19 @@ async function expandDemoAssociates(tx:WorkspaceTx) {
  }
  await tx.put('production-migration',migration,{completedAt:now(),associateCount:30});
 }
+async function addDemoAssociateProfiles(tx:WorkspaceTx) {
+ const migration='associate-profiles-v1';
+ if(await tx.get('production-migration',migration))return;
+ for(let n=1;n<=30;n++){
+  const key=`person-${n}`,account=await tx.get<Operator>('production-operator',key),profile=demoProfile(key);
+  if(account&&profile)await tx.put('production-operator',key,{...account,profile});
+ }
+ await tx.put('production-migration',migration,{completedAt:now(),associateCount:30});
+}
 export async function production(tx:WorkspaceTx,u:User|undefined,route:string,input:any,operatorToken:string,photo?:string|null):Promise<any> {
  await seed(tx);
  await expandDemoAssociates(tx);
+ await addDemoAssociateProfiles(tx);
  await seedProducts(tx);
  await ensureProductionForms(tx);
  await simplifyProductionARR(tx);
@@ -55,28 +69,29 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
  const change=async()=>{const r=await get();check(input.revision===r.revision,'Entry changed. Refresh before saving.',409);return r;};
  const save=async(r:ProductionEntry,action:string,note:string,visibility:'worker'|'internal'='internal')=>{r.revision++;r.updatedAt=now();r.history.push({at:r.updatedAt,by:u?.username||o!.username,action,note,visibility});await tx.put('production-entry',r.id,r);await audit(tx,u?.username||o!.username,action,r.id);return {entry:await safe(r)};};
  if(route==='production-login') {
-  const username=text(input.username,80).toLowerCase();const found=await tx.get<Operator>('production-operator',username);
+  const login=text(input.username,80).toLowerCase();let found=await tx.get<Operator>('production-operator',login);
+  if(!found&&login.includes('@'))found=(await tx.list<Operator>('production-operator')).find(account=>account.profile?.email.toLowerCase()===login);
   check(found?.active&&verifyPassword(input.password,found.password),'Username or password is incorrect.',401);
-  const token=secret();await tx.put('production-session',sha256(token),{user:found.id,expires:new Date(Date.now()+4*3600000).toISOString()});await audit(tx,username,'demo Mfg. Associate login','');return{token,user:opSafe(found)};
+  const token=secret();await tx.put('production-session',sha256(token),{user:found.id,expires:new Date(Date.now()+4*3600000).toISOString()});await audit(tx,found.username,'demo Mfg. Associate login','');return{token,user:opSafe(found)};
  }
  if(route==='production-logout'){if(operatorToken)await tx.remove('production-session',sha256(operatorToken));return{ok:true};}
- if(route==='production-catalog')return{user:u?publicUser(u):o?opSafe(o):null,config:{...productionConfig,...await tx.get('production-settings','main')},products:(await tx.list('production-product')).filter(p=>p.active&&p.common),forms:(await tx.list('production-form')).map(f=>({id:f.id,identity:f.identity,version:f.version,publishedAt:f.publishedAt,definition:f.definition})),operators:(await tx.list<Operator>('production-operator')).filter(v=>v.active).sort((a,b)=>a.username.localeCompare(b.username,undefined,{numeric:true,sensitivity:'base'})).map(v=>({id:v.id,username:v.username})),capabilities:{recognition,publishing,operationalManager},demo:true};
+ if(route==='production-catalog')return{user:u?publicUser(u):o?opSafe(o):null,config:{...productionConfig,...await tx.get('production-settings','main')},products:(await tx.list('production-product')).filter(p=>p.active&&p.common),forms:(await tx.list('production-form')).map(f=>({id:f.id,identity:f.identity,version:f.version,publishedAt:f.publishedAt,definition:f.definition})),operators:(await tx.list<Operator>('production-operator')).filter(v=>v.active).sort((a,b)=>a.username.localeCompare(b.username,undefined,{numeric:true,sensitivity:'base'})).map(v=>({id:v.id,username:v.username,...(u||o?{profile:v.profile}:{})})),capabilities:{recognition,publishing,operationalManager},demo:true};
  check(u||o,'Please sign in.',401);
  for(const dispatch of [()=>catalogRoutes(tx,u,!!(u||o),route,input),()=>formRoutes(tx,u,route,input),()=>settingsRoutes(tx,u,route,input),()=>shiftRoutes(tx,u,o,route,input),()=>productionAllocations(tx,u,route,input)]) {const result=await dispatch();if(result!==undefined)return result;}
  if(route==='production-associate-list') {
   check(u&&(u.role==='owner'||u.role==='admin'),'Administrator access required.',403);
-  return{operators:(await tx.list<Operator>('production-operator')).map(v=>({id:v.id,username:v.username,active:v.active,revision:(v as any).revision||1})).sort((a,b)=>a.username.localeCompare(b.username,undefined,{numeric:true}))};
+  return{operators:(await tx.list<Operator>('production-operator')).map(v=>({id:v.id,username:v.username,profile:v.profile,active:v.active,revision:(v as any).revision||1})).sort((a,b)=>a.username.localeCompare(b.username,undefined,{numeric:true}))};
  }
  if(route==='production-associate-save') {
   check(u?.role==='owner','A+ manages associate access.',403);
-  const username=text(input.id||input.username,80).toLowerCase();check(/^person-[1-9][0-9]{0,3}$/.test(username),'Use a fictional person-number username.');
+  const username=text(input.id||input.username,80).toLowerCase();check(/^person-(?:[1-9]|[12]\d|30)$/.test(username),'Use a fictional person-1 through person-30 username.');
   const existing=await tx.get('production-operator',username);check(typeof input.active==='boolean','Specify active status.');
   if(existing)check(input.revision===(existing.revision||1),'Associate changed. Refresh before saving.',409);
-  const salt=existing?undefined:secret();const account=existing||{id:username,username,role:'operator',password:{salt,hash:scryptSync('abc@123',salt!,64).toString('hex')}};
+  const salt=existing?undefined:secret();const account=existing||{id:username,username,role:'operator',profile:demoProfile(username),password:{salt,hash:scryptSync('abc@123',salt!,64).toString('hex')}};
   const before={active:existing?.active,revision:existing?.revision||0};account.active=input.active;account.revision=(existing?.revision||1)+1;
   await tx.put('production-operator',username,account);if(!account.active)await tx.removeForUser('production-session',username);
   const key=id();await tx.put('production-event',key,{id:key,at:now(),by:u.username,action:'associate access updated',operator:username,before,after:{active:account.active,revision:account.revision}});
-  return{operator:{id:username,username,active:account.active,revision:account.revision}};
+  return{operator:{id:username,username,profile:account.profile,active:account.active,revision:account.revision}};
  }
  if(route==='production-permission') {
   check(u?.role==='owner','Owner access required.',403);const userId=text(input.userId,100);const target=await tx.get<User>('user',userId);check(target&&target.role!=='reviewer','Choose a Manager or Admin account.');

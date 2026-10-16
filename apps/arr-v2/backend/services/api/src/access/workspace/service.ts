@@ -1,5 +1,5 @@
 import {protectProductionLogin,ProductionLoginRejected} from './production-login-protection.js';
-import { production } from './production.js';
+import {canonicalProductionLoginIdentifier,production} from './production.js';
 import { isArchived, queueLifecycle } from "./retention.js";
 import { tickets } from "./tickets.js";
 import legacySnapshot from "./legacy-v01.json";
@@ -145,7 +145,7 @@ export class WorkspaceService {
         this.lastCleanup = Date.now();
       }
       const u = await this.user(tx, token);
-      if (route === 'production-login') return protectProductionLogin(tx, input.username, productionLoginIpHash,
+      if (route === 'production-login') return protectProductionLogin(tx, canonicalProductionLoginIdentifier(input.username), productionLoginIpHash,
         () => production(tx, u, route, input, operatorToken, photo));
       if (route.startsWith("production-")) return production(tx, u, route, input, operatorToken, photo);
       if (route === "session-state") {
