@@ -13,6 +13,15 @@ describe('shift queue elapsed-time presentation', () => {
     expect(source).toContain(' · Shift total ');
   });
 
+  it('uses two middle dots between distinct shift fields', async () => {
+    const source = await readFile(sourcePath, 'utf8');
+    expect(source).toContain("${esc(v.stage)} · · ${esc(v.product)} · · ${esc(timeLabel(v.start))}");
+    expect(source).toContain("${!v.end?' · · Changed '+esc(age(v.start)):''} · · ${segmentKindLabel(v)}");
+    expect(source).toContain("esc(v.stage)+' · · '+esc(v.product)");
+    expect(source).toContain("${v.end?esc(timeLabel(v.end)):'Now'} · · ${segmentKindLabel(v)}");
+    expect(source).toContain("'Production'} · <strong class=\"segment-duration\"");
+  });
+
   it('bolds Current without bolding Previous', async () => {
     const source = await readFile(sourcePath, 'utf8');
     expect(source).toContain("title==='Current'?'current-segment-label':''");
