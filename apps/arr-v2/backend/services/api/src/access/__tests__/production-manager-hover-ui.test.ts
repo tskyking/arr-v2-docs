@@ -59,20 +59,25 @@ describe('Manager staged shift queue and hover previews',()=>{
 
    const first=page.locator('[data-shift="shift-1"]');
    const hoursTarget=first.locator('.associate-hours-target');
+   const current=first.locator('.current-hover-target');
    await hoursTarget.hover();
    const hours=hoursTarget.locator('.associate-hours-preview');
    expect(await hours.isVisible()).toBe(true);
    expect(await hours.locator('[data-product-hours-row]').count()).toBe(10);
    expect(await hours.locator('[data-product-hours-row]').first().textContent()).toContain('Product 1');
    expect(await hours.locator('.more-products-indicator').textContent()).toBe('…');
+   const hoursBox=await hours.boundingBox(),currentBox=await current.boundingBox();expect(hoursBox).not.toBeNull();expect(currentBox).not.toBeNull();
+   expect(Math.abs(hoursBox!.x-currentBox!.x)).toBeLessThanOrEqual(1);
 
-   const current=first.locator('.current-hover-target');
    await current.hover();
    const timeline=current.locator('.current-timeline-preview');
    expect(await timeline.isVisible()).toBe(true);
    expect(await timeline.textContent()).toContain('Receiving and Sorting');
    expect(await timeline.textContent()).toContain('Cleaning / Decontamination');
    expect(await timeline.textContent()).toContain('Packaging');
+   const timelineText=await timeline.textContent();expect(timelineText).not.toContain('<span');expect(timelineText).not.toContain('<strong');expect(timelineText).not.toContain('</');
+   const alignedTimelineBox=await timeline.boundingBox();expect(alignedTimelineBox).not.toBeNull();
+   expect(Math.abs((alignedTimelineBox!.x+alignedTimelineBox!.width)-(currentBox!.x+currentBox!.width))).toBeLessThanOrEqual(1);
    expect(await timeline.evaluate(node=>getComputedStyle(node).pointerEvents)).toBe('auto');
    expect(await timeline.evaluate(node=>node.scrollHeight>node.clientHeight)).toBe(true);
    const triggerBox=await current.boundingBox(),timelineBox=await timeline.boundingBox();expect(triggerBox).not.toBeNull();expect(timelineBox).not.toBeNull();
