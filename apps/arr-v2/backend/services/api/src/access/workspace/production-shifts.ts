@@ -76,6 +76,11 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
  const confirm=(r:ProductionShift)=>manager||!!(u&&formAccess&&u.role==='reviewer'&&r.readiness?.leadId===u.id);
  const narrow=(r:ProductionShift)=>({id:r.id,revision:r.revision,operator:r.operator,username:r.username,workDate:r.workDate,team:r.team,readiness:structuredClone(r.readiness),assignment:(()=>{const s=r.segments.at(-1)!;return{stage:s.stage,station:s.station,product:s.product,start:s.start,kind:s.kind};})(),canConfirmReadiness:confirm(r)});
  const safe=(r:ProductionShift)=>{const c=structuredClone(r) as any;if(u&&!recognition){delete c.data.recognition;delete c.data.recognitionPeople;c.history=c.history.map((h:any)=>({at:h.at,by:h.by,role:h.role,action:h.action,reason:h.recognitionChanged?'Restricted recognition details':h.reason}));}if(!u)delete c.shares;if(u?.role==='reviewer')c.shares={[u.id]:c.shares[u.id]};c.canCorrect=correct(r)||own(r)&&['in_progress','needs_attention'].includes(r.status);c.canAddFeedback=own(r)&&r.status==='submitted'&&!r.history.some((h:any)=>h.action==='feedback');c.canManage=manager;c.canComment=manager||!!share(r);c.canReview=manager||!!share(r);c.canConfirmReadiness=confirm(r);return c;};
+ const productHours=(records:ProductionShift[])=>{
+  const totals:Record<string,Map<string,number>>={};
+  for(const r of records)for(const s of r.segments){if(s.kind!=='production'||!s.product)continue;const end=s.end?Date.parse(s.end):Date.now(),start=Date.parse(s.start);if(!Number.isFinite(start)||!Number.isFinite(end)||end<start)continue;const minutes=Math.max(0,(end-start)/60000-(s.extras?.interruptionMinutes||0));const byProduct=totals[r.operator]??=new Map<string,number>();byProduct.set(s.product,(byProduct.get(s.product)||0)+minutes);}
+  return Object.fromEntries(Object.entries(totals).map(([operator,byProduct])=>{const all=[...byProduct].map(([product,minutes])=>({product,minutes})).sort((a,b)=>b.minutes-a.minutes||a.product.localeCompare(b.product));return[operator,{items:all.slice(0,10).map(v=>({...v,minutes:Math.round(v.minutes)})),hasMore:all.length>10}];}));
+ };
  const record=async()=>{const r=await tx.get<ProductionShift>('production-shift',text(input.id,100));check(r&&(visible(r)||confirm(r)),'Shift unavailable.',404);return r;};
  const save=async(r:ProductionShift,action:string,before:any,reason='')=>{r.revision++;r.updatedAt=now();r.history.push({at:r.updatedAt,by:actor,role:manager?'manager':u?.role||'operator',action,reason,recognitionChanged:JSON.stringify([before?.data?.recognition,before?.data?.recognitionPeople])!==JSON.stringify([r.data.recognition,r.data.recognitionPeople]),before,after:{status:r.status,segments:structuredClone(r.segments),readiness:structuredClone(r.readiness),data:structuredClone(r.data),workDate:r.workDate}});await tx.put('production-shift',r.id,r);return visible(r)?{shift:safe(r)}:{readiness:narrow(r)};};
  const newReadiness=(operatorId:string)=>{const a=settings.crewAssignments?.[operatorId]||{};return{status:'waiting_associate',requestedAt:now(),leadId:a.leadId||null,managerId:a.managerId||null};};
@@ -93,10 +98,14 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
   for(const item of input.shifts){check(!seen.has(item.id),'Duplicate shift selection.');seen.add(item.id);const r=await tx.get<ProductionShift>('production-shift',text(item.id,100));check(r&&r.revision===item.revision,'A selected shift changed. Refresh before closeout.',409);check(r.status==='submitted'&&r.segments.every(s=>s.end),'Incomplete or unsubmitted shifts cannot be closed.');records.push(r);}
   const shifts=[];for(const r of records){const before={status:r.status,segments:structuredClone(r.segments),readiness:structuredClone(r.readiness),data:structuredClone(r.data),workDate:r.workDate};r.status='closed';shifts.push((await save(r,'close',before)).shift);}return{shifts};
  }
+ if(route==='production-shift-presence'){
+  check(manager,'Supervisor role required.',403);const from=validDate(input.from||dayOffset(workToday(),-14)),to=validDate(input.to||workToday());check(from<=to,'Invalid date range.');const teams=Array.isArray(input.teams)?input.teams.map((v:any)=>text(v,100)):[];
+  return{shifts:await tx.productionShiftPresence(from,to,teams,input.hideClosed===true)};
+ }
  if(route==='production-shift-list'){
-  const from=validDate(input.from||dayOffset(workToday(),-14)),to=validDate(input.to||workToday());check(from<=to,'Invalid date range.');const shifts=[],readiness=[];
-  for(const r of await tx.list<ProductionShift>('production-shift'))if(r.workDate>=from&&r.workDate<=to&&(!input.teams?.length||input.teams.includes(r.team))){if(visible(r))shifts.push(safe(r));if(r.readiness&&['waiting_associate','waiting_confirmation'].includes(r.readiness.status)&&confirm(r))readiness.push(narrow(r));}
-  return{shifts,readiness,canManage:manager};
+  const from=validDate(input.from||dayOffset(workToday(),-14)),to=validDate(input.to||workToday());check(from<=to,'Invalid date range.');const shifts=[],readiness=[],visibleRecords:ProductionShift[]=[];
+  for(const r of await tx.list<ProductionShift>('production-shift'))if(r.workDate>=from&&r.workDate<=to&&(!input.teams?.length||input.teams.includes(r.team))){if(visible(r)){shifts.push(safe(r));visibleRecords.push(r);}if(r.readiness&&['waiting_associate','waiting_confirmation'].includes(r.readiness.status)&&confirm(r))readiness.push(narrow(r));}
+  return{shifts,readiness,canManage:manager,...(manager?{productHours:productHours(visibleRecords)}:{})};
  }
  const r=await record();
  if(route==='production-shift-detail')return visible(r)?{shift:safe(r)}:{readiness:narrow(r)};
