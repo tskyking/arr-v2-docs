@@ -112,6 +112,33 @@ describe('Manager staged shift queue and hover previews',()=>{
   }finally{await browser.close();}
  },20000);
 
+ browserIt('collapses changed or ended rows and tints only the last touched row',async()=>{
+  const [html,css,stationQr,source]=await Promise.all([file('production.html'),file('production.css'),file('station-qr.js'),file('production.js')]);
+  const body=html.match(/<body>([\s\S]*)<\/body>/)?.[1]||'',products=[{id:'product-1',name:'Product 1',active:true,common:true},{id:'product-2',name:'Product 2',active:true,common:true}];
+  const shifts=[shift(1),shift(2)].map(s=>({...s,canCorrect:true,canManage:true})),actions:string[]=[];
+  const browser=await chromium.launch({headless:true,executablePath:browserExecutable});const page=await browser.newPage({viewport:{width:1280,height:900}});
+  try{
+   await page.route('https://arr.test/v2/production-*',async route=>{const name=route.request().url().split('/').at(-1)!;
+    if(name==='production-catalog')return route.fulfill({json:{user:{id:'manager',username:'manager',role:'manager',forms:['arr'],active:true},operators:shifts.map(s=>({id:s.operator,username:s.username,active:true})),products,forms:[],config:{teams:['Team A'],crewAssignments:{}},capabilities:{operationalManager:true}}});
+    if(name==='production-product-list')return route.fulfill({json:{products}});
+    if(name==='production-shift-presence')return route.fulfill({json:{shifts:shifts.map(({segments,data,formSnapshot,shares,readiness,history,...s})=>s)}});
+    if(name==='production-shift-list')return route.fulfill({json:{shifts,readiness:[],canManage:true,productHours:{}}});
+    if(name==='production-shift-detail'){const input=JSON.parse(route.request().postData()||'{}');return route.fulfill({json:{shift:shifts.find(s=>s.id===input.id)}});}
+    if(name==='production-shift-action'){const input=JSON.parse(route.request().postData()||'{}');actions.push(input.action);const index=shifts.findIndex(s=>s.id===input.id),record=shifts[index],segments=record.segments.map(v=>({...v})),last=segments.at(-1)!;last.end=input.actualTime;
+     if(input.action==='changeover')segments.push({...last,id:`${record.id}-next`,stage:input.assignment.stage,station:input.assignment.stage,product:input.assignment.product,start:input.actualTime,end:null});
+     shifts[index]={...record,revision:record.revision+1,status:input.action==='end'?'submitted':'in_progress',segments};return route.fulfill({json:{shift:shifts[index]}});}
+    if(name==='production-leads')return route.fulfill({json:{leads:[]}});return route.fulfill({json:{}});
+   });
+   await page.route('https://arr.test/',route=>route.fulfill({contentType:'text/html',body:`<style>${css}</style>${body}`}));await page.goto('https://arr.test/');await page.addScriptTag({content:stationQr});await page.addScriptTag({content:source});await expect.poll(()=>page.locator('[data-shift]').count()).toBe(2);
+   const first=page.locator('[data-shift="shift-1"]');await first.click();await expect.poll(()=>first.getAttribute('aria-expanded')).toBe('true');await page.waitForTimeout(1100);
+   await page.getByRole('button',{name:'Change assignment'}).click();await page.locator('[name="stage"]').selectOption({label:'Packaging'});await page.locator('[name="productChoice"]').selectOption({label:'Product 2'});await page.getByLabel(/I understand the instructions/).check();await page.locator('#segment-action [name="reason"]').fill('Manager-assisted assignment update');expect(await page.locator('#segment-action').evaluate((form:any)=>[...form.elements].filter((el:any)=>!el.checkValidity()).map((el:any)=>({name:el.name,type:el.type,value:el.value,required:el.required})))).toEqual([]);await page.getByRole('button',{name:'Change assignment'}).click();
+   await expect.poll(()=>actions).toContain('changeover');await expect.poll(()=>page.locator('[data-shift="shift-1"]').getAttribute('aria-expanded')).toBe('false');expect(await page.locator('[data-shift="shift-1"]').evaluate(node=>node.classList.contains('last-touched-shift'))).toBe(true);expect(await page.locator('#shift-shift-1').isHidden()).toBe(true);
+   const second=page.locator('[data-shift="shift-2"]');await second.click();await expect.poll(()=>second.getAttribute('aria-expanded')).toBe('true');await page.waitForTimeout(1100);await page.getByRole('button',{name:'End shift…'}).click();await page.locator('#segment-action [name="reason"]').fill('Manager-assisted end shift');page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Confirm End Shift'}).click();
+   await expect.poll(()=>page.locator('[data-shift="shift-2"]').getAttribute('aria-expanded')).toBe('false');expect(await page.locator('[data-shift="shift-2"]').evaluate(node=>node.classList.contains('last-touched-shift'))).toBe(true);expect(await page.locator('[data-shift="shift-1"]').evaluate(node=>node.classList.contains('last-touched-shift'))).toBe(false);
+   const touchedColor=await page.locator('[data-shift="shift-2"]').evaluate(node=>getComputedStyle(node).backgroundColor);await page.locator('[data-shift="shift-1"]').hover();await page.waitForTimeout(250);const hoverColor=await page.locator('[data-shift="shift-1"]').evaluate(node=>getComputedStyle(node).backgroundColor);expect(touchedColor).toBe(hoverColor);
+  }finally{await browser.close();}
+ },20000);
+
  browserIt('keeps Manager hover aggregates and timeline previews out of reviewer rows',async()=>{
   const [html,css,stationQr,source]=await Promise.all([file('production.html'),file('production.css'),file('station-qr.js'),file('production.js')]);
   const body=html.match(/<body>([\s\S]*)<\/body>/)?.[1]||'',record=shift(1);const requests:string[]=[];
