@@ -8,8 +8,8 @@ const htmlPath = new URL('../public/production.html', import.meta.url);
 describe('shift queue elapsed-time presentation', () => {
   it('cache-busts the staged Manager queue assets', async () => {
     const html = await readFile(htmlPath, 'utf8');
-    expect(html).toContain('production.css?v=20261020-manager-fast-hover-v1');
-    expect(html).toContain('production.js?v=20261020-manager-fast-hover-v1');
+    expect(html).toContain('production.css?v=20261020-manager-hover-position-v2');
+    expect(html).toContain('production.js?v=20261020-manager-hover-position-v2');
   });
 
   it('shows a live bold shift total beside the crew', async () => {
@@ -26,7 +26,7 @@ describe('shift queue elapsed-time presentation', () => {
     expect(source).toContain("${!v.end?' · · Changed '+esc(age(v.start)):''} · · ${segmentKindLabel(v)}");
     expect(source).toContain("esc(v.stage)+' · · '+esc(v.product)");
     expect(source).toContain("${v.end?esc(timeLabel(v.end)):'Now'} · · ${segmentKindLabel(v)}");
-    expect(source).toContain("'Production'} · <strong class=\"segment-duration\"");
+    expect(source).toContain('${esc(segmentKindName(v))} · <strong class="segment-duration"');
   });
 
   it('bolds Current without bolding Previous', async () => {
