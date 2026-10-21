@@ -33,7 +33,7 @@ describe('shift queue elapsed-time presentation', () => {
       readFile(sourcePath, 'utf8'),
       readFile(stylePath, 'utf8'),
     ]);
-    expect(source).toContain("title==='Current'?'current-segment-row':title==='Previous'?'previous-segment-row':''");
+    expect(source).toContain("current-segment-row${manager?' current-hover-target':''}");
     expect(styles).toContain('.current-segment-row { color: #263c46; font-weight: 600; background: #f2f7f6; border-left: 2px solid #8aafa9; border-radius: 4px; padding: .12rem .35rem; }');
     expect(styles).toContain('.current-segment-row .segment-kind { color: #263c46; }');
     expect(styles).not.toContain('.shift-summary small { background: #f2f7f6; }');

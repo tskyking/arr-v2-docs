@@ -13,7 +13,8 @@ export class WorkspaceStore {
         .query(
           `CREATE TABLE IF NOT EXISTS tschutes_v2_lock(id integer PRIMARY KEY); INSERT INTO tschutes_v2_lock VALUES(1) ON CONFLICT DO NOTHING;
  CREATE TABLE IF NOT EXISTS tschutes_v2_documents(kind text NOT NULL,id text NOT NULL,data jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(kind,id));
- CREATE INDEX IF NOT EXISTS tschutes_v2_created ON tschutes_v2_documents(kind,created_at);`,
+ CREATE INDEX IF NOT EXISTS tschutes_v2_created ON tschutes_v2_documents(kind,created_at);
+ CREATE INDEX IF NOT EXISTS tschutes_v2_production_shift_window ON tschutes_v2_documents ((data->>'workDate'),(data->>'team'),(data->>'status')) WHERE kind='production-shift';`,
         )
         .then(() => {})
         .catch((e) => {
@@ -54,6 +55,22 @@ export class WorkspaceTx {
       [kind],
     );
     return r.rows.map((r) => r.data);
+  }
+  async productionShiftPresence(from: string, to: string, teams: string[], hideClosed: boolean) {
+    const r = await this.db.query(
+      `SELECT jsonb_build_object(
+        'id',id,'revision',data->'revision','operator',data->'operator','username',data->'username',
+        'workDate',data->'workDate','shift',data->'shift','team',data->'team','status',data->'status'
+      ) AS data
+      FROM tschutes_v2_documents
+      WHERE kind='production-shift'
+        AND data->>'workDate' BETWEEN $1 AND $2
+        AND (cardinality($3::text[])=0 OR data->>'team'=ANY($3::text[]))
+        AND ($4::boolean=false OR data->>'status'<>'closed')
+      ORDER BY created_at DESC`,
+      [from, to, teams, hideClosed],
+    );
+    return r.rows.map((row) => row.data);
   }
   async entries(kind: string): Promise<{ key: string; data: any }[]> {
     const result = await this.db.query(
