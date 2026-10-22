@@ -43,6 +43,14 @@ describe('FGI storage and permissions',()=>{
   expect(fallback.operations.map((v:any)=>[v.operation,v.lagDays,v.lagSource])).toEqual([['Packaging',0,'default']]);
   expect(JSON.stringify(out)).not.toContain('username');expect(JSON.stringify(out)).not.toContain('operator');expect(JSON.stringify(out)).not.toContain('Inspection');
  });
+ it('summarizes WIP availability for all visible products in one identity-free request',async()=>{
+  const tx:any=new Tx();await tx.put('production-product','data-product',{id:'data-product',name:'Data Product',aliases:['Data Alias']});await tx.put('production-shift','summary-shift',{id:'summary-shift',revision:1,operator:'person-1',username:'person-1',workDate:'2026-10-11',segments:[{id:'worked',kind:'production',start:'2026-10-11T08:00:00Z',end:'2026-10-11T09:00:00Z',product:'Data Alias',stage:'Packaging',extras:{interruptionMinutes:10}},{id:'zero-net',kind:'production',start:'2026-10-11T09:00:00Z',end:'2026-10-11T10:00:00Z',product:'Empty Product',stage:'Packaging',extras:{interruptionMinutes:60}},{id:'legacy-stage',kind:'production',start:'2026-10-11T10:00:00Z',end:'2026-10-11T10:30:00Z',product:'Empty Product',stage:'Legacy operation'},{id:'case-only',kind:'production',start:'2026-10-11T10:00:00Z',end:'2026-10-11T10:30:00Z',product:'case product',stage:'Packaging'},{id:'training',kind:'training',start:'2026-10-11T10:30:00Z',end:'2026-10-11T11:00:00Z',product:'Empty Product',stage:'Packaging'}]});
+  const out=await productionAllocations(tx,manager,'production-fgi-work-context-summary',{workDate:'2026-10-11',days:3,families:['Data Product','Empty Product']});
+  expect(out).toMatchObject({from:'2026-10-09',to:'2026-10-11',days:3,products:[{family:'Data Product',hasData:true,totalMinutes:50},{family:'Empty Product',hasData:false,totalMinutes:0}]});expect(out.products.every((value:any)=>Object.keys(value).sort().join(',')==='family,hasData,totalMinutes')).toBe(true);expect(JSON.stringify(out)).not.toContain('person-1');
+  const many=await productionAllocations(tx,manager,'production-fgi-work-context-summary',{workDate:'2026-10-11',days:3,families:Array.from({length:101},(_,index)=>`Product ${index}`)});expect(many.products).toHaveLength(101);
+  const caseSensitive=await productionAllocations(tx,manager,'production-fgi-work-context-summary',{workDate:'2026-10-11',days:3,families:['Case Product','case product']});expect(caseSensitive.products).toEqual([{family:'Case Product',hasData:false,totalMinutes:0},{family:'case product',hasData:true,totalMinutes:30}]);
+  await expect(productionAllocations(tx,{...manager,role:'admin'},'production-fgi-work-context-summary',{workDate:'2026-10-11',days:3,families:['Data Product']})).rejects.toThrow('Manager operational role');
+ });
 });
 describe('allocation lifecycle and stale containment',()=>{
  async function setup(){
