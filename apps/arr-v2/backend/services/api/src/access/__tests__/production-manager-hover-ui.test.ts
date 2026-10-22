@@ -104,6 +104,8 @@ describe('Manager staged shift queue and hover previews',()=>{
    await page.waitForTimeout(1100);
    await first.click();
    await expect.poll(()=>first.getAttribute('aria-expanded'),{timeout:3000}).toBe('false');
+   await page.setViewportSize({width:1200,height:300});
+   const last=page.locator('[data-shift="shift-40"]');await last.scrollIntoViewIfNeeded();const footerGap=await page.evaluate(()=>document.querySelector('footer')!.getBoundingClientRect().top-document.querySelector('[data-shift="shift-40"]')!.getBoundingClientRect().bottom);expect(footerGap).toBeGreaterThanOrEqual(120);const lastHours=last.locator('.associate-hours-target'),lastPreview=lastHours.locator('.associate-hours-preview');await lastHours.hover();expect(await lastPreview.isVisible()).toBe(true);const stableScroll=await page.evaluate(()=>scrollY);await page.waitForTimeout(300);expect(await page.evaluate(()=>scrollY)).toBe(stableScroll);
    await page.setViewportSize({width:390,height:844});
    await hoursTarget.hover();
    expect(await hours.isHidden()).toBe(true);
