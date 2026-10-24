@@ -60,7 +60,8 @@ export class WorkspaceTx {
     const r = await this.db.query(
       `SELECT jsonb_build_object(
         'id',id,'revision',data->'revision','operator',data->'operator','username',data->'username',
-        'workDate',data->'workDate','shift',data->'shift','team',data->'team','status',data->'status'
+        'workDate',data->'workDate','shift',data->'shift','team',data->'team','status',data->'status',
+        'queueStart',data->'segments'->0->'start','queueInitialOrderKey',data->'queueInitialOrderKey'
       ) AS data
       FROM tschutes_v2_documents
       WHERE kind='production-shift'

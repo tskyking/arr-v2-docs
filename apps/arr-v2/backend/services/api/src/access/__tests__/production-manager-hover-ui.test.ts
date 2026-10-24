@@ -141,6 +141,27 @@ describe('Manager staged shift queue and hover previews',()=>{
   }finally{await browser.close();}
  },20000);
 
+ browserIt('offers personal one-step ordering only for visible In-progress fictional associates',async()=>{
+  const [html,css,stationQr,source]=await Promise.all([file('production.html'),file('production.css'),file('station-qr.js'),file('production.js')]),body=html.match(/<body>([\s\S]*)<\/body>/)?.[1]||'',shifts=[shift(4),shift(3),{...shift(2),status:'submitted'},shift(1)],moves:any[]=[];
+  const operators=shifts.map((s:any)=>({id:s.operator,username:s.username,active:true,profile:{firstName:'Person',lastName:s.operator.split('-')[1],email:`${s.operator}@demo.com`}}));
+  const browser=await chromium.launch({headless:true,executablePath:browserExecutable}),page=await browser.newPage({viewport:{width:1280,height:900}});
+  try{
+   await page.route('https://arr.test/v2/production-*',async route=>{const name=route.request().url().split('/').at(-1)!;
+    if(name==='production-catalog')return route.fulfill({json:{user:{id:'manager',username:'manager',role:'manager',forms:['arr'],active:true},operators,products:[],forms:[],config:{teams:['Team A'],crewAssignments:{}},capabilities:{operationalManager:true}}});
+    if(name==='production-product-list')return route.fulfill({json:{products:[]}});
+    if(name==='production-shift-presence')return route.fulfill({json:{shifts:shifts.map(({segments,data,formSnapshot,shares,readiness,history,...s}:any)=>s)}});
+    if(name==='production-shift-list')return route.fulfill({json:{shifts,readiness:[],canManage:true,productHours:{}}});
+    if(name==='production-shift-quick-status')return route.fulfill({json:{day:{eligible:0,enabled:false},swing:{eligible:0,enabled:false}}});
+    if(name==='production-shift-order-move'){const input=JSON.parse(route.request().postData()||'{}');moves.push(input);const order=[...input.visibleOperators],at=order.indexOf(input.operator),next=input.direction==='up'?at-1:at+1;[order[at],order[next]]=[order[next],order[at]];return route.fulfill({json:{orderedOperators:order}});}
+    return route.fulfill({json:{}});
+   });
+   await page.route('https://arr.test/',route=>route.fulfill({contentType:'text/html',body:`<style>${css}</style>${body}`}));await page.goto('https://arr.test/');await page.addScriptTag({content:stationQr});await page.addScriptTag({content:source});await expect.poll(()=>page.locator('[data-shift-order]').count()).toBe(6);
+   expect(await page.locator('[data-shift="shift-2"]').locator('xpath=ancestor::article[1]').locator('[data-shift-order]').count()).toBe(0);expect(await page.getByRole('button',{name:'Move Person 4 (person-4) up one position'}).isDisabled()).toBe(true);expect(await page.getByRole('button',{name:'Move Person 1 (person-1) down one position'}).isDisabled()).toBe(true);
+   await expect.poll(()=>page.evaluate(()=>eval('S.busy'))).toBe(false);await page.evaluate(()=>eval('X.dirty=true'));page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Move Person 1 (person-1) up one position'}).click();await expect.poll(()=>page.evaluate(()=>eval('S.busy'))).toBe(false);expect(moves).toHaveLength(0);page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Move Person 1 (person-1) up one position'}).click();await expect.poll(()=>moves.length).toBe(1);expect(moves[0]).toMatchObject({workDate:'2026-10-20',shift:'day',operator:'person-1',direction:'up',visibleOperators:['person-4','person-3','person-1']});await expect.poll(()=>page.locator('[data-shift]').evaluateAll(nodes=>nodes.map((node:any)=>node.dataset.shift))).toEqual(['shift-4','shift-1','shift-2','shift-3']);expect(await page.locator('[data-shift="shift-1"]').getAttribute('aria-expanded')).toBe('false');expect(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label'))).toBe('Move Person 1 (person-1) up one position');
+   await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+  }finally{await browser.close();}
+ },15000);
+
  browserIt('keeps Manager hover aggregates and timeline previews out of reviewer rows',async()=>{
   const [html,css,stationQr,source]=await Promise.all([file('production.html'),file('production.css'),file('station-qr.js'),file('production.js')]);
   const body=html.match(/<body>([\s\S]*)<\/body>/)?.[1]||'',record=shift(1);const requests:string[]=[];
