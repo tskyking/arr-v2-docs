@@ -43,10 +43,24 @@ async function addDemoAssociateProfiles(tx:WorkspaceTx) {
  }
  await tx.put('production-migration',migration,{completedAt:now(),associateCount:30});
 }
+/** Approved routing rollout: expose eligible staff choices and give tim-mgr full Production scope. */
+export async function ensureProductionRoutingStaff(tx:WorkspaceTx) {
+ const migration='multi-staff-routing-tim-manager-v1';
+ if(await tx.get('production-migration',migration))return;
+ const staff=await tx.list<User>('user'),tim=staff.find(v=>v.username==='tim-mgr'&&v.active&&v.role==='manager');
+ if(!tim)return;
+ const enabled:string[]=[];
+ for(const person of staff)if(person.active&&['manager','lead','reviewer'].includes(person.role)&&!person.forms.includes('arr')){await tx.put('user',person.id,{...person,forms:[...person.forms,'arr']});enabled.push(person.username);}
+ const prior=await tx.get('production-settings','main'),teams=prior.teams||['Team A'],crewAssignments:Record<string,any>={...prior.crewAssignments};
+ const associates=(await tx.list<any>('production-operator')).filter(v=>v.active!==false);
+ for(const associate of associates){const value=crewAssignments[associate.id]||{},managerIds=[...new Set([...(Array.isArray(value.managerIds)?value.managerIds:[]),...(value.managerId?[value.managerId]:[]),tim.id])],leadIds=[...new Set([...(Array.isArray(value.leadIds)?value.leadIds:[]),...(value.leadId?[value.leadId]:[])])],team=teams.includes(value.team)?value.team:teams.includes(associate.team)?associate.team:teams[0];const normalized={...value,team,managerIds,leadIds};delete normalized.managerId;delete normalized.leadId;crewAssignments[associate.id]=normalized;}
+ const settings={...prior,crewAssignments,revision:(prior.revision||1)+1},at=now();await tx.put('production-settings','main',settings);const event=id();await tx.put('production-event',event,{id:event,at,by:'approved-routing-release',action:'Production routing staff enabled and tim-mgr assigned to all associates',enabledStaff:enabled,associateCount:associates.length,beforeRevision:prior.revision||1,afterRevision:settings.revision});await tx.put('production-migration',migration,{completedAt:at,timManagerId:tim.id,enabledStaff:enabled,associateCount:associates.length,settingsRevision:settings.revision});
+}
 export async function production(tx:WorkspaceTx,u:User|undefined,route:string,input:any,operatorToken:string,photo?:string|null):Promise<any> {
  await seed(tx);
  await expandDemoAssociates(tx);
  await addDemoAssociateProfiles(tx);
+ await ensureProductionRoutingStaff(tx);
  await seedProducts(tx);
  await ensureProductionForms(tx);
  await simplifyProductionARR(tx);
