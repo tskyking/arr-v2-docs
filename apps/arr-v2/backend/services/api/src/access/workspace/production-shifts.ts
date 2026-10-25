@@ -12,6 +12,7 @@ type QuickStartLock={token:string;managerId:string;managerUsername:string;workDa
 type ShiftOrder={managerId:string;workDate:string;shift:string;operators:string[];updatedAt:string};
 const fictionalAssociate=/^person-(?:[1-9]|[12]\d|30)$/;
 const movableAssociate=/^person-\d+$/;
+const TEST_C_REASON='This is a +2hour shift of steps for this associate for data collection during testing of other functions - not actual time worked on this station by this employee';
 const stamp=(v:any)=>{check(typeof v==='string'&&/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v)),'Enter an actual date and time including time zone.');check(Date.parse(v)<=Date.now()+300000,'Actual work time cannot be in the future.');validDate(v.slice(0,10));return new Date(v).toISOString();};
 const count=(v:any,label='Gate Passes'):number|null=>{if(v===undefined||v===null||v==='')return null;check(typeof v==='number'&&Number.isSafeInteger(v)&&v>=0,`${label} must be a nonnegative whole number or left blank.`);return v;};
 export function shiftWorkDate(at:string,cutoff=3){const d=new Date(at);const date=workToday(d);const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:productionConfig.timezone,hour:'2-digit',hourCycle:'h23'}).format(d));return hour<cutoff?dayOffset(date,-1):date;}
@@ -182,6 +183,9 @@ export async function shiftRoutes(tx:WorkspaceTx,u:User|undefined,o:Operator|und
  if(action==='submit'){check(correct(r)||own(r)&&['in_progress','needs_attention'].includes(r.status),'Correction permission required.',403);timeline(r.segments,true);r.status='submitted';return save(r,action,before,text(input.reason||'',1000));}
  if(action==='needs_attention'){check(manager,'Supervisor role required.',403);check(r.status!=='closed','Reopen this shift first.');r.status='needs_attention';return save(r,action,before,text(input.reason||'',1000));}
  if(action==='readiness-ready'){check(own(r),'Associate confirmation required.',403);check(r.readiness?.status==='waiting_associate','No pending preparation.');r.readiness.status='waiting_confirmation';r.readiness.associateConfirmedAt=now();return save(r,action,before);}
+ if(action==='test-c-plus-two'){
+  check(supervisorAccess(r.operator),'Assigned Supervisor access required.',403);check(r.status==='in_progress','Test C +2 requires an In-progress shift.');const last=r.segments.at(-1);check(last&&!last.end&&last.kind==='production'&&last.product&&productionConfig.stages.includes(last.stage),'Test C +2 requires a current production station.');const boundary=new Date(Date.parse(last.start)+2*60*60*1000);check(Number.isFinite(boundary.getTime())&&Date.now()>=boundary.getTime(),'The current station must have at least two hours elapsed.');const index=productionConfig.stages.indexOf(last.stage),nextStage=productionConfig.stages[(index+1)%productionConfig.stages.length],at=boundary.toISOString();last.end=at;r.segments.push({id:id(),kind:'production',start:at,end:null,stage:nextStage,station:nextStage,product:last.product,...(last.productId?{productId:last.productId}:{}),reportedMoves:null,sopReadySource:'demo_preselected'});r.readiness=null;timeline(r.segments,false);return save(r,action,before,TEST_C_REASON);
+ }
  check(correct(r)||own(r)&&['in_progress','needs_attention'].includes(r.status),'Correction permission required.',403);check(r.status!=='closed','Reopen this shift before making corrections.',409);
  const reason=text(input.reason||'',1000);if(u||action==='correct')check(reason,'Enter a brief correction reason.');
  if(action==='segment-counts'){
