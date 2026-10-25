@@ -210,7 +210,55 @@ describe('continuous production shifts',()=>{
    const result=await call('production-shift-quick-confirm',{token:preview.token},manager);expect(result.created).toEqual([]);expect(result.skipped).toEqual([{username:'person-7',reason:'The associate account is no longer active or eligible.'}]);
   }finally{vi.useRealTimers();}
  });
- it('keeps a daily default order and saves a personal Manager-only in-progress sequence',async()=>{
+ it('honors quick-start exclusions and returns them only as the confirming Manager’s gray queue placeholders',async()=>{
+ vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-02T18:00:00Z'));
+ try{
+  await tx.put('production-settings','main',{teams:['Team A'],crewAssignments:{'person-1':{team:'Team A',managerIds:['manager','manager-two']},'person-2':{team:'Team A',managerIds:['manager','manager-two']}}});
+  const form=await tx.get('production-form','arr');
+  for(const operator of ['person-1','person-2']){await tx.put('production-operator',operator,{id:operator,username:operator,active:true,profile:{firstName:operator==='person-1'?'Amy':'Zoe',lastName:'Demo'}});await tx.put('production-shift',`source-${operator}`,{id:`source-${operator}`,operator,username:operator,workDate:'2026-10-01',shift:'day',team:'Team A',status:'closed',revision:1,segments:[{id:`segment-${operator}`,kind:'production',start:'2026-10-01T12:00:00.000Z',end:'2026-10-01T22:30:00.000Z',stage:'Packaging',station:'P1',product:'Sleeves',productId:'sleeves',reportedMoves:null}],data:{},formSnapshot:form,createdAt:'2026-10-01T12:00:00.000Z',updatedAt:'2026-10-01T22:30:00.000Z',shares:{},readiness:null,history:[]});}
+  const preview=await call('production-shift-quick-preview',{workDate:'2026-10-02',shift:'day'},manager);await expect(call('production-shift-quick-close-preview',{workDate:'2026-10-02',shift:'day'},managerTwo)).rejects.toThrow('bulk preview');const result=await call('production-shift-quick-confirm',{token:preview.token,excludedOperators:['person-2']},manager);
+  expect(result.created.map((v:any)=>v.operator)).toEqual(['person-1']);expect(result.excluded.map((v:any)=>v.operator)).toEqual(['person-2']);
+  const own=await call('production-shift-list',{from:'2026-09-20',to:'2026-10-02'},manager),otherView=await call('production-shift-list',{from:'2026-09-20',to:'2026-10-02'},managerTwo);
+  expect(own.quickStartExcluded).toEqual([{operator:'person-2',username:'person-2',workDate:'2026-10-02',shift:'day',team:'Team A'}]);expect(otherView.quickStartExcluded).toEqual([]);
+  const manual=structuredClone(result.created[0]);manual.id='manual-person-2';manual.operator='person-2';manual.username='person-2';manual.team='Team B';manual.segments[0].id='manual-segment';await tx.put('production-shift',manual.id,manual);
+  const teamAView=await call('production-shift-list',{from:'2026-09-20',to:'2026-10-02',teams:['Team A']},manager);expect(teamAView.shifts.filter((v:any)=>v.workDate==='2026-10-02').map((v:any)=>v.operator)).toEqual(['person-1']);expect(teamAView.quickStartExcluded).toEqual([]);
+ }finally{vi.useRealTimers();}
+});
+it('previews and atomically bulk-closes included Day shifts at 3:30pm while excluded shifts remain open',async()=>{
+ vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-02T18:00:00Z'));
+ try{
+  await tx.put('production-settings','main',{teams:['Team A'],crewAssignments:{'person-1':{team:'Team A',managerIds:['manager']},'person-2':{team:'Team A',managerIds:['manager']},'person-3':{team:'Team A',managerIds:['manager']}}});
+  for(const operator of ['person-1','person-2','person-3'])await tx.put('production-operator',operator,{id:operator,username:operator,active:true});
+  const first=await start(),second=(await call('production-shift-start',{workDate:'2026-10-01',shift:'day',team:'Team A',actualTime:at(8),assignment:assigned,data:{sopClarity:10}},undefined,other)).shift;
+  await tx.put('production-shift','third',{...structuredClone(first),id:'third',operator:'person-3',username:'person-3',segments:[{...structuredClone(first.segments[0]),id:'third-segment'}]});
+  const submitted=(await action(second,'end',{actualTime:at(12)},undefined,other)).shift;
+  const status=await call('production-shift-quick-status',{workDate:'2026-10-01'},manager);expect(status.day).toMatchObject({closeEligible:3,closeEnabled:true});
+  const preview=await call('production-shift-quick-close-preview',{workDate:'2026-10-01',shift:'day'},manager);expect(preview.closes.map((v:any)=>v.username)).toEqual(['person-1','person-2','person-3']);expect(preview.endTime).toBe('2026-10-01T22:30:00.000Z');await expect(call('production-shift-quick-preview',{workDate:'2026-10-01',shift:'day'},managerTwo)).rejects.toThrow('bulk preview');
+  const result=await call('production-shift-quick-close-confirm',{token:preview.token,excludedOperators:['person-3']},manager);expect(result.closed.map((v:any)=>v.operator)).toEqual(['person-1','person-2']);expect(result.excluded.map((v:any)=>v.operator)).toEqual(['person-3']);
+  const closedFirst=await tx.get('production-shift',first.id),closedSecond=await tx.get('production-shift',submitted.id),openThird=await tx.get('production-shift','third');
+  expect(closedFirst.status).toBe('closed');expect(closedFirst.segments.at(-1).end).toBe('2026-10-01T22:30:00.000Z');expect(closedSecond.status).toBe('closed');expect(closedSecond.segments.at(-1).end).toBe(at(12).replace('Z','.000Z'));expect(openThird.status).toBe('in_progress');expect(openThird.segments.at(-1).end).toBeNull();
+  expect(closedFirst.history.at(-1)).toMatchObject({by:'manager',action:'quick-close',reason:'Test close of entire day shift on 2026-10-01 at 3:30pm'});
+ }finally{vi.useRealTimers();}
+});
+it('uses the next-day Pacific 2am boundary for Swing bulk close and rejects stale previews before any write',async()=>{
+ vi.useFakeTimers();vi.setSystemTime(new Date('2026-11-02T09:59:59Z'));
+ try{
+  await tx.put('production-settings','main',{teams:['Team A'],crewAssignments:{'person-1':{team:'Team A',managerIds:['manager']},'person-2':{team:'Team A',managerIds:['manager']}}});
+  let first=await start({workDate:'2026-11-01',shift:'swing',actualTime:'2026-11-01T23:00:00Z'});const second=structuredClone(first);second.id='swing-two';second.operator='person-2';second.username='person-2';second.segments[0].id='swing-two-segment';await tx.put('production-shift',second.id,second);
+  expect((await call('production-shift-quick-status',{workDate:'2026-11-01'},manager)).swing).toMatchObject({closeEligible:2,closeEnabled:false,closeTimeReached:false});await expect(call('production-shift-quick-close-preview',{workDate:'2026-11-01',shift:'swing'},manager)).rejects.toThrow('has not arrived');vi.setSystemTime(new Date('2026-11-02T10:00:00Z'));
+  const cancellable=await call('production-shift-quick-close-preview',{workDate:'2026-11-01',shift:'swing'},manager);expect(cancellable.endTime).toBe('2026-11-02T10:00:00.000Z');expect(await call('production-shift-quick-close-cancel',{token:cancellable.token},manager)).toEqual({cancelled:true});const preview=await call('production-shift-quick-close-preview',{workDate:'2026-11-01',shift:'swing'},manager);vi.setSystemTime(new Date('2026-11-02T09:59:59Z'));await expect(call('production-shift-quick-close-confirm',{token:preview.token,excludedOperators:[]},manager)).rejects.toThrow('has not arrived');vi.setSystemTime(new Date('2026-11-02T10:00:00Z'));
+  first=(await action(first,'changeover',{actualTime:'2026-11-02T01:00:00Z',assignment:{...assigned,stage:'Packaging'},reason:'Changed after preview'},manager)).shift;
+  await expect(call('production-shift-quick-close-confirm',{token:preview.token,excludedOperators:[]},manager)).rejects.toThrow('changed after the preview');expect((await tx.get('production-shift','swing-two')).status).toBe('in_progress');
+ }finally{vi.useRealTimers();}
+});
+it('resolves Pacific Swing close boundaries across spring-forward and fall-back transitions',async()=>{
+ vi.useFakeTimers();
+ try{
+  vi.setSystemTime(new Date('2026-03-08T09:59:59Z'));expect((await call('production-shift-quick-status',{workDate:'2026-03-07'},manager)).swing.closeTimeReached).toBe(false);vi.setSystemTime(new Date('2026-03-08T10:00:00Z'));expect((await call('production-shift-quick-status',{workDate:'2026-03-07'},manager)).swing.closeTimeReached).toBe(true);
+  vi.setSystemTime(new Date('2026-11-01T09:59:59Z'));expect((await call('production-shift-quick-status',{workDate:'2026-10-31'},manager)).swing.closeTimeReached).toBe(false);vi.setSystemTime(new Date('2026-11-01T10:00:00Z'));expect((await call('production-shift-quick-status',{workDate:'2026-10-31'},manager)).swing.closeTimeReached).toBe(true);
+ }finally{vi.useRealTimers();}
+});
+it('keeps a daily default order and saves a personal Manager-only in-progress sequence',async()=>{
   vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-02T18:00:00Z'));
   try{
    await tx.put('production-settings','main',{teams:['Team A'],crewAssignments:Object.fromEntries(['person-1','person-2','person-3','person-20','person-31'].map(operator=>[operator,{team:'Team A',managerIds:['manager','manager-two']}]))});const form=await tx.get('production-form','arr'),source=(operator:string)=>({id:`source-${operator}`,operator,username:operator,workDate:'2026-10-01',shift:'day',team:'Team A',status:'closed',revision:1,segments:[{id:`source-segment-${operator}`,kind:'production',start:'2026-10-01T12:00:00.000Z',end:'2026-10-01T20:00:00.000Z',stage:'Packaging',station:'P1',product:'Sleeves',productId:'sleeves',reportedMoves:null}],data:{},formSnapshot:form,createdAt:'2026-10-01T12:00:00.000Z',updatedAt:'2026-10-01T20:00:00.000Z',shares:{},readiness:null,history:[]});
