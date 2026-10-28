@@ -12,7 +12,7 @@ export function calculateOperationTargets(fgi:number,profile:ProductOperationPro
  return out;
 }
 export const FGI_BASE = [
- ['Compression sleeves',5040],['Disposable pulse-ox sensors',2520],['ECG leads/patient cables',1400],['Tourniquet cuffs',728],['Air-transfer products',672],['Manifolds',672],['Arthroscopic shaver blades',616],['Bits/burs/blades',560],['Laryngoscope blades',392],['Trocars/cannulas',364],['Harmonic scalpels/shears',252],['LigaSure/vessel sealers',224],['Ablation devices',168],['Suture passers/retrievers',168],['Reusable pulse-ox sensors',112],['EP devices/diagnostic catheters',84],['Shaver handpieces/accessories',28]
+ ['Disposable pulse-ox sensors',3220],['Manifolds',2520],['Compression sleeves',2380],['Air-transfer products',1820],['ECG leads/patient cables',980],['Tourniquet cuffs',840],['Arthroscopic shaver blades',465],['Bits/burs/blades',423],['Laryngoscope blades',296],['Trocars/cannulas',275],['Harmonic scalpels/shears',190],['LigaSure/vessel sealers',169],['Ablation devices',127],['Suture passers/retrievers',127],['Reusable pulse-ox sensors',84],['EP devices/diagnostic catheters',63],['Shaver handpieces/accessories',21]
 ] as const;
 type Source={sourceId:string;sourceRevision:number;operator:string;username:string;minutes:number;grossMinutes?:number;downtimeMinutes?:number;reportedMoves:number|null};
 export type AllocationRow={operator:string;username:string;minutes:number;reportedMoves:number|null;partialReported:boolean;allocated:number|null};
