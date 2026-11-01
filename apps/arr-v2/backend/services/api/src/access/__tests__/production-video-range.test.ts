@@ -51,6 +51,25 @@ describe('ARR introduction video delivery', () => {
     expect(Buffer.from(await range.arrayBuffer())).toEqual(source.subarray(0, 2));
   });
 
+  it.each([
+    'air-transfer-mattress-refurbishment-simulation-presentation-marin-2026-10-31.mp4',
+    'air-transfer-mattress-refurbishment-simulation-presentation-elevenlabs-roger-2026-10-31.mp4',
+  ])('serves banner presentation %s with metadata and byte ranges', async (presentation) => {
+    const source = await readFile(new URL(`../public/${presentation}`, import.meta.url));
+    const url = `${assetRoot}/${presentation}`;
+
+    const head = await fetch(url, { method: 'HEAD' });
+    expect(head.status).toBe(200);
+    expect(head.headers.get('content-type')).toBe('video/mp4');
+    expect(head.headers.get('accept-ranges')).toBe('bytes');
+    expect(head.headers.get('content-length')).toBe(String(source.length));
+
+    const range = await fetch(url, { headers: { Range: 'bytes=0-1' } });
+    expect(range.status).toBe(206);
+    expect(range.headers.get('content-range')).toBe(`bytes 0-1/${source.length}`);
+    expect(Buffer.from(await range.arrayBuffer())).toEqual(source.subarray(0, 2));
+  });
+
   it('accepts case-insensitive byte units and open-ended or suffix ranges', async () => {
     const source = await readFile(sourceUrl);
     for (const [header, expectedStart, expectedEnd] of [
