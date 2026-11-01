@@ -48,6 +48,8 @@ for (const [file, type] of [
   ["vendor/jsQR.js", "application/javascript; charset=utf-8"],
   ["production.css", "text/css; charset=utf-8"],
   ["arr-concept-overview-final-marin-2026-10-14.mp4", "video/mp4"],
+  ["air-transfer-mattress-refurbishment-simulation-presentation-marin-2026-10-31.mp4", "video/mp4"],
+  ["air-transfer-mattress-refurbishment-simulation-presentation-elevenlabs-roger-2026-10-31.mp4", "video/mp4"],
   ["tickets.js", "application/javascript; charset=utf-8"],
   ["workspace.js", "application/javascript; charset=utf-8"],
   ["workspace.css", "text/css; charset=utf-8"],
