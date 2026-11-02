@@ -194,7 +194,24 @@ describe('continuous production shifts',()=>{
  }finally{vi.useRealTimers();}
 });
 it('limits quick-start preview and confirmation to currently assigned associates',async()=>{vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-02T18:00:00Z'));try{await tx.put('production-settings','main',{teams:['Team A'],crewAssignments:{'person-8':{team:'Team A',managerIds:['manager']},'person-9':{team:'Team A',managerIds:['manager-two']}}});const form=await tx.get('production-form','arr'),source=(operator:string)=>({id:`source-${operator}`,operator,username:operator,workDate:'2026-10-01',shift:'day',team:'Team A',status:'closed',revision:1,segments:[{id:`segment-${operator}`,kind:'production',start:'2026-10-01T12:00:00.000Z',end:'2026-10-01T20:00:00.000Z',stage:'Packaging',station:'P1',product:'Sleeves',productId:'sleeves',reportedMoves:null}],data:{},formSnapshot:form,createdAt:'2026-10-01T12:00:00.000Z',updatedAt:'2026-10-01T20:00:00.000Z',shares:{},readiness:null,history:[]});for(const operator of ['person-8','person-9']){await tx.put('production-operator',operator,{id:operator,username:operator,active:true});await tx.put('production-shift',`source-${operator}`,source(operator));}const preview=await call('production-shift-quick-preview',{workDate:'2026-10-02',shift:'day'},manager);expect(preview.starts.map((v:any)=>v.username)).toEqual(['person-8']);await tx.put('production-settings','main',{teams:['Team A'],crewAssignments:{'person-8':{team:'Team A',managerIds:[]},'person-9':{team:'Team A',managerIds:['manager-two']}}});const result=await call('production-shift-quick-confirm',{token:preview.token},manager);expect(result.created).toEqual([]);expect(result.skipped).toEqual([{username:'person-8',reason:'The associate is no longer assigned to this Supervisor.'}]);}finally{vi.useRealTimers();}});
- it('uses the exact Pacific 5am start across both DST transition dates',async()=>{
+ it('uses the latest prior worked matching shift when the preceding calendar day has no records',async()=>{
+ vi.useFakeTimers();vi.setSystemTime(new Date('2026-11-02T18:00:00Z'));
+ try{
+  await tx.put('production-operator','person-1',{...op,active:true});await tx.put('production-operator','person-8',{id:'person-8',username:'person-8',active:true});
+  const form=await tx.get('production-form','arr'),source={id:'weekend-source',operator:'person-1',username:'person-1',workDate:'2026-10-31',shift:'day',team:'Team A',status:'closed',revision:1,segments:[{id:'weekend-segment',kind:'production',start:'2026-10-31T12:00:00.000Z',end:'2026-10-31T20:00:00.000Z',...assigned,reportedMoves:null}],data:{},formSnapshot:form,createdAt:'2026-10-31T12:00:00.000Z',updatedAt:'2026-10-31T20:00:00.000Z',shares:{},readiness:null,history:[]};
+  await tx.put('production-shift',source.id,source);
+  await tx.put('production-shift','older-day-source',{...source,id:'older-day-source',workDate:'2026-10-30',updatedAt:'2026-10-30T20:00:00.000Z'});
+  await tx.put('production-shift','sunday-swing-source',{...source,id:'sunday-swing-source',workDate:'2026-11-01',shift:'swing',updatedAt:'2026-11-01T20:00:00.000Z'});
+  await tx.put('production-shift','sunday-unassigned-day-source',{...source,id:'sunday-unassigned-day-source',operator:'person-8',username:'person-8',workDate:'2026-11-01',updatedAt:'2026-11-01T20:00:00.000Z'});
+  const status=await call('production-shift-quick-status',{workDate:'2026-11-02'},manager);
+  expect(status.day).toMatchObject({enabled:true,eligible:1});
+  const preview=await call('production-shift-quick-preview',{workDate:'2026-11-02',shift:'day'},manager);
+  expect(preview.sourceDate).toBe('2026-10-31');expect(preview.starts.map((value:any)=>value.username)).toEqual(['person-1']);
+  const result=await call('production-shift-quick-confirm',{token:preview.token},manager);
+  expect(result.created).toHaveLength(1);expect(result.created[0]).toMatchObject({operator:'person-1',workDate:'2026-11-02',shift:'day',status:'in_progress'});
+ }finally{vi.useRealTimers();}
+});
+it('uses the exact Pacific 5am start across both DST transition dates',async()=>{
   vi.useFakeTimers();vi.setSystemTime(new Date('2026-11-02T20:00:00Z'));
   try{
    await tx.put('production-settings','main',{teams:['Team A'],crewAssignments:{'person-4':{team:'Team A',managerIds:['manager']},'person-5':{team:'Team A',managerIds:['manager']}}});
