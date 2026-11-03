@@ -88,7 +88,7 @@ describe('lag-adjusted FGI allocation board UI', () => {
   it('does not permit allocation without eligible time and preserves draft warnings after an FGI save', async () => {
     const source = await readFile(jsPath, 'utf8');
     expect(source).toContain("calculated&&operation.canAllocate?'':'disabled'");
-    expect(source).toContain('X.dirty=X.fgiDirty===true||allocationDirty().size>0');
+    expect(source).toContain('X.dirty=X.fgiDirty===true||X.fgiRateDirty||allocationDirty().size>0');
   });
 
   it('keeps existing drafts and range state until a replacement board request succeeds', async () => {
@@ -103,7 +103,8 @@ describe('lag-adjusted FGI allocation board UI', () => {
     const source = await readFile(jsPath, 'utf8');
     expect(source).toContain('X.fgiDirty=true');
     expect(source).toContain('X.fgiDirty=false');
-    expect(source).toContain("X.dirty=X.fgiDirty===true||allocationDirty().size>0");
+    expect(source).toContain("X.dirty=X.fgiDirty===true||X.fgiRateDirty||allocationDirty().size>0");
+    expect(source).toContain('if(rateDraftValues.get(family)===draftAtSave)');
   });
 
   it('surfaces a stale saved run in the initial product summary', async () => {
