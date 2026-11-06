@@ -23,6 +23,17 @@ import { AccessStore, productionStore } from "./store.js";
 import credentials from "./credentials.json";
 import { WorkspaceStore } from "./workspace/store.js";
 import { WorkspaceService } from "./workspace/service.js";
+import {
+  MODELS_ORIGIN,
+  MODELS_STATE_COOKIE,
+  authorizeModels,
+  createStaffSessionFromModels,
+  exchangeModelsCode,
+  modelsSharedSecret,
+  newModelsState,
+  parseModelsIdentity,
+  verifyModelsBearer,
+} from "./workspace/models-sso.js";
 import { deliverMail } from "./workspace/mail.js";
 
 const derive = promisify(scrypt);
@@ -147,13 +158,20 @@ async function cleanPhoto(input: unknown): Promise<string | null> {
   }
 }
 function token(req: IncomingMessage) {
+  return cookieValue(req, COOKIE);
+}
+function cookieValue(req: IncomingMessage, name: string) {
   return (
     req.headers.cookie
       ?.split(";")
       .map((v) => v.trim())
-      .find((v) => v.startsWith(COOKIE + "="))
-      ?.slice(COOKIE.length + 1) ?? ""
+      .find((v) => v.startsWith(name + "="))
+      ?.slice(name.length + 1) ?? ""
   );
+}
+function redirect(res: ServerResponse, location: string) {
+  res.writeHead(302, { Location: location });
+  res.end();
 }
 function safeRecord(record: Record<string, unknown>) {
   const { receiptHash: _receipt, photo, ...rest } = record;
@@ -262,6 +280,66 @@ export function createAccessHandler(
         await store.cleanup();
         lastCleanup = Date.now();
       }
+      const requestUrl = new URL(req.url ?? path, "http://arr.local");
+      if (workspaceStore && suffix === "sso/models/start" && method === "GET") {
+        const state = newModelsState();
+        const destination = new URL("/sso/arr/authorize", MODELS_ORIGIN);
+        destination.searchParams.set("state", state);
+        res.setHeader(
+          "Set-Cookie",
+          `${MODELS_STATE_COOKIE}=${state}; HttpOnly; SameSite=Lax; Path=/api/access-demo; Max-Age=60${local ? "" : "; Secure"}`,
+        );
+        redirect(res, destination.toString());
+        return true;
+      }
+      if (workspaceStore && suffix === "sso/models/authorize" && method === "GET") {
+        const result = await authorizeModels(
+          workspaceStore,
+          cookieValue(req, "tschutes_workspace"),
+          requestUrl.searchParams.get("state"),
+        );
+        const destination = new URL("/sso/arr/callback", MODELS_ORIGIN);
+        destination.searchParams.set("code", result.code);
+        destination.searchParams.set("state", result.state);
+        redirect(res, destination.toString());
+        return true;
+      }
+      if (workspaceStore && suffix === "sso/models/exchange" && method === "POST") {
+        verifyModelsBearer(
+          typeof req.headers.authorization === "string" ? req.headers.authorization : undefined,
+        );
+        json(res, 200, await exchangeModelsCode(workspaceStore, await body(req)));
+        return true;
+      }
+      if (workspaceStore && suffix === "sso/models/callback" && method === "GET") {
+        const state = requestUrl.searchParams.get("state") ?? "";
+        const code = requestUrl.searchParams.get("code") ?? "";
+        if (!state || !code || cookieValue(req, MODELS_STATE_COOKIE) !== state)
+          throw new AccessError(401, "Shared sign-in state is invalid or expired.");
+        const modelsResponse = await fetch(`${MODELS_ORIGIN}/sso/arr/exchange`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${modelsSharedSecret()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ code, state }),
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!modelsResponse.ok)
+          throw new AccessError(
+            modelsResponse.status === 403 ? 403 : 401,
+            "Models shared sign-in was rejected.",
+          );
+        const identity = parseModelsIdentity(await modelsResponse.json());
+        const session = await createStaffSessionFromModels(workspaceStore, identity);
+        const secure = local ? "" : "; Secure";
+        res.setHeader("Set-Cookie", [
+          `tschutes_workspace=${session}; HttpOnly; SameSite=Lax; Path=/api/access-demo; Max-Age=14400${secure}`,
+          `${MODELS_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/access-demo; Max-Age=0${secure}`,
+        ]);
+        redirect(res, "production.html");
+        return true;
+      }
       if (["POST", "PATCH", "DELETE"].includes(method ?? "")) {
         // JSON plus a required custom header prevents cross-origin simple-form submission.
         if (req.headers["x-arr-request"] !== "1")
@@ -335,7 +413,7 @@ export function createAccessHandler(
           const value = route === "login" ? result.token : "";
           res.setHeader(
             "Set-Cookie",
-            `tschutes_workspace=${value}; HttpOnly; SameSite=Strict; Path=/api/access-demo; Max-Age=${value ? 14400 : 0}${local ? "" : "; Secure"}`,
+            `tschutes_workspace=${value}; HttpOnly; SameSite=Lax; Path=/api/access-demo; Max-Age=${value ? 14400 : 0}${local ? "" : "; Secure"}`,
           );
           delete result.token;
         }
