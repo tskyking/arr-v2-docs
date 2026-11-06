@@ -1,12 +1,13 @@
 import { timingSafeEqual } from 'node:crypto';
 import { AccessError } from '../domain.js';
 import { WorkspaceStore, type WorkspaceTx } from './store.js';
-import { check, now, secret, sha256, type User } from './model.js';
+import { check, hashPassword, now, secret, sha256, verifyPassword, type User } from './model.js';
 
 export const MODELS_ORIGIN = 'https://models.arrweb.com';
 export const MODELS_STATE_COOKIE = 'models_sso_state';
 const ALLOWED_ROLES = new Set(['manager', 'admin', 'owner']);
 const CODE_LIFETIME_MS = 60_000;
+const DUMMY_PASSWORD = hashPassword('models-credential-timing-placeholder');
 
 type ModelsIdentity = Pick<User, 'id' | 'username' | 'role' | 'generation'>;
 type StoredCode = { user: string; state: string; generation: number; expires: string };
@@ -23,17 +24,48 @@ function opaque(value: unknown, label: string) {
 
 function configuredSecret() {
   const value = process.env.SSO_SHARED_SECRET;
-  if (!value || value.length < 32) throw new AccessError(503, 'Models SSO is not configured.');
+  const normalized = value?.trim().toUpperCase() ?? '';
+  if (
+    !value ||
+    value.length < 32 ||
+    /^REPLACE(?:_|$)/.test(normalized) ||
+    ['CHANGEME', 'CHANGE_ME', 'PLACEHOLDER', 'YOUR_SECRET_HERE'].includes(normalized)
+  ) throw new AccessError(503, 'Models SSO is not configured.');
   return value;
 }
 
 export function verifyModelsBearer(header: string | undefined) {
   const expected = configuredSecret();
   const supplied = header?.startsWith('Bearer ') ? header.slice(7) : '';
-  const expectedBytes = Buffer.from(expected);
-  const suppliedBytes = Buffer.from(supplied);
-  if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes))
+  const expectedBytes = Buffer.from(sha256(expected), 'hex');
+  const suppliedBytes = Buffer.from(sha256(supplied), 'hex');
+  if (!timingSafeEqual(expectedBytes, suppliedBytes))
     throw new AccessError(401, 'Models SSO authentication failed.');
+}
+
+export async function authenticateModelsCredentials(
+  store: WorkspaceStore,
+  input: Record<string, unknown>,
+): Promise<ModelsIdentity> {
+  const username = typeof input.username === 'string' && input.username.length <= 200
+    ? input.username.toLowerCase()
+    : '';
+  const password = typeof input.password === 'string' ? input.password : '';
+  const result = await store.transaction(async (tx) => {
+    const users = await tx.list<User>('user');
+    const user = users.find((candidate) =>
+      candidate.username.toLowerCase() === username || candidate.email.toLowerCase() === username,
+    );
+    const passwordMatches = verifyPassword(password, user?.password ?? DUMMY_PASSWORD);
+    if (!user || !passwordMatches || !allowed(user)) return undefined;
+    const at = now();
+    user.lastLoginAt = at;
+    user.lastActivityAt = at;
+    await tx.put('user', user.id, user);
+    return { id: user.id, username: user.username, role: user.role, generation: user.generation };
+  });
+  if (!result) throw new AccessError(401, 'Username or password is incorrect.');
+  return result;
 }
 
 async function sessionUser(tx: WorkspaceTx, token: string) {
@@ -98,6 +130,23 @@ export function parseModelsIdentity(value: unknown): ModelsIdentity {
   check(typeof identity.role === 'string' && ALLOWED_ROLES.has(identity.role), 'Models identity is not authorized.', 403);
   check(Number.isInteger(identity.generation) && Number(identity.generation) > 0, 'Models identity is invalid.', 401);
   return identity as ModelsIdentity;
+}
+
+export async function revalidateModelsIdentity(
+  store: WorkspaceStore,
+  input: Record<string, unknown>,
+): Promise<ModelsIdentity> {
+  const asserted = parseModelsIdentity(input);
+  const current = await store.transaction(async (tx) => {
+    const user = await tx.get<User>('user', asserted.id);
+    if (!allowed(user) ||
+        user.username !== asserted.username ||
+        user.role !== asserted.role ||
+        user.generation !== asserted.generation) return undefined;
+    return { id: user.id, username: user.username, role: user.role, generation: user.generation };
+  });
+  if (!current) throw new AccessError(403, 'ARR account is no longer eligible for Models.');
+  return current;
 }
 
 export async function createStaffSessionFromModels(store: WorkspaceStore, asserted: ModelsIdentity) {

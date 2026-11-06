@@ -117,12 +117,18 @@ IPs. Existing anti-abuse rate limits hash source IPs separately from analytics.
 
 ARR and Models use a one-time, server-to-server authorization-code exchange for active
 Manager, Admin and Owner accounts. Configure the same encrypted `SSO_SHARED_SECRET` in
-both services; it must contain at least 32 characters. Never commit or log its value.
-The Models origin is fixed at `https://models.arrweb.com`; caller-supplied return URLs
+both services; it must contain at least 32 characters. The DigitalOcean spec declares it
+as a `SECRET` with a `REPLACE_...` placeholder; replace that value before deployment,
+because runtime configuration rejects known placeholder values. Never commit or log the
+real secret. The Models origin is fixed at `https://models.arrweb.com`; caller-supplied return URLs
 are not accepted.
 
 ARR exposes `/sso/models/authorize` and `/sso/models/exchange` for ARR-to-Models entry,
-and `/sso/models/start` plus `/sso/models/callback` for Models-to-ARR entry. Codes expire
+and `/sso/models/start` plus `/sso/models/callback` for Models-to-ARR entry. Models
+also uses the Bearer-authenticated `/sso/models/credentials` endpoint for shared
+username/password sign-in and `/sso/models/revalidate` for bounded session
+revalidation. Credentials and revalidation return only the exact authoritative
+`{id, username, role, generation}` identity and never create an ARR session. Codes expire
 within 60 seconds, are stored only as SHA-256 hashes, are consumed atomically, and are
 revalidated against the current ARR account role, status and generation. Models-to-ARR
 callbacks also match the exact stable ID, username, role and generation before creating
@@ -167,7 +173,11 @@ Audit history is append-only at the API, but not tamper-proof against database o
 Session cookies are HttpOnly/Secure in deployed mode. Staff cookies use SameSite=Lax
 for top-level Models SSO; production-operator and legacy cookies remain SameSite=Strict.
 Same-origin custom
-JSON headers and CSP remain enforced. Rate limits apply to new public/auth routes.
+JSON headers and CSP remain enforced. Persistent database-backed rate limits use the
+trusted edge forwarding-header assumption documented in the handler: public SSO
+navigation has lower per-IP/global ceilings, while Bearer-only Models backchannels have
+high per-service/global ceilings so ordinary shared-service traffic does not inherit the
+12-request interactive-login allowance.
 
 Existing deployment database TLS/dependency findings remain documented in the security
 handoff. No compliance certificate, SSO, durable production audit trail, independent

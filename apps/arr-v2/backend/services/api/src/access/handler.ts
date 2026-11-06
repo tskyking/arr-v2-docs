@@ -26,12 +26,14 @@ import { WorkspaceService } from "./workspace/service.js";
 import {
   MODELS_ORIGIN,
   MODELS_STATE_COOKIE,
+  authenticateModelsCredentials,
   authorizeModels,
   createStaffSessionFromModels,
   exchangeModelsCode,
   modelsSharedSecret,
   newModelsState,
   parseModelsIdentity,
+  revalidateModelsIdentity,
   verifyModelsBearer,
 } from "./workspace/models-sso.js";
 import { deliverMail } from "./workspace/mail.js";
@@ -173,6 +175,31 @@ function redirect(res: ServerResponse, location: string) {
   res.writeHead(302, { Location: location });
   res.end();
 }
+function trustedEdgeIp(req: IncomingMessage) {
+  // DEMO ASSUMPTION: forwarding headers come from a trusted edge. Direct callers
+  // must not be able to spoof these headers to rotate a rate-limit identity.
+  return String(
+    req.headers["cf-connecting-ip"] ??
+      req.headers["x-forwarded-for"] ??
+      req.socket.remoteAddress,
+  ).split(",")[0].trim();
+}
+function modelsRouteName(suffix: string) {
+  return suffix.startsWith("sso/models/") ? suffix.slice("sso/models/".length) : "";
+}
+async function limitModelsPublicRoute(store: AccessStore, suffix: string, method: string | undefined, ip: string) {
+  const publicRoute = method === "GET" && /^(start|callback|authorize)$/.exec(
+    modelsRouteName(suffix),
+  )?.[1];
+  if (!publicRoute) return;
+  const maximum = publicRoute === "start" ? 60 : 120;
+  await store.limit(`sso:models:public:${publicRoute}:ip:${sha256(ip)}`, maximum, 900);
+  await store.limit(`sso:models:public:${publicRoute}:global`, 10_000, 3600);
+}
+async function limitModelsBackchannel(store: AccessStore, route: string) {
+  await store.limit(`sso:models:backchannel:${route}:service`, 20_000, 900);
+  await store.limit("sso:models:backchannel:global", 100_000, 3600);
+}
 function safeRecord(record: Record<string, unknown>) {
   const { receiptHash: _receipt, photo, ...rest } = record;
   return { ...rest, hasPhoto: Boolean(photo) };
@@ -281,6 +308,17 @@ export function createAccessHandler(
         lastCleanup = Date.now();
       }
       const requestUrl = new URL(req.url ?? path, "http://arr.local");
+      const ip = trustedEdgeIp(req);
+      await limitModelsPublicRoute(store, suffix, method, ip);
+      const modelsBackchannel = method === "POST" && /^(exchange|credentials|revalidate)$/.exec(
+        modelsRouteName(suffix),
+      )?.[1];
+      if (modelsBackchannel) {
+        verifyModelsBearer(
+          typeof req.headers.authorization === "string" ? req.headers.authorization : undefined,
+        );
+        await limitModelsBackchannel(store, modelsBackchannel);
+      }
       if (workspaceStore && suffix === "sso/models/start" && method === "GET") {
         const state = newModelsState();
         const destination = new URL("/sso/arr/authorize", MODELS_ORIGIN);
@@ -304,10 +342,15 @@ export function createAccessHandler(
         redirect(res, destination.toString());
         return true;
       }
+      if (workspaceStore && suffix === "sso/models/credentials" && method === "POST") {
+        json(res, 200, await authenticateModelsCredentials(workspaceStore, await body(req)));
+        return true;
+      }
+      if (workspaceStore && suffix === "sso/models/revalidate" && method === "POST") {
+        json(res, 200, await revalidateModelsIdentity(workspaceStore, await body(req)));
+        return true;
+      }
       if (workspaceStore && suffix === "sso/models/exchange" && method === "POST") {
-        verifyModelsBearer(
-          typeof req.headers.authorization === "string" ? req.headers.authorization : undefined,
-        );
         json(res, 200, await exchangeModelsCode(workspaceStore, await body(req)));
         return true;
       }
@@ -337,7 +380,7 @@ export function createAccessHandler(
           `tschutes_workspace=${session}; HttpOnly; SameSite=Lax; Path=/api/access-demo; Max-Age=14400${secure}`,
           `${MODELS_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/access-demo; Max-Age=0${secure}`,
         ]);
-        redirect(res, "production.html");
+        redirect(res, "/api/access-demo/production.html");
         return true;
       }
       if (["POST", "PATCH", "DELETE"].includes(method ?? "")) {
@@ -353,13 +396,6 @@ export function createAccessHandler(
         if (req.headers["sec-fetch-site"] === "cross-site")
           throw new AccessError(403, "Cross-origin requests are not allowed.");
       }
-      // DEMO ASSUMPTION: forwarding headers come from a trusted edge. Direct callers
-      // must not be able to spoof these headers to rotate a rate-limit identity.
-      const ip = String(
-        req.headers["cf-connecting-ip"] ??
-          req.headers["x-forwarded-for"] ??
-          req.socket.remoteAddress,
-      ).split(",")[0];
       // New workspace is additive; legacy records and endpoints remain isolated.
       if (suffix.startsWith("v2/") && workspace && workspaceStore) {
         if (method !== "POST") throw new AccessError(405, "Use POST.");

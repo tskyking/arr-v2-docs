@@ -37,9 +37,12 @@ services:
       - key: MAX_BODY_BYTES
         value: "52428800"
         scope: RUN_TIME
-      # Required for ARR ↔ Models one-time SSO. Add SSO_SHARED_SECRET as an
-      # encrypted RUN_TIME secret in App Platform with at least 32 characters;
-      # use the exact same value in Models. Its value is intentionally omitted.
+      # Required for ARR ↔ Models one-time SSO. Replace the placeholder in App
+      # Platform with the exact same high-entropy value used by Models.
+      - key: SSO_SHARED_SECRET
+        value: REPLACE_WITH_SHARED_SSO_SECRET_AT_LEAST_32_CHARACTERS
+        type: SECRET
+        scope: RUN_TIME
 
 static_sites:
   - name: arr-v2-web
