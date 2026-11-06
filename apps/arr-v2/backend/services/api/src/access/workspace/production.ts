@@ -4,7 +4,7 @@ import {settingsRoutes} from './production-settings.js';
 import {shiftRoutes} from './production-shifts.js';
 import {productionAllocations} from './production-allocations.js';
 import { scryptSync } from 'node:crypto';
-import {check,id,now,text,secret,sha256,verifyPassword,publicUser,type User} from './model.js';
+import {check,email,id,now,text,secret,sha256,verifyPassword,publicUser,type User} from './model.js';
 import {productionConfig,productionAnswers,workToday,dayOffset,lateEod,validDate,scoreFields,type ProductionEntry} from './production-model.js';
 import type {WorkspaceTx} from './store.js';
 type AssociateProfile={firstName:string;lastName:string;email:string};
@@ -95,6 +95,19 @@ export async function production(tx:WorkspaceTx,u:User|undefined,route:string,in
  if(route==='production-associate-list') {
   check(u&&(u.role==='owner'||u.role==='admin'),'Administrator access required.',403);
   return{operators:(await tx.list<Operator>('production-operator')).map(v=>({id:v.id,username:v.username,profile:v.profile,active:v.active,revision:(v as any).revision||1})).sort((a,b)=>a.username.localeCompare(b.username,undefined,{numeric:true}))};
+ }
+ if(route==='production-associate-profile-save') {
+  check(u?.role==='owner','A+ manages associate profiles.',403);
+  const username=text(input.id,80).toLowerCase();check(/^person-(?:[1-9]|[12]\d|30)$/.test(username),'Use a fictional person-1 through person-30 username.');
+  const existing=await tx.get<Operator&{revision?:number} >('production-operator',username);check(existing,'Associate unavailable.',404);
+  const revision=existing.revision||1;check(input.revision===revision,'Associate changed. Refresh before saving.',409);
+  check(input.profile&&typeof input.profile==='object'&&!Array.isArray(input.profile),'Specify associate profile.');
+  const firstName=text(input.profile.firstName,80),lastName=text(input.profile.lastName,80),profileEmail=email(input.profile.email);
+  check(firstName.length>0&&lastName.length>0,'First and last name are required.');
+  const operators=await tx.list<Operator>('production-operator');check(!operators.some(other=>other.id!==username&&other.profile?.email.toLowerCase()===profileEmail),'Email already belongs to another associate.');
+  const profile={firstName,lastName,email:profileEmail},updated={...existing,profile,revision:revision+1};
+  await tx.put('production-operator',username,updated);const key=id();await tx.put('production-event',key,{id:key,at:now(),by:u.username,action:'associate profile updated',operator:username,before:{profile:existing.profile,revision},after:{profile,revision:updated.revision}});
+  return{operator:{id:updated.id,username:updated.username,profile:updated.profile,active:updated.active,revision:updated.revision}};
  }
  if(route==='production-associate-save') {
   check(u?.role==='owner','A+ manages associate access.',403);
