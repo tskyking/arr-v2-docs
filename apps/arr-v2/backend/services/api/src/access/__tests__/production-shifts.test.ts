@@ -73,11 +73,23 @@ describe('continuous production shifts',()=>{
     expect((await tx.get('production-shift',second.id)).segments).toHaveLength(1);
    }finally{vi.useRealTimers();}
   });
+  it('opts visible associates out when +n has not elapsed or would pass the fixed close',async()=>{
+   vi.useFakeTimers();vi.setSystemTime(new Date(at(13)));
+   try{
+    const first=await start(),second=(await call('production-shift-start',{workDate:'2026-10-01',shift:'day',team:'Team A',actualTime:at(12),assignment:assigned,data:{sopClarity:10}},undefined,other)).shift;
+    let preview=await call('production-shift-test-c-bulk-preview',{hours:2,visibleShifts:[{id:first.id,revision:first.revision},{id:second.id,revision:second.revision}]},manager);
+    expect(preview.advances.map((item:any)=>item.operator)).toEqual(['person-1']);expect(preview.skips).toEqual([{id:second.id,operator:'person-2',username:'person-2',reason:'The current station has not reached 2 hours.'}]);
+    await call('production-shift-test-c-bulk-cancel',{token:preview.token},manager);
+    const nearClose=structuredClone(await tx.get('production-shift',second.id));nearClose.segments[0].start='2026-10-01T21:00:00.000Z';await tx.put('production-shift',second.id,nearClose);vi.setSystemTime(new Date('2026-10-01T23:00:00.000Z'));
+    preview=await call('production-shift-test-c-bulk-preview',{hours:2,visibleShifts:[{id:first.id,revision:first.revision},{id:second.id,revision:second.revision}]},manager);
+    expect(preview.advances.map((item:any)=>item.operator)).toEqual(['person-1']);expect(preview.skips).toEqual([{id:second.id,operator:'person-2',username:'person-2',reason:'The changeover would pass the fixed shift close.'}]);
+   }finally{vi.useRealTimers();}
+  });
   it('rejects invalid or stale Test C +n bulk selections before changing any shift',async()=>{
    vi.useFakeTimers();vi.setSystemTime(new Date(at(13)));
    try{
     const first=await start(),second=(await call('production-shift-start',{workDate:'2026-10-01',shift:'day',team:'Team A',actualTime:at(8),assignment:assigned,data:{sopClarity:10}},undefined,other)).shift;
-    for(const hours of [0,0.25,12.5,'2'])await expect(call('production-shift-test-c-bulk-preview',{hours,visibleShifts:[{id:first.id,revision:first.revision}]},manager)).rejects.toThrow('half-hour');
+    for(const hours of [0,0.25,10,12.5,'2'])await expect(call('production-shift-test-c-bulk-preview',{hours,visibleShifts:[{id:first.id,revision:first.revision}]},manager)).rejects.toThrow('half-hour');
     await expect(call('production-shift-test-c-bulk-preview',{hours:1,visibleShifts:[{id:second.id,revision:second.revision}]},managerTwo)).rejects.toThrow('visible');
     const preview=await call('production-shift-test-c-bulk-preview',{hours:1,visibleShifts:[{id:first.id,revision:first.revision},{id:second.id,revision:second.revision}]},manager);
     const changed=structuredClone(await tx.get('production-shift',second.id));changed.revision+=1;await tx.put('production-shift',second.id,changed);
