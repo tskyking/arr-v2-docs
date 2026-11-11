@@ -57,6 +57,34 @@ describe('continuous production shifts',()=>{
    ['swing','2026-10-02T08:00:00Z','2026-10-02T11:00:00Z'],
   ] as const)('blocks Test C +2 when the two-hour boundary would pass the %s fixed close',async(shift:'day'|'swing',actualTime:string,currentTime:string)=>{vi.useFakeTimers();vi.setSystemTime(new Date(currentTime));try{const s=await start({shift,actualTime});await expect(action(s,'test-c-plus-two',{},manager)).rejects.toThrow('fixed shift close');expect((await tx.get('production-shift',s.id)).segments).toHaveLength(1);}finally{vi.useRealTimers();}});
   it('allows Test C +2 when its two-hour boundary lands exactly on the Day close',async()=>{vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-01T23:00:00Z'));try{const s=await start({actualTime:'2026-10-01T20:30:00Z'}),advanced=(await action(s,'test-c-plus-two',{},manager)).shift;expect(advanced.segments[0].end).toBe('2026-10-01T22:30:00.000Z');}finally{vi.useRealTimers();}});
+  it('previews and confirms a manager-scoped Test C +n changeover for the visible in-progress shifts',async()=>{
+   vi.useFakeTimers();vi.setSystemTime(new Date(at(13)));
+   try{
+    const first=await start(),second=(await call('production-shift-start',{workDate:'2026-10-01',shift:'day',team:'Team A',actualTime:at(8),assignment:assigned,data:{sopClarity:10}},undefined,other)).shift;
+    const preview=await call('production-shift-test-c-bulk-preview',{hours:1.5,visibleShifts:[{id:first.id,revision:first.revision},{id:second.id,revision:second.revision}]},manager);
+    expect(preview).toMatchObject({hours:1.5,advances:[{id:first.id,operator:'person-1',fromStage:'Cleaning / Decontamination',toStage:'Inspection'},{id:second.id,operator:'person-2',fromStage:'Cleaning / Decontamination',toStage:'Inspection'}],skips:[]});
+    expect(Date.parse(preview.expiresAt)).toBeGreaterThan(Date.now());
+    const result=await call('production-shift-test-c-bulk-confirm',{token:preview.token,excludedOperators:['person-2']},manager);
+    expect(result.excluded).toEqual([{operator:'person-2',username:'person-2'}]);
+    expect(result.advanced).toHaveLength(1);expect(result.advanced[0].operator).toBe('person-1');
+    expect(result.advanced[0].segments[0].end).toBe('2026-10-01T09:30:00.000Z');
+    expect(result.advanced[0].segments[1]).toMatchObject({stage:'Inspection',product:'Sleeves',start:'2026-10-01T09:30:00.000Z',end:null,sopReadySource:'demo_preselected'});
+    expect(result.advanced[0].history.at(-1)).toMatchObject({action:'test-c-plus-n-bulk',by:'manager'});
+    expect((await tx.get('production-shift',second.id)).segments).toHaveLength(1);
+   }finally{vi.useRealTimers();}
+  });
+  it('rejects invalid or stale Test C +n bulk selections before changing any shift',async()=>{
+   vi.useFakeTimers();vi.setSystemTime(new Date(at(13)));
+   try{
+    const first=await start(),second=(await call('production-shift-start',{workDate:'2026-10-01',shift:'day',team:'Team A',actualTime:at(8),assignment:assigned,data:{sopClarity:10}},undefined,other)).shift;
+    for(const hours of [0,0.25,12.5,'2'])await expect(call('production-shift-test-c-bulk-preview',{hours,visibleShifts:[{id:first.id,revision:first.revision}]},manager)).rejects.toThrow('half-hour');
+    await expect(call('production-shift-test-c-bulk-preview',{hours:1,visibleShifts:[{id:second.id,revision:second.revision}]},managerTwo)).rejects.toThrow('visible');
+    const preview=await call('production-shift-test-c-bulk-preview',{hours:1,visibleShifts:[{id:first.id,revision:first.revision},{id:second.id,revision:second.revision}]},manager);
+    const changed=structuredClone(await tx.get('production-shift',second.id));changed.revision+=1;await tx.put('production-shift',second.id,changed);
+    await expect(call('production-shift-test-c-bulk-confirm',{token:preview.token,excludedOperators:[]},manager)).rejects.toThrow('changed after the preview');
+    expect((await tx.get('production-shift',first.id)).segments).toHaveLength(1);
+   }finally{vi.useRealTimers();}
+  });
   it('lets the associate save one final feedback update after ending without changing the submitted timeline',async()=>{
   let s=await start();await expect(action(s,'feedback',{data:{workedWell:'Too soon'}})).rejects.toThrow('End the shift');s=(await action(s,'end',{actualTime:at(12)})).shift;expect(s.canAddFeedback).toBe(true);expect((await call('production-shift-detail',{id:s.id},manager)).shift.canAddFeedback).toBe(false);const timeline=structuredClone(s.segments);
   await expect(action(s,'feedback',{data:{reportedMoves:999}})).rejects.toThrow('Only the displayed End-of-Day feedback fields');
