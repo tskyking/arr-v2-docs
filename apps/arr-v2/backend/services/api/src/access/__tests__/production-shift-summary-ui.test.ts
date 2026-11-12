@@ -8,8 +8,8 @@ const htmlPath = new URL('../public/production.html', import.meta.url);
 describe('shift queue elapsed-time presentation', () => {
   it('cache-busts the staged Manager queue assets', async () => {
     const html = await readFile(htmlPath, 'utf8');
-    expect(html).toContain('production.css?v=20261106-associate-profile-edit-v1');
-    expect(html).toContain('production.js?v=20261106-associate-profile-edit-v1');
+    expect(html).toContain('production.css?v=20261111-test-c-bulk-v1');
+    expect(html).toContain('production.js?v=20261111-test-c-bulk-v1');
   });
 
   it('shows a live bold shift total beside the crew', async () => {

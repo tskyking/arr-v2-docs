@@ -81,7 +81,7 @@ describe('Models links in the production UI', () => {
 
   it('cache-busts the changed production assets', async () => {
     const page = await html();
-    expect(page).toContain('production.css?v=20261106-associate-profile-edit-v1');
-    expect(page).toContain('production.js?v=20261106-associate-profile-edit-v1');
+    expect(page).toContain('production.css?v=20261111-test-c-bulk-v1');
+    expect(page).toContain('production.js?v=20261111-test-c-bulk-v1');
   });
 });
