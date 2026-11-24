@@ -26,7 +26,24 @@ describe('Insights chronological presentation',()=>{
     if(name==='production-dashboard')return route.fulfill({json:{shiftDays:[
      {date:'2026-10-14',shifts:2,productionMinutes:120,trainingMinutes:0,waitingMinutes:0,downtimeMinutes:0,openSegments:0,reportedCount:0,unreportedCount:0,operations:[]},
      {date:'2026-10-12',shifts:1,productionMinutes:60,trainingMinutes:0,waitingMinutes:0,downtimeMinutes:0,openSegments:0,reportedCount:0,unreportedCount:0,operations:[]},
-     {date:'2026-10-16',shifts:3,productionMinutes:180,trainingMinutes:0,waitingMinutes:0,downtimeMinutes:0,openSegments:0,reportedCount:0,unreportedCount:0,operations:[]},
+     {date:'2026-10-16',shifts:3,productionMinutes:180,trainingMinutes:0,waitingMinutes:0,downtimeMinutes:0,openSegments:0,reportedCount:1,reportedMoves:3,unreportedCount:15,operations:[
+      {operation:'Functional Testing',product:'Manifolds',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Custom Verification',product:'Manifolds',productionMinutes:15,reportedCount:0,reportedMoves:0},
+      {operation:'Inspection',product:'Harmonic scalpels/shears',productionMinutes:60,reportedCount:0,reportedMoves:0},
+      {operation:'Repair / Reassembly',product:'Manifolds',productionMinutes:60,reportedCount:0,reportedMoves:0},
+      {operation:'Packaging',product:'Harmonic scalpels/shears',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Final Quality Review',product:'Manifolds',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Receiving and Sorting',product:'Manifolds',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Cleaning / Decontamination',product:'Harmonic scalpels/shears',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Packaging',product:'Manifolds',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Receiving and Sorting',product:'Harmonic scalpels/shears',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Inspection',product:'Manifolds',productionMinutes:0,reportedCount:0,reportedMoves:0},
+      {operation:'Functional Testing',product:'Harmonic scalpels/shears',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Cleaning / Decontamination',product:'Manifolds',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Legacy Review',product:'Manifolds',productionMinutes:25,reportedCount:1,reportedMoves:3},
+      {operation:'Final Quality Review',product:'Harmonic scalpels/shears',productionMinutes:120,reportedCount:0,reportedMoves:0},
+      {operation:'Repair / Reassembly',product:'Harmonic scalpels/shears',productionMinutes:60,reportedCount:0,reportedMoves:0},
+     ]},
     ],fgiDays:[
      {date:'2026-10-13',total:1170,revision:1,provenance:'manual_demo',rows:[]},
      {date:'2026-10-16',total:1300,revision:3,provenance:'manual_demo',rows:[]},
@@ -55,6 +72,49 @@ describe('Insights chronological presentation',()=>{
     '2026-10-16 · 3 shifts · 3.0 production hours',
     '2026-10-14 · 2 shifts · 2.0 production hours',
     '2026-10-12 · 1 shifts · 1.0 production hours',
+   ]);
+   const operationRows=cards.nth(1).locator('details').first().locator('.dashboard-operation-row');
+   expect(await operationRows.locator('span:first-child').allTextContents()).toEqual([
+    'Packaging · Manifolds',
+    'Final Quality Review · Manifolds',
+    'Repair / Reassembly · Manifolds',
+    'Functional Testing · Manifolds',
+    'Inspection · Manifolds',
+    'Cleaning / Decontamination · Manifolds',
+    'Custom Verification · Manifolds',
+    'Legacy Review · Manifolds',
+    'Receiving and Sorting · Manifolds',
+    'Packaging · Harmonic scalpels/shears',
+    'Final Quality Review · Harmonic scalpels/shears',
+    'Repair / Reassembly · Harmonic scalpels/shears',
+    'Functional Testing · Harmonic scalpels/shears',
+    'Inspection · Harmonic scalpels/shears',
+    'Cleaning / Decontamination · Harmonic scalpels/shears',
+    'Receiving and Sorting · Harmonic scalpels/shears',
+   ]);
+   expect(await operationRows.locator('span:last-child').allTextContents()).toEqual([
+    '120 minutes · Not counted',
+    '120 minutes · Not counted',
+    '60 minutes · Not counted',
+    '120 minutes · Not counted',
+    '0 minutes · Not counted',
+    '120 minutes · Not counted',
+    '15 minutes · Not counted',
+    '25 minutes · 3 reported moves',
+    '120 minutes · Not counted',
+    '120 minutes · Not counted',
+    '120 minutes · Not counted',
+    '60 minutes · Not counted',
+    '120 minutes · Not counted',
+    '60 minutes · Not counted',
+    '120 minutes · Not counted',
+    '120 minutes · Not counted',
+   ]);
+   expect(await operationRows.evaluateAll((elements:Element[])=>elements.map((element:Element,index:number)=>element.classList.contains('dashboard-operation-group-end')?index:-1).filter((index:number)=>index>=0))).toEqual([8]);
+   const groupEnds=cards.nth(1).locator('details').first().locator('.dashboard-operation-row.dashboard-operation-group-end');
+   expect(await groupEnds.count()).toBe(1);
+   expect(await groupEnds.evaluateAll((elements:Element[])=>elements.map((element:Element)=>({width:parseFloat(getComputedStyle(element).borderBottomWidth),style:getComputedStyle(element).borderBottomStyle,color:getComputedStyle(element).borderBottomColor})))).toEqual([
+    {width:3,style:'solid',color:'rgb(8, 107, 109)'},
    ]);
   }finally{await browser.close();}
  },20000);
